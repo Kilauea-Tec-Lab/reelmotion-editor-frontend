@@ -38,7 +38,7 @@ export const useEditorAuth = (): UseEditorAuthResult => {
         // Get token from cookies
         const token = Cookies.get("token");
 
-        console.log(token);
+        console.log(token, "token");
         
         if (!token) {
           // No token found, redirect to main site
