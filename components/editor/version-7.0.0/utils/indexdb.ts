@@ -26,7 +26,6 @@ export interface UserMediaItem {
   thumbnail?: string;
   duration?: number;
   createdAt: number;
-  isLocalFile?: boolean; // True for videos using local blob URLs
 }
 
 /**

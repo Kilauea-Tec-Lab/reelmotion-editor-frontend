@@ -12,7 +12,6 @@ import { UserMediaItem, addMediaItem } from "./indexdb";
 
 /**
  * Uploads a file to the server and stores the reference in IndexedDB
- * For videos, uses local blob URLs instead of uploading to server
  */
 export const uploadMediaFile = async (file: File): Promise<UserMediaItem> => {
   try {
@@ -51,34 +50,20 @@ export const uploadMediaFile = async (file: File): Promise<UserMediaItem> => {
       throw new Error(errorData.error || "Failed to upload file");
     }
 
-    const uploadResult = await response.json();
-
-    // Handle local files (videos)
-    let serverPath: string;
-    if (uploadResult.isLocalFile) {
-      // For videos, create a blob URL and store it
-      const blobUrl = URL.createObjectURL(file);
-      serverPath = blobUrl;
-      
-      console.log(`Video file will be accessed locally: ${file.name}`);
-    } else {
-      // For images/audio, use the server path
-      serverPath = uploadResult.serverPath;
-    }
+    const { id, serverPath, size } = await response.json();
 
     // Create media item for IndexedDB
     const mediaItem: UserMediaItem = {
-      id: uploadResult.id,
+      id,
       userId,
       name: file.name,
       type: fileType,
       serverPath,
-      size: uploadResult.size || file.size,
+      size,
       lastModified: file.lastModified,
       thumbnail: thumbnail || "",
       duration,
       createdAt: Date.now(),
-      isLocalFile: uploadResult.isLocalFile || false,
     };
 
     // Store in IndexedDB
@@ -199,14 +184,6 @@ export const deleteMediaFile = async (
   filePath: string
 ): Promise<boolean> => {
   try {
-    // If it's a blob URL (local file), just revoke it
-    if (filePath.startsWith('blob:')) {
-      URL.revokeObjectURL(filePath);
-      console.log('Revoked local blob URL:', filePath);
-      return true;
-    }
-
-    // For server files, call the delete API
     const response = await fetch("/api/media/delete", {
       method: "POST",
       headers: {
@@ -225,16 +202,4 @@ export const deleteMediaFile = async (
     console.error("Error deleting media file:", error);
     return false;
   }
-};
-
-/**
- * Cleanup function to revoke all blob URLs when component unmounts
- */
-export const cleanupLocalMediaFiles = (mediaItems: UserMediaItem[]): void => {
-  mediaItems.forEach(item => {
-    if (item.isLocalFile && item.serverPath.startsWith('blob:')) {
-      URL.revokeObjectURL(item.serverPath);
-      console.log('Cleaned up local blob URL for:', item.name);
-    }
-  });
 };
