@@ -25,9 +25,42 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Check if we're in production (Netlify)
+    const isProduction = process.env.NODE_ENV === 'production' || process.env.NETLIFY;
     
-    // Create user directory if it doesn't exist
-    const userDir = path.join(process.cwd(), 'public', 'users', userId);
+    if (isProduction) {
+      // In production, proxy the upload to the backend
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "https://backend.reelmotion.ai";
+      
+      try {
+        // Forward the formData to the backend
+        const backendFormData = new FormData();
+        backendFormData.append('file', file);
+        backendFormData.append('userId', userId);
+        
+        const backendResponse = await fetch(`${backendUrl}/upload-media`, {
+          method: 'POST',
+          body: backendFormData,
+        });
+        
+        if (!backendResponse.ok) {
+          throw new Error(`Backend upload failed: ${backendResponse.status}`);
+        }
+        
+        const backendResult = await backendResponse.json();
+        return NextResponse.json(backendResult);
+        
+      } catch (backendError) {
+        console.error('Backend upload error:', backendError);
+        // Fallback to temporary storage if backend fails
+      }
+    }
+    
+    // Local development or fallback: use temporary directory
+    const baseDir = isProduction ? '/tmp' : path.join(process.cwd(), 'public');
+    const userDir = path.join(baseDir, 'users', userId);
+    
     if (!existsSync(userDir)) {
       await mkdir(userDir, { recursive: true });
     }
@@ -43,7 +76,9 @@ export async function POST(request: NextRequest) {
     await writeFile(filePath, buffer);
     
     // Return the file information
-    const publicPath = `/users/${userId}/${fileName}`;
+    const publicPath = isProduction 
+      ? `/tmp/users/${userId}/${fileName}` 
+      : `/users/${userId}/${fileName}`;
     
     return NextResponse.json({
       success: true,
@@ -52,11 +87,12 @@ export async function POST(request: NextRequest) {
       serverPath: publicPath,
       size: file.size,
       type: file.type,
+      warning: isProduction ? 'File stored temporarily and will be deleted after function execution' : undefined
     });
   } catch (error) {
     console.error('Error uploading file:', error);
     return NextResponse.json(
-      { error: 'Failed to upload file' },
+      { error: 'Failed to upload file', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }
