@@ -37,11 +37,13 @@ export const useEditorAuth = (): UseEditorAuthResult => {
         
         // Get token from cookies
         const token = Cookies.get("token");
+
+        console.log(token);
         
         if (!token) {
           // No token found, redirect to main site
-          window.location.href =
-            process.env.NEXT_PUBLIC_REELMOTION_URL || "https://reelmotion.ai";
+          /*window.location.href =
+            process.env.NEXT_PUBLIC_REELMOTION_URL || "https://reelmotion.ai";*/
           return;
         }
 
@@ -67,16 +69,18 @@ export const useEditorAuth = (): UseEditorAuthResult => {
           setEditorData(data);
         } else {
           // Invalid response structure, redirect
-          window.location.href =
-            process.env.NEXT_PUBLIC_REELMOTION_URL || "https://reelmotion.ai";
+          /*window.location.href =
+            process.env.NEXT_PUBLIC_REELMOTION_URL || "https://reelmotion.ai";*/
+            console.log("pedo 1");
         }
       } catch (err) {
         console.error("Editor auth error:", err);
         setError(err instanceof Error ? err.message : "Authentication failed");
         
         // On error, redirect to main site
-        window.location.href =
-          process.env.NEXT_PUBLIC_REELMOTION_URL || "https://reelmotion.ai";
+        /*window.location.href =
+          process.env.NEXT_PUBLIC_REELMOTION_URL || "https://reelmotion.ai";*/
+          console.log("pedo 2");
       } finally {
         setIsLoading(false);
       }
