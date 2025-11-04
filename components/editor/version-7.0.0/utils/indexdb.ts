@@ -26,6 +26,7 @@ export interface UserMediaItem {
   thumbnail?: string;
   duration?: number;
   createdAt: number;
+  isLocalFile?: boolean; // Flag to indicate if file is stored locally
 }
 
 /**

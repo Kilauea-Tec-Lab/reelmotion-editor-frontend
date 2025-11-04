@@ -43,21 +43,27 @@ export async function POST(request: NextRequest) {
     const isVideo = file.type.startsWith('video/');
     
     if (isVideo) {
-      console.log('Video file detected, applying special handling');
+      console.log('Video file detected, using local storage approach');
       
-      // For videos in production, we should ideally use a different approach
-      // like direct upload to cloud storage or streaming upload
-      const isProduction = process.env.NODE_ENV === 'production' || process.env.NETLIFY;
+      // For videos, we'll use a different approach - local storage with blob URLs
+      // This avoids server upload and keeps files on user's device
+      const fileId = uuidv4();
       
-      if (isProduction) {
-        return NextResponse.json(
-          { 
-            error: 'Video uploads not supported in production environment. Please use direct cloud storage upload.',
-            suggestion: 'Consider using Cloudinary, AWS S3, or similar service for video uploads.'
-          },
-          { status: 501 }
-        );
-      }
+      // Create a blob URL for local access
+      const buffer = Buffer.from(await file.arrayBuffer());
+      const base64Data = buffer.toString('base64');
+      const dataUrl = `data:${file.type};base64,${base64Data}`;
+      
+      return NextResponse.json({
+        success: true,
+        id: fileId,
+        fileName: file.name,
+        serverPath: dataUrl, // Use data URL instead of server path
+        size: file.size,
+        type: file.type,
+        isLocalFile: true, // Flag to indicate this is a local file
+        localStorageKey: `video_${fileId}` // Key for localStorage if needed
+      });
     }
 
     // Check if we're in production (Netlify)
