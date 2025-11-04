@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import Cookies from "js-cookie";
+import { toAbsoluteUrl } from "../utils/url-helper";
 
 // Interface defining the structure of video data from Reelmotion backend
 interface ReelmotionVideo {
@@ -65,7 +66,7 @@ export function useReelmotionVideos() {
             .map((video) => ({
               ...video,
               // Use proxy to avoid CORS issues
-              video_url: `/api/proxy-video?url=${encodeURIComponent(video.video_url)}`,
+              video_url: toAbsoluteUrl(`/api/proxy-video?url=${encodeURIComponent(video.video_url)}`),
             }))
             .reverse(); // Reverse the order to show newest first
 
