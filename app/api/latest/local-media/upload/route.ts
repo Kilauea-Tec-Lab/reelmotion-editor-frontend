@@ -5,21 +5,34 @@ import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 
 /**
- * Handles media file uploads
+ * Handles media file uploads with local URL generation for videos
  * 
  * This API endpoint:
- * 1. Receives a file and user ID
- * 2. Creates a user directory if it doesn't exist
- * 3. Saves the file to the user's directory
- * 4. Returns the file path and ID
+ * 1. For videos: Returns local blob URL info (no file upload)
+ * 2. For images/audio: Uploads to server as before
  */
+
+// File size limits
+const MAX_FILE_SIZE_NETLIFY = 5 * 1024 * 1024; // 5MB
+
+// Video file types that should use local URLs
+const VIDEO_MIME_TYPES = [
+  'video/mp4',
+  'video/webm',
+  'video/avi',
+  'video/mov',
+  'video/quicktime',
+  'video/x-msvideo',
+  'video/x-ms-wmv',
+  'video/3gpp'
+];
+
 export async function POST(request: NextRequest) {
   try {
-    console.log('Upload request received');
-    
     const formData = await request.formData();
     const file = formData.get('file') as File;
     const userId = formData.get('userId') as string;
+    const useLocalUrl = formData.get('useLocalUrl') as string; // Optional flag
     
     if (!file || !userId) {
       return NextResponse.json(
@@ -28,53 +41,38 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`Processing file: ${file.name}, size: ${file.size}, type: ${file.type}`);
-
-    // Check file size limit (50MB for Netlify functions)
-    const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
-    if (file.size > MAX_FILE_SIZE) {
-      return NextResponse.json(
-        { error: `File too large. Maximum size is ${MAX_FILE_SIZE / (1024 * 1024)}MB` },
-        { status: 413 }
-      );
-    }
-
-    // Check if it's a video file
-    const isVideo = file.type.startsWith('video/');
+    const isVideo = VIDEO_MIME_TYPES.includes(file.type);
+    const isProduction = process.env.NODE_ENV === 'production' || process.env.NETLIFY;
     
-    if (isVideo) {
-      console.log('Video file detected, using local storage approach');
-      
-      // For videos, we'll use a different approach - local storage with blob URLs
-      // This avoids server upload and keeps files on user's device
+    // For videos or when explicitly requested, return local URL info
+    if (isVideo || useLocalUrl === 'true') {
       const fileId = uuidv4();
-      
-      // Create a blob URL for local access
-      const buffer = Buffer.from(await file.arrayBuffer());
-      const base64Data = buffer.toString('base64');
-      const dataUrl = `data:${file.type};base64,${base64Data}`;
       
       return NextResponse.json({
         success: true,
         id: fileId,
         fileName: file.name,
-        serverPath: dataUrl, // Use data URL instead of server path
         size: file.size,
         type: file.type,
-        isLocalFile: true, // Flag to indicate this is a local file
-        localStorageKey: `video_${fileId}` // Key for localStorage if needed
+        isLocalFile: true,
+        localFileInfo: {
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          lastModified: file.lastModified
+        },
+        message: 'File will be accessed locally from user\'s computer',
       });
     }
 
-    // Check if we're in production (Netlify)
-    const isProduction = process.env.NODE_ENV === 'production' || process.env.NETLIFY;
-    
-    if (isProduction) {
-      // In production, proxy the upload to the backend
+    // For non-video files (images, audio), handle upload normally
+    if (isProduction && file.size > MAX_FILE_SIZE_NETLIFY) {
+      // Try backend upload for large non-video files
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "https://backend.reelmotion.ai";
       
       try {
-        // Forward the formData to the backend
+        console.log(`Uploading large file to backend:`, file.name, `${(file.size / 1024 / 1024).toFixed(2)}MB`);
+        
         const backendFormData = new FormData();
         backendFormData.append('file', file);
         backendFormData.append('userId', userId);
@@ -82,22 +80,35 @@ export async function POST(request: NextRequest) {
         const backendResponse = await fetch(`${backendUrl}/upload-media`, {
           method: 'POST',
           body: backendFormData,
+          signal: AbortSignal.timeout(30000) // 30 seconds
         });
         
         if (!backendResponse.ok) {
-          throw new Error(`Backend upload failed: ${backendResponse.status}`);
+          const errorText = await backendResponse.text();
+          throw new Error(`Backend upload failed: ${backendResponse.status} - ${errorText}`);
         }
         
         const backendResult = await backendResponse.json();
-        return NextResponse.json(backendResult);
+        return NextResponse.json({
+          ...backendResult,
+          uploadMethod: 'backend'
+        });
         
       } catch (backendError) {
         console.error('Backend upload error:', backendError);
-        // Fallback to temporary storage if backend fails
+        
+        return NextResponse.json({
+          error: 'File too large for direct upload',
+          message: 'Large files must be uploaded through the backend service.',
+          maxSize: `${MAX_FILE_SIZE_NETLIFY / 1024 / 1024}MB`,
+          fileSize: `${(file.size / 1024 / 1024).toFixed(2)}MB`
+        }, { status: 413 });
       }
     }
     
-    // Local development or fallback: use temporary directory
+    // Handle small files locally (images, small audio files)
+    console.log(`Processing small file locally:`, file.name, `${(file.size / 1024 / 1024).toFixed(2)}MB`);
+    
     const baseDir = isProduction ? '/tmp' : path.join(process.cwd(), 'public');
     const userDir = path.join(baseDir, 'users', userId);
     
@@ -112,13 +123,8 @@ export async function POST(request: NextRequest) {
     const filePath = path.join(userDir, fileName);
     
     // Convert file to buffer and save it
-    console.log('Converting file to buffer...');
     const buffer = Buffer.from(await file.arrayBuffer());
-    console.log(`Buffer created, size: ${buffer.length}`);
-    
-    console.log(`Writing file to: ${filePath}`);
     await writeFile(filePath, buffer);
-    console.log('File written successfully');
     
     // Return the file information
     const publicPath = isProduction 
@@ -132,26 +138,18 @@ export async function POST(request: NextRequest) {
       serverPath: publicPath,
       size: file.size,
       type: file.type,
+      uploadMethod: 'local_server',
+      isLocalFile: false,
       warning: isProduction ? 'File stored temporarily and will be deleted after function execution' : undefined
     });
+    
   } catch (error) {
-    console.error('Error uploading file:', error);
-    
-    // More detailed error information
-    const errorDetails = {
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
-      name: error instanceof Error ? error.name : undefined,
-    };
-    
-    console.error('Full error details:', errorDetails);
-    
+    console.error('Error processing file:', error);
     return NextResponse.json(
       { 
-        error: 'Failed to upload file', 
-        details: errorDetails.message,
-        timestamp: new Date().toISOString(),
-        environment: process.env.NODE_ENV || 'unknown'
+        error: 'Failed to process file', 
+        details: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
       },
       { status: 500 }
     );

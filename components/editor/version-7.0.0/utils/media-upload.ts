@@ -12,6 +12,7 @@ import { UserMediaItem, addMediaItem } from "./indexdb";
 
 /**
  * Uploads a file to the server and stores the reference in IndexedDB
+ * For videos, uses local blob URLs instead of uploading to server
  */
 export const uploadMediaFile = async (file: File): Promise<UserMediaItem> => {
   try {
@@ -34,65 +35,50 @@ export const uploadMediaFile = async (file: File): Promise<UserMediaItem> => {
     // Get user ID
     const userId = getUserId();
 
-    let id: string;
+    // Create form data for upload
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("userId", userId);
+
+    // Upload file to server
+    const response = await fetch("/api/latest/local-media/upload", {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Failed to upload file");
+    }
+
+    const uploadResult = await response.json();
+
+    // Handle local files (videos)
     let serverPath: string;
-    let size: number;
-    let isLocalFile = false;
-
-    // For videos, handle locally to avoid server upload issues
-    if (fileType === "video") {
-      // Generate unique ID
-      id = crypto.randomUUID();
+    if (uploadResult.isLocalFile) {
+      // For videos, create a blob URL and store it
+      const blobUrl = URL.createObjectURL(file);
+      serverPath = blobUrl;
       
-      // Create blob URL for local access
-      const blob = new Blob([file], { type: file.type });
-      serverPath = URL.createObjectURL(blob);
-      size = file.size;
-      isLocalFile = true;
-      
-      // Store the file reference in localStorage for persistence across sessions
-      const fileReader = new FileReader();
-      fileReader.onload = () => {
-        localStorage.setItem(`video_${id}`, fileReader.result as string);
-      };
-      fileReader.readAsDataURL(file);
-      
-      console.log('Video handled locally, no server upload');
+      console.log(`Video file will be accessed locally: ${file.name}`);
     } else {
-      // For images and audio, upload to server as usual
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("userId", userId);
-
-      const response = await fetch("/api/latest/local-media/upload", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to upload file");
-      }
-
-      const uploadResult = await response.json();
-      id = uploadResult.id;
+      // For images/audio, use the server path
       serverPath = uploadResult.serverPath;
-      size = uploadResult.size;
     }
 
     // Create media item for IndexedDB
     const mediaItem: UserMediaItem = {
-      id,
+      id: uploadResult.id,
       userId,
       name: file.name,
       type: fileType,
       serverPath,
-      size,
+      size: uploadResult.size || file.size,
       lastModified: file.lastModified,
       thumbnail: thumbnail || "",
       duration,
       createdAt: Date.now(),
-      isLocalFile, // Add flag to indicate if file is stored locally
+      isLocalFile: uploadResult.isLocalFile || false,
     };
 
     // Store in IndexedDB
@@ -213,6 +199,14 @@ export const deleteMediaFile = async (
   filePath: string
 ): Promise<boolean> => {
   try {
+    // If it's a blob URL (local file), just revoke it
+    if (filePath.startsWith('blob:')) {
+      URL.revokeObjectURL(filePath);
+      console.log('Revoked local blob URL:', filePath);
+      return true;
+    }
+
+    // For server files, call the delete API
     const response = await fetch("/api/media/delete", {
       method: "POST",
       headers: {
@@ -234,58 +228,13 @@ export const deleteMediaFile = async (
 };
 
 /**
- * Restores local video files from localStorage
- * This function should be called when the app loads to restore video blob URLs
+ * Cleanup function to revoke all blob URLs when component unmounts
  */
-export const restoreLocalVideos = async (): Promise<void> => {
-  try {
-    // Get all media items from IndexedDB
-    const { getUserMediaItems } = await import('./indexdb');
-    const userId = getUserId();
-    const mediaItems = await getUserMediaItems(userId);
-    
-    // Find video items that are stored locally
-    const localVideoItems = mediaItems.filter(item => 
-      item.type === 'video' && item.isLocalFile
-    );
-    
-    // Restore blob URLs for each local video
-    for (const videoItem of localVideoItems) {
-      const localStorageKey = `video_${videoItem.id}`;
-      const storedData = localStorage.getItem(localStorageKey);
-      
-      if (storedData) {
-        // Convert base64 back to blob and create new blob URL
-        const response = await fetch(storedData);
-        const blob = await response.blob();
-        const newBlobUrl = URL.createObjectURL(blob);
-        
-        // Update the serverPath with the new blob URL
-        videoItem.serverPath = newBlobUrl;
-        
-        console.log(`Restored local video: ${videoItem.name}`);
-      } else {
-        console.warn(`Local video data not found for: ${videoItem.name}`);
-      }
+export const cleanupLocalMediaFiles = (mediaItems: UserMediaItem[]): void => {
+  mediaItems.forEach(item => {
+    if (item.isLocalFile && item.serverPath.startsWith('blob:')) {
+      URL.revokeObjectURL(item.serverPath);
+      console.log('Cleaned up local blob URL for:', item.name);
     }
-  } catch (error) {
-    console.error('Error restoring local videos:', error);
-  }
-};
-
-/**
- * Cleans up blob URLs and localStorage for local videos
- * This should be called when videos are no longer needed
- */
-export const cleanupLocalVideo = (mediaItem: UserMediaItem): void => {
-  if (mediaItem.isLocalFile && mediaItem.type === 'video') {
-    // Revoke the blob URL to free memory
-    URL.revokeObjectURL(mediaItem.serverPath);
-    
-    // Remove from localStorage
-    const localStorageKey = `video_${mediaItem.id}`;
-    localStorage.removeItem(localStorageKey);
-    
-    console.log(`Cleaned up local video: ${mediaItem.name}`);
-  }
+  });
 };
