@@ -35,15 +35,38 @@ export const useEditorAuth = (): UseEditorAuthResult => {
       try {
         setIsLoading(true);
         
-        // Get token from cookies
-        const token = Cookies.get("token");
-
-        console.log(token, "token");
+        let tokenToUse = null;
         
-        if (!token) {
-          // No token found, redirect to main site
-          /*window.location.href =
-            process.env.NEXT_PUBLIC_REELMOTION_URL || "https://reelmotion.ai";*/
+        // First, check if there's a UUID in the URI
+        const currentPath = window.location.pathname;
+        // Match pattern like /1005|uuid or /1005%7Cuuid (URL encoded)
+        const uuidMatch = currentPath.match(/^\/(.+)$/);
+        
+        if (uuidMatch) {
+          // Found token in URI, decode and validate it
+          const rawToken = uuidMatch[1];
+          const decodedToken = decodeURIComponent(rawToken);
+          
+          // Check if it matches the expected format: numbers|alphanumeric
+          if (/^\d+\|[a-zA-Z0-9]+$/.test(decodedToken)) {
+            console.log("Valid UUID found in URI:", decodedToken);
+            tokenToUse = decodedToken;
+          } else {
+            console.log("Invalid token format in URI:", decodedToken);
+          }
+        }
+        
+        if (!tokenToUse) {
+          // No valid UUID in URI, try to get token from cookies
+          const cookieToken = Cookies.get("token");
+          console.log("Token from cookies:", cookieToken);
+          tokenToUse = cookieToken;
+        }
+        
+        if (!tokenToUse) {
+          // No token found anywhere
+        window.location.href =
+          process.env.NEXT_PUBLIC_REELMOTION_URL || "https://reelmotion.ai";
           return;
         }
 
@@ -51,13 +74,14 @@ export const useEditorAuth = (): UseEditorAuthResult => {
         const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "https://backend.reelmotion.ai";
         const response = await fetch(`${backendUrl}/editor/get-info-to-edit`, {
           headers: {
-            Authorization: "Bearer " + token,
+            Authorization: "Bearer " + tokenToUse,
           },
         });
 
         // Check if response is ok
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+        window.location.href =
+          process.env.NEXT_PUBLIC_REELMOTION_URL || "https://reelmotion.ai";
         }
 
         const data: EditorData = await response.json();
@@ -67,20 +91,26 @@ export const useEditorAuth = (): UseEditorAuthResult => {
           // Valid response, user is authorized
           setIsAuthorized(true);
           setEditorData(data);
+          
+          // If we used UUID from URI and it worked, save it as token in cookies
+          if (uuidMatch && /^\d+\|[a-zA-Z0-9]+$/.test(tokenToUse)) {
+            Cookies.set("token", tokenToUse);
+            console.log("UUID validated and saved as token:", tokenToUse);
+          }
         } else {
-          // Invalid response structure, redirect
-          /*window.location.href =
-            process.env.NEXT_PUBLIC_REELMOTION_URL || "https://reelmotion.ai";*/
-            console.log("pedo 1");
+          // Invalid response structure
+          console.log("Invalid response structure, code:", data.code);
+
+                  window.location.href =
+          process.env.NEXT_PUBLIC_REELMOTION_URL || "https://reelmotion.ai";
         }
       } catch (err) {
         console.error("Editor auth error:", err);
         setError(err instanceof Error ? err.message : "Authentication failed");
         
         // On error, redirect to main site
-        /*window.location.href =
-          process.env.NEXT_PUBLIC_REELMOTION_URL || "https://reelmotion.ai";*/
-          console.log("pedo 2");
+        window.location.href =
+          process.env.NEXT_PUBLIC_REELMOTION_URL || "https://reelmotion.ai";
       } finally {
         setIsLoading(false);
       }

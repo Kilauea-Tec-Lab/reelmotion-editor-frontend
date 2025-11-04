@@ -7,9 +7,21 @@ export const metadata: Metadata = {
   title: "Reelmotion Editor",
   description: "Reelmotion Editor",
   icons: {
-    icon: "/icons/icon_reelmotion_ai.png",
+    icon: [
+      {
+        url: "/icons/icon_reelmotion_ai.png",
+        sizes: "any",
+        type: "image/png",
+      },
+    ],
     shortcut: "/icons/icon_reelmotion_ai.png",
     apple: "/icons/icon_reelmotion_ai.png",
+    other: [
+      {
+        rel: "icon",
+        url: "/icons/icon_reelmotion_ai.png",
+      },
+    ],
   },
 };
 
@@ -20,7 +32,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
-      <head />
+      <head>
+        <link rel="icon" href="/icons/icon_reelmotion_ai.png" type="image/png" />
+        <link rel="shortcut icon" href="/icons/icon_reelmotion_ai.png" type="image/png" />
+      </head>
       <body>
         <ThemeProvider
           attribute="class"
