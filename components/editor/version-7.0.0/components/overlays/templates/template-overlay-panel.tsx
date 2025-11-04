@@ -72,14 +72,14 @@ export const TemplateOverlayPanel: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col gap-2 p-2 sm:gap-4 sm:p-4 bg-gray-100/40 dark:bg-gray-900/40 h-full scrollbar-hide overflow-hidden">
+    <div className="flex flex-col gap-2 p-2 sm:gap-4 sm:p-4 bg-gray-100/40 dark:bg-darkBox  h-full scrollbar-hide overflow-hidden">
       <>
         <div className="flex gap-2">
           <form onSubmit={handleSearch} className="flex-1 flex gap-2">
             <Input
               placeholder="Search templates..."
               value={searchQuery}
-              className="flex-1 h-8 sm:h-10 text-xs sm:text-sm bg-white dark:bg-gray-800 border-gray-200 dark:border-white/5 text-gray-900 dark:text-zinc-200 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus-visible:ring-blue-400 md:text-base"
+              className="flex-1 h-8 sm:h-10 text-xs sm:text-sm bg-white dark:bg-darkBoxSub  border-gray-200 dark:border-white/5 text-gray-900 dark:text-zinc-200 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus-visible:ring-blue-400 md:text-base"
               onChange={(e) => setSearchQuery(e.target.value)}
               // NOTE: Stops zooming in on input focus on iPhone
               style={{ fontSize: "16px" }}
@@ -109,7 +109,7 @@ export const TemplateOverlayPanel: React.FC = () => {
               Array.from({ length: 6 }).map((_, index) => (
                 <div
                   key={`skeleton-${index}`}
-                  className="relative aspect-video bg-gray-200 dark:bg-gray-800 animate-pulse rounded-sm"
+                  className="relative aspect-video bg-gray-200 dark:bg-darkBoxSub  animate-pulse rounded-sm"
                 />
               ))
             ) : templates.length > 0 ? (

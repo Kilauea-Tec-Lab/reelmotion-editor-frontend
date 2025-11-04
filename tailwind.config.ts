@@ -24,6 +24,11 @@ const config: Config = {
       },
       colors: {
         border: "hsl(var(--border))",
+        primarioDark: "#34373C",
+        darkBox: "#282733",
+        darkBoxSub: "#363540",
+        primario: "#F8F8F8",
+        primarioLogo: "#DC569D",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",

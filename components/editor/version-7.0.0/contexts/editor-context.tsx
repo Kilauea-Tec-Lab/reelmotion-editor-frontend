@@ -69,6 +69,17 @@ interface EditorContextProps {
 
   // Add renderType to the context
   renderType: "ssr" | "lambda";
+
+  // Edition data for backend save
+  editionData?: {
+    id: string;
+    inputProps: any;
+    editId?: string | null;
+    editName?: string | null;
+  };
+
+  // Load edit functionality
+  loadEdit?: (editionData: any) => void;
 }
 
 // Create the context with undefined as default value

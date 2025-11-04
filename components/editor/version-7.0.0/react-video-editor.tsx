@@ -14,9 +14,11 @@ import { EditorProvider } from "./contexts/editor-context";
 import { useOverlays } from "./hooks/use-overlays";
 import { useVideoPlayer } from "./hooks/use-video-player";
 import { useTimelineClick } from "./hooks/use-timeline-click";
+import { TimelineRowAdjuster } from "./components/core/timeline-row-adjuster";
 import { useAspectRatio } from "./hooks/use-aspect-ratio";
 import { useCompositionDuration } from "./hooks/use-composition-duration";
 import { useHistory } from "./hooks/use-history";
+import { useEditorAuth } from "./hooks/use-editor-auth";
 
 // Types
 import { Overlay } from "./types";
@@ -37,8 +39,57 @@ import { useAutosave } from "./hooks/use-autosave";
 import { LocalMediaProvider } from "./contexts/local-media-context";
 import { KeyframeProvider } from "./contexts/keyframe-context";
 import { AssetLoadingProvider } from "./contexts/asset-loading-context";
+import { useTimeline } from "./contexts/timeline-context";
+import { ZOOM_CONSTRAINTS } from "./constants";
+
+// Component to handle zoom keyboard shortcuts
+// Must be inside TimelineProvider to access zoom context
+function ZoomKeyboardShortcuts() {
+  const { zoomScale, setZoomScale } = useTimeline();
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check if we're not in an input field
+      const target = e.target as HTMLElement;
+      const isInputField = 
+        target.tagName === "INPUT" || 
+        target.tagName === "TEXTAREA" || 
+        target.isContentEditable;
+      
+      if (isInputField) return;
+
+      // Handle + key (zoom in)
+      if (e.key === "+" || e.key === "=") {
+        e.preventDefault();
+        const newScale = Math.min(
+          zoomScale + ZOOM_CONSTRAINTS.step,
+          ZOOM_CONSTRAINTS.max
+        );
+        setZoomScale(newScale);
+      }
+      
+      // Handle - key (zoom out)
+      if (e.key === "-" || e.key === "_") {
+        e.preventDefault();
+        const newScale = Math.max(
+          zoomScale - ZOOM_CONSTRAINTS.step,
+          ZOOM_CONSTRAINTS.min
+        );
+        setZoomScale(newScale);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [zoomScale, setZoomScale]);
+
+  return null; // This component doesn't render anything
+}
 
 export default function ReactVideoEditor({ projectId }: { projectId: string }) {
+  // Authentication check
+  const { isLoading, isAuthorized, editorData } = useEditorAuth();
+
   // Autosave state
   const [showRecoveryDialog, setShowRecoveryDialog] = useState(false);
   const [autosaveTimestamp, setAutosaveTimestamp] = useState<number | null>(
@@ -48,6 +99,10 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
   const [lastSaveTime, setLastSaveTime] = useState<number | null>(null);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const [playbackRate, setPlaybackRate] = useState(1);
+  
+  // Current edit state (for load/save functionality)
+  const [currentEditId, setCurrentEditId] = useState<string | null>(null);
+  const [currentEditName, setCurrentEditName] = useState<string | null>(null);
 
   // Overlay management hooks
   const {
@@ -156,11 +211,60 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
   const handleRecoverAutosave = async () => {
     const loadedState = await loadState();
     console.log("loadedState", loadedState);
+    
+    if (loadedState) {
+      // Restore overlays
+      if (loadedState.overlays) {
+        setOverlays(loadedState.overlays);
+      }
+      
+      // Restore aspect ratio
+      if (loadedState.aspectRatio) {
+        setAspectRatio(loadedState.aspectRatio);
+      }
+      
+      // Restore player dimensions
+      if (loadedState.playerDimensions) {
+        updatePlayerDimensions(
+          loadedState.playerDimensions.width,
+          loadedState.playerDimensions.height
+        );
+      }
+    }
+    
     setShowRecoveryDialog(false);
   };
 
   const handleDiscardAutosave = () => {
     setShowRecoveryDialog(false);
+  };
+
+  // Handle loading an edit from the backend
+  const handleLoadEdit = (loadedEdit: any) => {
+    console.log("Loading edition:", loadedEdit);
+    
+    // Store the edit ID and name for future saves
+    if (loadedEdit.id) {
+      setCurrentEditId(loadedEdit.id);
+    }
+    if (loadedEdit.name) {
+      setCurrentEditName(loadedEdit.name);
+    }
+    
+    // Parse edition data if it's still a string
+    const editionData = typeof loadedEdit.editionData === 'string' 
+      ? JSON.parse(loadedEdit.editionData) 
+      : loadedEdit.editionData;
+    
+    if (editionData && editionData.inputProps) {
+      // Restore overlays
+      if (editionData.inputProps.overlays) {
+        setOverlays(editionData.inputProps.overlays);
+      }
+      
+      // Note: aspectRatio and playerDimensions are managed by composition settings
+      // They're derived from width/height in inputProps if needed
+    }
   };
 
   // Manual save function for use in keyboard shortcuts or save button
@@ -181,6 +285,46 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [editorState]);
+
+  // Set up keyboard shortcut for deleting selected overlay (Backspace / Delete)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check if Backspace or Delete key is pressed
+      if (e.key === "Backspace" || e.key === "Delete") {
+        // Check if we're not in an input field
+        const target = e.target as HTMLElement;
+        const isInputField = 
+          target.tagName === "INPUT" || 
+          target.tagName === "TEXTAREA" || 
+          target.isContentEditable;
+        
+        // Only delete overlay if not in an input field and an overlay is selected
+        if (!isInputField && selectedOverlayId !== null) {
+          e.preventDefault();
+          deleteOverlay(selectedOverlayId);
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedOverlayId, deleteOverlay]);
+
+  // Create edition data for backend save
+  const editionData = {
+    id: "TestComponent",
+    inputProps: {
+      overlays,
+      durationInFrames,
+      fps: FPS,
+      width: compositionWidth,
+      height: compositionHeight,
+      src: "",
+    },
+    // Include current edit info if available
+    editId: currentEditId,
+    editName: currentEditName,
+  };
 
   // Combine all editor context values
   const editorContextValue = {
@@ -234,14 +378,37 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
 
     // Autosave
     saveProject: handleManualSave,
+
+    // Edition data for backend save
+    editionData,
+
+    // Load edit functionality
+    loadEdit: handleLoadEdit,
   };
+
+  // Show loading state while authenticating
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center w-screen h-screen dark:bg-darkBox ">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  // If not authorized, the hook will handle the redirect
+  // This is just a safety check
+  if (!isAuthorized) {
+    return null;
+  }
 
   return (
     <UISidebarProvider>
       <EditorSidebarProvider>
         <KeyframeProvider>
           <TimelineProvider>
+            <ZoomKeyboardShortcuts />
             <EditorProvider value={editorContextValue}>
+              <TimelineRowAdjuster />
               <LocalMediaProvider>
                 <AssetLoadingProvider>
                   <AppSidebar />

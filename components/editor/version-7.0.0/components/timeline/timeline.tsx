@@ -18,15 +18,22 @@ import GhostMarker from "./ghost-marker";
 import TimelineGrid from "./timeline-grid";
 import TimelineMarker from "./timeline-marker";
 import TimeMarkers from "./timeline-markers";
-import { Grip, Loader2 } from "lucide-react";
+import { Grip, Loader2, Plus } from "lucide-react";
 import {
   ROW_HEIGHT,
   SHOW_LOADING_PROJECT_ALERT,
   SNAPPING_CONFIG,
+  MAX_ROWS,
 } from "../../constants";
 import { useAssetLoading } from "../../contexts/asset-loading-context";
 import { MobileNavBar } from "../mobile/mobile-nav-bar";
 import { useTimelineSnapping } from "../../hooks/use-timeline-snapping";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 
 interface TimelineProps {
   /** Array of overlay objects to be displayed on the timeline */
@@ -75,8 +82,14 @@ const Timeline: React.FC<TimelineProps> = ({
     position: number;
   } | null>(null);
 
-  const { visibleRows, timelineRef, zoomScale, handleWheelZoom } =
-    useTimeline();
+  const {
+    visibleRows,
+    timelineRef,
+    zoomScale,
+    handleWheelZoom,
+    addRow,
+    removeRow,
+  } = useTimeline();
 
   // State for context menu visibility
   const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
@@ -215,6 +228,28 @@ const Timeline: React.FC<TimelineProps> = ({
     setOverlays(updatedOverlays);
   };
 
+  // Handle deleting a specific row
+  const handleDeleteRow = (rowIndex: number) => {
+    // First, delete all overlays in that row
+    const overlaysInRow = overlays.filter((overlay) => overlay.row === rowIndex);
+    overlaysInRow.forEach((overlay) => onOverlayDelete(overlay.id));
+
+    // Then adjust row indices for rows below the deleted one
+    const updatedOverlays = overlays
+      .filter((overlay) => overlay.row !== rowIndex)
+      .map((overlay) => {
+        if (overlay.row > rowIndex) {
+          return { ...overlay, row: overlay.row - 1 };
+        }
+        return overlay;
+      });
+
+    setOverlays(updatedOverlays);
+
+    // Remove the row from the timeline
+    removeRow();
+  };
+
   // Add state for row dragging
   const [draggedRowIndex, setDraggedRowIndex] = useState<number | null>(null);
   const [dragOverRowIndex, setDragOverRowIndex] = useState<number | null>(null);
@@ -246,6 +281,154 @@ const Timeline: React.FC<TimelineProps> = ({
     setDraggedRowIndex(null);
     setDragOverRowIndex(null);
     setIsDraggingRow(false);
+  };
+
+  // Handle drop from sidebar panels (videos, audio, images)
+  const handleTimelineDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    
+    const videoData = e.dataTransfer.getData("application/reelmotion-video");
+    const soundData = e.dataTransfer.getData("application/reelmotion-sound");
+    
+    if (videoData) {
+      try {
+        const data = JSON.parse(videoData);
+        const { width, height } = { width: 1280, height: 720 }; // Default dimensions
+        
+        // Calculate drop position
+        const timelineRect = timelineRef.current?.getBoundingClientRect();
+        if (!timelineRect) return;
+        
+        const dropX = e.clientX - timelineRect.left;
+        const dropY = e.clientY - timelineRect.top;
+        
+        // Calculate frame position from X coordinate
+        const timelineWidth = timelineRect.width * zoomScale;
+        const framePosition = Math.round((dropX / timelineWidth) * durationInFrames);
+        
+        // Calculate row from Y coordinate (accounting for header)
+        const headerHeight = 21; // 1.3rem converted to pixels
+        const rowY = dropY - headerHeight;
+        const targetRow = Math.max(0, Math.min(visibleRows - 1, Math.floor(rowY / ROW_HEIGHT)));
+        
+        // Get video duration
+        const getVideoDuration = (videoUrl: string): Promise<number> => {
+          return new Promise((resolve) => {
+            const video = document.createElement("video");
+            video.preload = "metadata";
+            video.src = videoUrl;
+            
+            video.onloadedmetadata = () => {
+              resolve(video.duration);
+            };
+            
+            video.onerror = () => {
+              resolve(200 / 30); // Fallback
+            };
+          });
+        };
+        
+        const videoDuration = await getVideoDuration(data.video_url);
+        const fps = 30;
+        const videoDurationInFrames = Math.floor(videoDuration * fps);
+        
+        // Find the last occupied frame in the target row
+        const overlaysInRow = overlays.filter(o => o.row === targetRow);
+        const lastFrameInRow = overlaysInRow.length > 0
+          ? Math.max(...overlaysInRow.map(o => o.from + o.durationInFrames))
+          : 0;
+        
+        // Place the new overlay after the last element in the row
+        const newOverlayStartFrame = Math.max(lastFrameInRow, 0);
+        
+        const newOverlay: Overlay = {
+          left: 0,
+          top: 0,
+          width,
+          height,
+          durationInFrames: videoDurationInFrames || 200,
+          from: newOverlayStartFrame,
+          id: Date.now(),
+          rotation: 0,
+          row: targetRow,
+          isDragging: false,
+          type: OverlayType.VIDEO,
+          content: data.video_url,
+          src: data.video_url,
+          videoStartTime: 0,
+          styles: {
+            opacity: 1,
+            zIndex: 100,
+            transform: "none",
+            objectFit: "cover",
+          },
+        };
+        
+        // Add the overlay to the array
+        setOverlays([...overlays, newOverlay]);
+        setSelectedOverlayId(newOverlay.id);
+      } catch (error) {
+        console.error("Error dropping video:", error);
+      }
+    } else if (soundData) {
+      try {
+        const data = JSON.parse(soundData);
+        
+        // Calculate drop position
+        const timelineRect = timelineRef.current?.getBoundingClientRect();
+        if (!timelineRect) return;
+        
+        const dropX = e.clientX - timelineRect.left;
+        const dropY = e.clientY - timelineRect.top;
+        
+        // Calculate frame position from X coordinate
+        const timelineWidth = timelineRect.width * zoomScale;
+        const framePosition = Math.round((dropX / timelineWidth) * durationInFrames);
+        
+        // Calculate row from Y coordinate (accounting for header)
+        const headerHeight = 21;
+        const rowY = dropY - headerHeight;
+        const targetRow = Math.max(0, Math.min(visibleRows - 1, Math.floor(rowY / ROW_HEIGHT)));
+        
+        // Find the last occupied frame in the target row
+        const overlaysInRow = overlays.filter(o => o.row === targetRow);
+        const lastFrameInRow = overlaysInRow.length > 0
+          ? Math.max(...overlaysInRow.map(o => o.from + o.durationInFrames))
+          : 0;
+        
+        // Place the new overlay after the last element in the row
+        const newOverlayStartFrame = Math.max(lastFrameInRow, 0);
+        
+        const newOverlay: Overlay = {
+          id: Date.now(),
+          type: OverlayType.SOUND,
+          content: data.title,
+          src: data.file,
+          from: newOverlayStartFrame,
+          row: targetRow,
+          left: 0,
+          top: 0,
+          width: 1920,
+          height: 100,
+          rotation: 0,
+          isDragging: false,
+          durationInFrames: data.duration * 30,
+          styles: {
+            opacity: 1,
+          },
+        };
+        
+        setOverlays([...overlays, newOverlay]);
+        setSelectedOverlayId(newOverlay.id);
+      } catch (error) {
+        console.error("Error dropping sound:", error);
+      }
+    }
+  };
+
+  const handleTimelineDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
   };
 
   useEffect(() => {
@@ -292,9 +475,9 @@ const Timeline: React.FC<TimelineProps> = ({
     <div className="flex flex-col">
       <div className="flex ">
         {/* Row Drag Handles Column */}
-        <div className="hidden md:block w-7 flex-shrink-0 border-l border-r border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50">
+        <div className="hidden md:block w-7 flex-shrink-0 border-l border-r border-gray-200 dark:border-gray-100/10 bg-gray-50 dark:bg-darkBox ">
           {/* Match TimeMarkers height */}
-          <div className="h-[1.3rem] bg-gray-100 dark:bg-gray-800/50" />
+          <div className="h-[1.3rem] bg-gray-100 dark:bg-darkBoxSub /50" />
 
           {/* Match the grid layout exactly */}
           <div
@@ -302,9 +485,10 @@ const Timeline: React.FC<TimelineProps> = ({
             style={{ height: `${visibleRows * ROW_HEIGHT}px` }}
           >
             {Array.from({ length: visibleRows }).map((_, rowIndex) => (
-              <div
-                key={`drag-${rowIndex}`}
-                className={`flex-1 flex items-center justify-center transition-all duration-200 
+              <ContextMenu key={`drag-${rowIndex}`}>
+                <ContextMenuTrigger asChild>
+                  <div
+                    className={`flex-1 flex items-center justify-center transition-all duration-200 
                   ${
                     dragOverRowIndex === rowIndex
                       ? "bg-blue-50 dark:bg-blue-900/20 border-2 border-dashed border-blue-300 dark:border-blue-500"
@@ -312,7 +496,7 @@ const Timeline: React.FC<TimelineProps> = ({
                   }
                   ${
                     draggedRowIndex === rowIndex
-                      ? "opacity-50 bg-gray-100/50 dark:bg-gray-800/50"
+                      ? "opacity-50 bg-gray-100/50 dark:bg-darkBoxSub /50"
                       : ""
                   }
                   ${
@@ -320,28 +504,38 @@ const Timeline: React.FC<TimelineProps> = ({
                       ? "cursor-grabbing"
                       : "hover:bg-gray-100 dark:hover:bg-gray-800/30"
                   }`}
-                onDragOver={(e) => handleRowDragOver(e, rowIndex)}
-                onDrop={() => handleRowDrop(rowIndex)}
-              >
-                <div
-                  className={`w-5 h-5 flex items-center justify-center rounded-md 
+                    onDragOver={(e) => handleRowDragOver(e, rowIndex)}
+                    onDrop={() => handleRowDrop(rowIndex)}
+                  >
+                    <div
+                      className={`w-5 h-5 flex items-center justify-center rounded-md 
                     transition-all duration-150 
                     hover:bg-gray-200 dark:hover:bg-gray-700
                     active:scale-95
                     ${isDraggingRow ? "cursor-grabbing" : "cursor-grab"} 
                     active:cursor-grabbing
                     group`}
-                  draggable
-                  onDragStart={(e) => handleRowDragStart(e, rowIndex)}
-                  onDragEnd={handleRowDragEnd}
-                >
-                  <Grip
-                    className="w-3 h-3 text-gray-400 dark:text-gray-500 
+                      draggable
+                      onDragStart={(e) => handleRowDragStart(e, rowIndex)}
+                      onDragEnd={handleRowDragEnd}
+                    >
+                      <Grip
+                        className="w-3 h-3 text-gray-400 dark:text-gray-500 
                     group-hover:text-gray-600 dark:group-hover:text-gray-300
                     transition-colors duration-150"
-                  />
-                </div>
-              </div>
+                      />
+                    </div>
+                  </div>
+                </ContextMenuTrigger>
+                <ContextMenuContent className="dark:bg-slate-900 dark:border-slate-800">
+                  <ContextMenuItem
+                    onClick={() => handleDeleteRow(rowIndex)}
+                    className="text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400 focus:bg-red-50 dark:focus:bg-red-900/20"
+                  >
+                    Delete Row
+                  </ContextMenuItem>
+                </ContextMenuContent>
+              </ContextMenu>
             ))}
           </div>
         </div>
@@ -356,7 +550,7 @@ const Timeline: React.FC<TimelineProps> = ({
         >
           <div
             ref={timelineRef}
-            className="pr-2 pb-2 relative bg-white dark:bg-gray-900"
+            className="pr-2 pb-2 relative bg-white dark:bg-darkBox"
             style={{
               width: `${100 * zoomScale}%`,
               minWidth: "100%",
@@ -369,6 +563,8 @@ const Timeline: React.FC<TimelineProps> = ({
             onTouchEnd={handleDragEnd}
             onMouseLeave={handleTimelineMouseLeave}
             onClick={onTimelineClick}
+            onDrop={handleTimelineDrop}
+            onDragOver={handleTimelineDragOver}
           >
             <div className="relative h-full">
               {/* Timeline header with frame markers */}
@@ -427,7 +623,7 @@ const Timeline: React.FC<TimelineProps> = ({
                     className="absolute inset-0 bg-white/60 dark:bg-gray-900/60 backdrop-blur-[1px] flex items-center justify-center z-50"
                     style={{ willChange: "opacity" }}
                   >
-                    <div className="flex items-center gap-2 px-3 py-2 bg-white/90 dark:bg-gray-800/90 rounded-lg shadow-sm ring-1 ring-black/5 dark:ring-white/10">
+                    <div className="flex items-center gap-2 px-3 py-2 bg-white/90 dark:bg-darkBoxSub /90 rounded-lg shadow-sm ring-1 ring-black/5 dark:ring-white/10">
                       <Loader2 className="w-3.5 h-3.5 animate-spin text-gray-600 dark:text-gray-300" />
                       <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
                         Loading project...
@@ -439,6 +635,20 @@ const Timeline: React.FC<TimelineProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Add Row Button - Shows when rows < MAX_ROWS */}
+      {visibleRows < MAX_ROWS && (
+        <div className="flex justify-center py-1 dark:bg-darkBox border dark:border-gray-100/10">
+          <button
+            onClick={addRow}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-darkBoxSub rounded-lg transition-colors"
+            title="Add new row"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add Row</span>
+          </button>
+        </div>
+      )}
 
       {/* Mobile Navigation Bar
        * Only shows on mobile devices (md:hidden)

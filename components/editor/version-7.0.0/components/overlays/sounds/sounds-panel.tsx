@@ -140,6 +140,24 @@ const SoundsPanel: React.FC = () => {
   };
 
   /**
+   * Handle drag start for sound items
+   */
+  const handleDragStart = (e: React.DragEvent, sound: LocalSound) => {
+    e.dataTransfer.effectAllowed = "copy";
+    e.dataTransfer.setData(
+      "application/reelmotion-sound",
+      JSON.stringify({
+        type: "sound",
+        title: sound.title,
+        file: sound.file,
+        duration: sound.duration,
+        artist: sound.artist,
+        id: sound.id,
+      })
+    );
+  };
+
+  /**
    * Renders an individual sound card with play controls and metadata
    * Clicking the card adds the sound to the timeline
    * Clicking the play button toggles sound preview
@@ -150,8 +168,10 @@ const SoundsPanel: React.FC = () => {
   const renderSoundCard = (sound: LocalSound) => (
     <div
       key={sound.id}
+      draggable
+      onDragStart={(e) => handleDragStart(e, sound)}
       onClick={() => handleAddToTimeline(sound)}
-      className="group flex items-center gap-3 p-2.5 bg-white dark:bg-gray-900 rounded-md 
+      className="group flex items-center gap-3 p-2.5 bg-white dark:bg-darkBox rounded-md 
         border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900
         transition-all duration-150 cursor-pointer"
     >
@@ -183,7 +203,7 @@ const SoundsPanel: React.FC = () => {
   );
 
   return (
-    <div className="space-y-4 p-4 bg-gray-50 dark:bg-gray-900/40 h-full">
+    <div className="space-y-4 p-4 bg-gray-50 dark:bg-darkBox  h-full">
       {!localOverlay ? (
         localSounds.map(renderSoundCard)
       ) : (

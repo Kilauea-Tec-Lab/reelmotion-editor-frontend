@@ -36,7 +36,7 @@ export const ImageStylePanel: React.FC<ImageStylePanelProps> = ({
   return (
     <div className="space-y-6">
       {/* Appearance Settings */}
-      <div className="space-y-4 rounded-md bg-muted/50 p-4 border border-border">
+      <div className="space-y-4 rounded-md bg-darkBoxSub p-4 border border-border">
         <h3 className="text-sm font-medium text-foreground">Appearance</h3>
 
         {/* Object Fit Setting */}
@@ -47,7 +47,7 @@ export const ImageStylePanel: React.FC<ImageStylePanelProps> = ({
             onChange={(e) =>
               handleStyleChange({ objectFit: e.target.value as any })
             }
-            className="w-full bg-background border border-input rounded-md text-xs p-2 hover:border-accent-foreground transition-colors"
+            className="w-full dark:bg-darkBox  border border-input rounded-md text-xs p-2 hover:border-accent-foreground transition-colors"
           >
             <option value="cover">Cover</option>
             <option value="contain">Contain</option>
@@ -78,7 +78,7 @@ export const ImageStylePanel: React.FC<ImageStylePanelProps> = ({
               handleStyleChange({ borderRadius: `${e.target.value}px` })
             }
             min="0"
-            className="w-full bg-background border border-input rounded-md text-xs p-2 hover:border-accent-foreground transition-colors"
+            className="w-full dark:bg-darkBox  border border-input rounded-md text-xs p-2 hover:border-accent-foreground transition-colors"
           />
         </div>
 
@@ -113,7 +113,7 @@ export const ImageStylePanel: React.FC<ImageStylePanelProps> = ({
                   ` brightness(${e.target.value}%)`;
                 handleStyleChange({ filter: newFilter.trim() });
               }}
-              className="flex-1 accent-primary h-1.5 rounded-full bg-muted"
+              className="flex-1 accent-primarioLogo h-1.5 rounded-full bg-muted"
             />
           </div>
         </div>

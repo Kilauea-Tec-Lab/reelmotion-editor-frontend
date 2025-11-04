@@ -38,7 +38,7 @@ export const VideoStylePanel: React.FC<VideoStylePanelProps> = ({
   return (
     <div className="space-y-6">
       {/* Appearance Settings */}
-      <div className="space-y-4 rounded-md bg-gray-100/50 dark:bg-gray-800/50 p-4 border border-gray-200 dark:border-gray-700">
+      <div className="space-y-4 rounded-md bg-gray-100/50 dark:bg-darkBoxSub /50 p-4 border border-gray-200 dark:border-gray-700">
         <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
           Appearance
         </h3>
@@ -52,7 +52,7 @@ export const VideoStylePanel: React.FC<VideoStylePanelProps> = ({
             onChange={(e) =>
               handleStyleChange({ objectFit: e.target.value as any })
             }
-            className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md text-xs p-2 hover:border-gray-300 dark:hover:border-gray-600 transition-colors text-gray-900 dark:text-gray-100"
+            className="w-full bg-white dark:bg-darkBox  border border-gray-200 dark:border-gray-700 rounded-md text-xs p-2 hover:border-gray-300 dark:hover:border-gray-600 transition-colors text-gray-900 dark:text-gray-100"
           >
             <option value="cover">Cover</option>
             <option value="contain">Contain</option>
@@ -83,7 +83,7 @@ export const VideoStylePanel: React.FC<VideoStylePanelProps> = ({
               handleStyleChange({ borderRadius: `${e.target.value}px` })
             }
             min="0"
-            className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md text-xs p-2 hover:border-gray-300 dark:hover:border-gray-600 transition-colors text-gray-900 dark:text-gray-100"
+            className="w-full bg-white dark:bg-darkBox  border border-gray-200 dark:border-gray-700 rounded-md text-xs p-2 hover:border-gray-300 dark:hover:border-gray-600 transition-colors text-gray-900 dark:text-gray-100"
           />
         </div>
 
@@ -118,7 +118,7 @@ export const VideoStylePanel: React.FC<VideoStylePanelProps> = ({
                   ` brightness(${e.target.value}%)`;
                 handleStyleChange({ filter: newFilter.trim() });
               }}
-              className="flex-1 accent-blue-500 h-1.5 rounded-full bg-gray-700"
+              className="flex-1 accent-primarioLogo h-1.5 rounded-full bg-gray-700"
             />
           </div>
         </div>

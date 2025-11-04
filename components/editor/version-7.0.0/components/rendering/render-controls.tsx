@@ -1,5 +1,5 @@
 import React from "react";
-import { Download, Loader2, Bell, Save } from "lucide-react";
+import { Download, Loader2, Bell, Save, FolderOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -7,6 +7,8 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { formatDistanceToNow } from "date-fns";
+import { SaveEditDialog } from "./save-edit-dialog";
+import { LoadEditDialog } from "./load-edit-dialog";
 
 /**
  * Interface representing a single video render attempt
@@ -28,14 +30,21 @@ interface RenderItem {
  * Props for the RenderControls component
  * @property {object} state - Current render state containing status, progress, and URL
  * @property {() => void} handleRender - Function to trigger a new render
- * @property {() => void} saveProject - Function to save the project
+ * @property {() => void} saveProject - Function to save the project (deprecated, use editionData)
  * @property {('ssr' | 'lambda')?} renderType - Type of render (SSR or Lambda)
+ * @property {object} editionData - Edition data to be saved to backend
+ * @property {function} onLoadEdit - Callback function when an edit is loaded
  */
 interface RenderControlsProps {
   state: any;
   handleRender: () => void;
   saveProject?: () => Promise<void>;
   renderType?: "ssr" | "lambda";
+  editionData?: {
+    id: string;
+    inputProps: any;
+  };
+  onLoadEdit?: (editionData: any) => void;
 }
 
 /**
@@ -55,14 +64,35 @@ const RenderControls: React.FC<RenderControlsProps> = ({
   handleRender,
   saveProject,
   renderType = "ssr",
+  editionData,
+  onLoadEdit,
 }) => {
   // Store multiple renders
   const [renders, setRenders] = React.useState<RenderItem[]>([]);
   // Track if there are new renders
   const [hasNewRender, setHasNewRender] = React.useState(false);
+  // Track save dialog state
+  const [isSaveDialogOpen, setIsSaveDialogOpen] = React.useState(false);
+  // Track load dialog state
+  const [isLoadDialogOpen, setIsLoadDialogOpen] = React.useState(false);
 
   // Check if rendering is disabled via environment variable
   const isRenderDisabled = process.env.NEXT_PUBLIC_DISABLE_RENDER === "true";
+
+  // Add keyboard shortcut for save (Ctrl+S / Cmd+S)
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+        e.preventDefault();
+        if (editionData) {
+          setIsSaveDialogOpen(true);
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [editionData]);
 
   // Add new render to the list when completed
   React.useEffect(() => {
@@ -125,13 +155,44 @@ const RenderControls: React.FC<RenderControlsProps> = ({
 
   return (
     <>
+      {/* Save Edit Dialog */}
+      {editionData && (
+        <SaveEditDialog
+          open={isSaveDialogOpen}
+          onOpenChange={setIsSaveDialogOpen}
+          editionData={editionData}
+        />
+      )}
+
+      {/* Load Edit Dialog */}
+      {onLoadEdit && (
+        <LoadEditDialog
+          open={isLoadDialogOpen}
+          onOpenChange={setIsLoadDialogOpen}
+          onLoadEdit={onLoadEdit}
+        />
+      )}
+
       <Button
         variant="ghost"
         size="sm"
         className="relative hover:bg-accent"
-        onClick={saveProject}
+        onClick={() => setIsLoadDialogOpen(true)}
+        disabled={!onLoadEdit}
+        title={!onLoadEdit ? "Load functionality not available" : "Load edit"}
       >
-        <Save className="w-3.5 h-3.5" />
+        <FolderOpen className="w-3.5 h-3.5" />&nbsp;Load
+      </Button>
+
+      <Button
+        variant="ghost"
+        size="sm"
+        className="relative hover:bg-accent"
+        onClick={() => setIsSaveDialogOpen(true)}
+        disabled={!editionData}
+        title={!editionData ? "No edition data available" : "Save edit"}
+      >
+        <Save className="w-3.5 h-3.5" />&nbsp;Save
       </Button>
       <Popover onOpenChange={() => setHasNewRender(false)}>
         <PopoverTrigger asChild>

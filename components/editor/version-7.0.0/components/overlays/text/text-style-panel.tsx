@@ -56,7 +56,7 @@ export const TextStylePanel: React.FC<TextStylePanelProps> = ({
   return (
     <div className="space-y-6">
       {/* Typography Settings */}
-      <div className="space-y-4 rounded-md bg-background/50 p-4 border">
+      <div className="space-y-4 rounded-md dark:bg-darkBox /50 p-4 border">
         <h3 className="text-sm font-medium">Typography</h3>
 
         <div className="space-y-2">
@@ -120,7 +120,7 @@ export const TextStylePanel: React.FC<TextStylePanelProps> = ({
       </div>
 
       {/* Colors */}
-      <div className="space-y-4 rounded-md bg-background/50 p-4 border">
+      <div className="space-y-4 rounded-md dark:bg-darkBox /50 p-4 border">
         <h3 className="text-sm font-medium">Colors</h3>
 
         <div className="grid grid-cols-3 gap-4">
@@ -138,7 +138,7 @@ export const TextStylePanel: React.FC<TextStylePanelProps> = ({
                     />
                   </PopoverTrigger>
                   <PopoverContent
-                    className="w-[330px] dark:bg-gray-900 border border-gray-700"
+                    className="w-[330px] dark:bg-darkBox border border-gray-700"
                     side="right"
                   >
                     <ColorPicker
@@ -171,7 +171,7 @@ export const TextStylePanel: React.FC<TextStylePanelProps> = ({
                     />
                   </PopoverTrigger>
                   <PopoverContent
-                    className="w-[330px] dark:bg-gray-900 border border-gray-700"
+                    className="w-[330px] dark:bg-darkBox border border-gray-700"
                     side="right"
                   >
                     <ColorPicker

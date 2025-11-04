@@ -231,7 +231,7 @@ export const CaptionsPanel: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col gap-6 p-4 bg-white dark:bg-gray-900/40">
+    <div className="flex flex-col gap-6 p-4 bg-white dark:bg-darkBox ">
       {!localOverlay ? (
         <>
           <div className="space-y-4">
@@ -287,7 +287,7 @@ export const CaptionsPanel: React.FC = () => {
                 <Button
                   variant="outline"
                   className="w-full border-dashed border-2 border-gray-200 dark:border-gray-700 
-                  hover:border-blue-500/50 bg-gray-50/50 dark:bg-gray-800/50 
+                  hover:border-blue-500/50 bg-gray-50/50 dark:bg-darkBoxSub /50 
                   hover:bg-gray-100 dark:hover:bg-gray-800 h-28 
                   flex flex-col items-center justify-center gap-3 text-sm group transition-all duration-200"
                   onClick={() =>
@@ -316,8 +316,8 @@ export const CaptionsPanel: React.FC = () => {
               <div className="relative">
                 <div className="absolute inset-x-0 -top-3 flex items-center justify-center">
                   <span
-                    className="px-3 py-1 text-xs text-gray-600 dark:text-gray-500 bg-white dark:bg-gray-900 
-                  rounded-full border border-gray-200 dark:border-gray-800"
+                    className="px-3 py-1 text-xs text-gray-600 dark:text-gray-500 bg-white dark:bg-darkBox 
+                  rounded-full border border-gray-200 dark:border-gray-100/10"
                   >
                     or
                   </span>
@@ -327,7 +327,7 @@ export const CaptionsPanel: React.FC = () => {
                     value={script}
                     onChange={(e) => setScript(e.target.value)}
                     placeholder="Type or paste your script here..."
-                    className="min-h-[200px] bg-white dark:bg-gray-800/50 
+                    className="min-h-[200px] bg-white dark:bg-darkBoxSub /50 
                     border-gray-200 dark:border-gray-700 
                     text-gray-900 dark:text-gray-200 
                     placeholder:text-gray-400 dark:placeholder:text-gray-500 
@@ -342,7 +342,7 @@ export const CaptionsPanel: React.FC = () => {
               <Button
                 onClick={generateCaptions}
                 className="flex-1 text-white dark:text-black
-                disabled:bg-gray-200 disabled:text-gray-500 disabled:dark:bg-gray-800 
+                disabled:bg-gray-200 disabled:text-gray-500 disabled:darkBoxSub 
                 disabled:dark:text-gray-600 disabled:opacity-100 disabled:cursor-not-allowed 
                 transition-colors"
                 disabled={!script.trim()}

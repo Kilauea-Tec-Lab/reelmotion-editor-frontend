@@ -91,7 +91,7 @@ export function LocalMediaGallery({
     switch (selectedFile.type) {
       case "image":
         return (
-          <div className="relative bg-gray-50 dark:bg-gray-900 rounded-lg p-2">
+          <div className="relative bg-gray-50 dark:bg-darkBox  rounded-lg p-2">
             <img
               src={selectedFile.path}
               alt={selectedFile.name}
@@ -101,7 +101,7 @@ export function LocalMediaGallery({
         );
       case "video":
         return (
-          <div className="relative bg-gray-50 dark:bg-gray-900 rounded-lg p-2">
+          <div className="relative bg-gray-50 dark:bg-darkBox  rounded-lg p-2">
             <video
               src={selectedFile.path}
               controls
@@ -113,7 +113,7 @@ export function LocalMediaGallery({
         );
       case "audio":
         return (
-          <div className="flex flex-col items-center space-y-3 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+          <div className="flex flex-col items-center space-y-3 p-4 bg-gray-50 dark:bg-darkBox rounded-lg">
             <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
               <Music className="w-6 h-6 text-blue-600 dark:text-blue-400" />
             </div>
@@ -146,7 +146,7 @@ export function LocalMediaGallery({
         key={file.id}
         className="relative group/item border dark:border-gray-700 border-gray-200 rounded-md overflow-hidden cursor-pointer 
           hover:border-blue-500 dark:hover:border-blue-400 transition-all 
-          bg-white dark:bg-gray-800/80 shadow-sm hover:shadow-md"
+          bg-white dark:bg-darkBoxSub /80 shadow-sm hover:shadow-md"
         onClick={() => handleMediaSelect(file)}
       >
         {/* Thumbnail */}
@@ -246,17 +246,17 @@ export function LocalMediaGallery({
         onValueChange={setActiveTab}
         className="flex-1 flex flex-col"
       >
-        <TabsList className="w-full grid grid-cols-4 bg-gray-100/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-sm border border-gray-200 dark:border-gray-700 gap-1">
+        <TabsList className="w-full grid grid-cols-4 bg-gray-100/50 dark:bg-darkBoxSub /50 backdrop-blur-sm rounded-sm border border-gray-200 dark:border-gray-700 gap-1">
           <TabsTrigger
             value="all"
-            className="data-[state=active]:bg-blue-500/20 data-[state=active]:text-gray-900 dark:data-[state=active]:text-white 
+            className="data-[state=active]:bg-primarioLogo data-[state=active]:text-gray-900 dark:data-[state=active]:text-white 
             rounded-sm transition-all duration-200 text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-200 hover:bg-gray-200/50 dark:hover:bg-gray-700/50"
           >
             <span className="flex items-center gap-2 text-xs">All</span>
           </TabsTrigger>
           <TabsTrigger
             value="image"
-            className="data-[state=active]:bg-blue-500/20 data-[state=active]:text-gray-900 dark:data-[state=active]:text-white 
+            className="data-[state=active]:bg-primarioLogo data-[state=active]:text-gray-900 dark:data-[state=active]:text-white 
             rounded-sm transition-all duration-200 text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-200 hover:bg-gray-200/50 dark:hover:bg-gray-700/50"
           >
             <span className="flex items-center gap-2 text-xs">
@@ -266,7 +266,7 @@ export function LocalMediaGallery({
           </TabsTrigger>
           <TabsTrigger
             value="video"
-            className="data-[state=active]:bg-blue-500/20 data-[state=active]:text-gray-900 dark:data-[state=active]:text-white 
+            className="data-[state=active]:bg-primarioLogo data-[state=active]:text-gray-900 dark:data-[state=active]:text-white 
             rounded-sm transition-all duration-200 text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-200 hover:bg-gray-200/50 dark:hover:bg-gray-700/50"
           >
             <span className="flex items-center gap-2 text-xs">
@@ -276,7 +276,7 @@ export function LocalMediaGallery({
           </TabsTrigger>
           <TabsTrigger
             value="audio"
-            className="data-[state=active]:bg-blue-500/20 data-[state=active]:text-gray-900 dark:data-[state=active]:text-white 
+            className="data-[state=active]:bg-primarioLogo data-[state=active]:text-gray-900 dark:data-[state=active]:text-white 
             rounded-sm transition-all duration-200 text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-200 hover:bg-gray-200/50 dark:hover:bg-gray-700/50"
           >
             <span className="flex items-center gap-2 text-xs">
@@ -294,7 +294,7 @@ export function LocalMediaGallery({
             </div>
           ) : filteredMedia.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center space-y-3">
-              <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-darkBoxSub  flex items-center justify-center">
                 <Upload className="w-4 h-4 text-gray-400" />
               </div>
               <div className="space-y-1">

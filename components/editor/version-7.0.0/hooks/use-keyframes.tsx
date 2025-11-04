@@ -199,14 +199,21 @@ export const useKeyframes = ({
 
       // Create a temporary video element to get dimensions
       const tempVideo = document.createElement("video");
-      tempVideo.crossOrigin = "anonymous";
+      // Only set crossOrigin if it's an external URL
+      if (processedVideoSrc.startsWith('http') && !processedVideoSrc.includes(window.location.hostname)) {
+        tempVideo.crossOrigin = "anonymous";
+      }
       tempVideo.muted = true;
       tempVideo.preload = "metadata";
+      tempVideo.playsInline = true;
       tempVideo.src = processedVideoSrc;
 
       const dimensions = await new Promise<{ width: number; height: number }>(
         (resolve, reject) => {
+          let timeoutId: NodeJS.Timeout;
+          
           const onLoadedMetadata = () => {
+            clearTimeout(timeoutId);
             resolve({
               width: tempVideo.videoWidth,
               height: tempVideo.videoHeight,
@@ -214,8 +221,9 @@ export const useKeyframes = ({
             cleanup();
           };
 
-          const onError = (e: ErrorEvent) => {
-            reject(new Error(`Failed to load video metadata: ${e.message}`));
+          const onError = (e: Event) => {
+            clearTimeout(timeoutId);
+            reject(new Error(`Failed to load video metadata: ${e.type}`));
             cleanup();
           };
 
@@ -229,16 +237,22 @@ export const useKeyframes = ({
           tempVideo.addEventListener("loadedmetadata", onLoadedMetadata);
           tempVideo.addEventListener("error", onError);
 
-          // Add timeout for metadata loading
-          setTimeout(() => {
+          // Add timeout for metadata loading - increased to 30 seconds for larger videos
+          timeoutId = setTimeout(() => {
             cleanup();
             reject(new Error("Timeout while loading video metadata"));
-          }, 10000);
+          }, 30000);
         }
-      );
+      ).catch((error) => {
+        console.warn("[Keyframes] Failed to load video dimensions, using defaults:", error);
+        // Return default dimensions as fallback
+        return { width: 1920, height: 1080 };
+      });
 
       if (!dimensions.width || !dimensions.height) {
-        throw new Error("Could not get video dimensions");
+        console.warn("[Keyframes] Invalid dimensions, using defaults");
+        dimensions.width = 1920;
+        dimensions.height = 1080;
       }
 
       // Create new video and canvas elements for this extraction

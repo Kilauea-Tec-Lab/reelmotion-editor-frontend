@@ -145,7 +145,7 @@ const TimeMarkers = ({
                   : "h-0.5 w-px bg-gray-200 dark:bg-gray-600/30"
               }
               transition-all duration-150 ease-in-out
-              group-hover:bg-blue-500/50 dark:group-hover:bg-blue-300/50
+              group-hover:bg-primarioLogo/50 dark:group-hover:bg-blue-300/50
             `}
             data-timeline-marker="indicator"
           />

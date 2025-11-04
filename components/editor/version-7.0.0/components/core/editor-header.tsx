@@ -50,15 +50,17 @@ export function EditorHeader() {
    * - renderMedia: Function to handle media rendering/export
    * - state: Current editor state
    * - renderType: Type of render
+   * - editionData: Edition data for backend save
+   * - loadEdit: Function to load an edit from backend
    */
-  const { renderMedia, state, saveProject, renderType } = useEditorContext();
+  const { renderMedia, state, saveProject, renderType, editionData, loadEdit } = useEditorContext();
 
   return (
     <header
       className="sticky top-0 flex shrink-0 items-center gap-2.5 
       bg-white dark:bg-gray-900/10
       border-l 
-      border-b border-gray-200 dark:border-gray-800
+      border-b border-gray-100/10 dark:border-gray-100/10
       p-2.5 px-4.5"
     >
       {/* Sidebar toggle button with theme-aware styling */}
@@ -82,6 +84,8 @@ export function EditorHeader() {
         state={state}
         saveProject={saveProject}
         renderType={renderType}
+        editionData={editionData}
+        onLoadEdit={loadEdit}
       />
     </header>
   );

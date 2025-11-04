@@ -10,6 +10,7 @@ export function ThemeToggle() {
 
   return (
     <div className="flex items-center space-x-2">
+      {/* 
       <Switch
         checked={theme === "dark"}
         onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
@@ -25,6 +26,7 @@ export function ThemeToggle() {
           <Sun className="h-[0.9rem] w-[0.9rem] text-slate-900" />
         )}
       </div>
+      */}
     </div>
   );
 }

@@ -111,7 +111,7 @@ export const Editor: React.FC = () => {
    */
   if (isMobile && DISABLE_MOBILE_LAYOUT) {
     return (
-      <div className="flex items-center justify-center h-screen bg-white dark:bg-gray-900 p-6">
+      <div className="flex items-center justify-center h-screen bg-white dark:bg-darkBox  p-6">
         <div className="text-center text-gray-900 dark:text-white">
           <h2 className="text-xl font-bold mb-3">React Video Editor</h2>
           <p className="text-sm text-gray-600 dark:text-gray-400 font-light mb-4">

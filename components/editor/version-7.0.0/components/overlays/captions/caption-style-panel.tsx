@@ -61,7 +61,7 @@ export const CaptionStylePanel: React.FC<CaptionStylePanelProps> = ({
               ${
                 localOverlay?.template === key
                   ? "border-blue-500 bg-blue-500/10 ring-2 ring-blue-500/30 dark:ring-blue-400/30"
-                  : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 bg-gray-50/50 dark:bg-gray-800/30 hover:bg-gray-100/80 dark:hover:bg-gray-800/50"
+                  : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 bg-gray-50/50 dark:bg-darkBoxSub /30 hover:bg-gray-100/80 dark:hover:bg-gray-800/50"
               }`}
           >
             {/* Preview Area with demo text */}
@@ -91,7 +91,7 @@ export const CaptionStylePanel: React.FC<CaptionStylePanelProps> = ({
             </div>
 
             {/* Template Info and Color Palette */}
-            <div className="flex items-center justify-between p-3 bg-white/50 dark:bg-gray-900/40 backdrop-blur-sm">
+            <div className="flex items-center justify-between p-3 bg-white/50 dark:bg-darkBox  backdrop-blur-sm">
               {/* Template Name and Status */}
               <div className="flex items-center gap-2">
                 <span className="text-xs font-medium text-gray-700 dark:text-gray-200">

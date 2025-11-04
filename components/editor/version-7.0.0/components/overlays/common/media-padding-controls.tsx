@@ -58,7 +58,7 @@ export const MediaPaddingControls: React.FC<MediaPaddingControlsProps> = ({
           onChange={(e) =>
             handleStyleChange({ padding: `${e.target.value}px` })
           }
-          className="w-full accent-blue-500 h-1.5 rounded-full bg-gray-300 dark:bg-gray-700"
+          className="w-full accent-primarioLogo h-1.5 rounded-full bg-gray-300 dark:bg-gray-700"
         />
       </div>
 
@@ -87,7 +87,7 @@ export const MediaPaddingControls: React.FC<MediaPaddingControlsProps> = ({
               handleStyleChange({ paddingBackgroundColor: e.target.value })
             }
             placeholder="transparent"
-            className="flex-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md text-xs p-2 hover:border-gray-300 dark:hover:border-gray-600 transition-colors text-gray-900 dark:text-gray-100"
+            className="flex-1 bg-white dark:bg-darkBoxSub  border border-gray-200 dark:border-gray-700 rounded-md text-xs p-2 hover:border-gray-300 dark:hover:border-gray-600 transition-colors text-gray-900 dark:text-gray-100"
           />
           {paddingBackgroundColor !== "transparent" && (
             <button

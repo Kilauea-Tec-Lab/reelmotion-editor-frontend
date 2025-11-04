@@ -83,11 +83,11 @@ export const CaptionSettings: React.FC<CaptionSettingsProps> = ({
   return (
     <Tabs defaultValue="captions" className="w-full">
       {/* Tab Navigation */}
-      <TabsList className="w-full grid grid-cols-3 bg-gray-100/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-sm border border-gray-200 dark:border-gray-700 gap-1">
+      <TabsList className="w-full grid grid-cols-3 bg-gray-100/50 dark:bg-darkBoxSub /50 backdrop-blur-sm rounded-sm border border-gray-200 dark:border-gray-700 gap-1">
         {/* Captions Tab */}
         <TabsTrigger
           value="captions"
-          className="data-[state=active]:bg-blue-500/20 data-[state=active]:text-gray-900 dark:data-[state=active]:text-white 
+          className="data-[state=active]:bg-primarioLogo data-[state=active]:text-gray-900 dark:data-[state=active]:text-white 
             rounded-sm transition-all duration-200 text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-200 hover:bg-gray-200/50 dark:hover:bg-gray-700/50"
         >
           <span className="flex items-center gap-2 text-xs">
@@ -99,7 +99,7 @@ export const CaptionSettings: React.FC<CaptionSettingsProps> = ({
         {/* Display Tab */}
         <TabsTrigger
           value="display"
-          className="data-[state=active]:bg-blue-500/20 data-[state=active]:text-gray-900 dark:data-[state=active]:text-white 
+          className="data-[state=active]:bg-primarioLogo data-[state=active]:text-gray-900 dark:data-[state=active]:text-white 
             rounded-sm transition-all duration-200 text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-200 hover:bg-gray-200/50 dark:hover:bg-gray-700/50"
         >
           <span className="flex items-center gap-2 text-xs">

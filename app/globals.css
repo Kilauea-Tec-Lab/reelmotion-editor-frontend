@@ -65,8 +65,7 @@
   }
 }
 
-
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=League+Spartan:wght@400;700&family=Merriweather:wght@400;700&family=Roboto+Mono&family=Playfair+Display:wght@400;700&family=Caveat:wght@400;700&family=Orbitron:wght@400;700&family=VT323&family=Cormorant+Garamond:wght@400;700&family=Fredoka+One&family=Montserrat:wght@400;700&family=Bungee+Inline&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=League+Spartan:wght@400;700&family=Merriweather:wght@400;700&family=Roboto+Mono&family=Playfair+Display:wght@400;700&family=Caveat:wght@400;700&family=Orbitron:wght@400;700&family=VT323&family=Cormorant+Garamond:wght@400;700&family=Fredoka+One&family=Montserrat:wght@400;700&family=Bungee+Inline&display=swap");
 
 /* For Webkit-based browsers (Chrome, Safari and Opera) */
 .scrollbar-hide::-webkit-scrollbar {
@@ -75,8 +74,8 @@
 
 /* For IE, Edge and Firefox */
 .scrollbar-hide {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
 }
 
 @layer base {
@@ -84,11 +83,12 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply dark:bg-darkBox  text-foreground;
   }
 }
 
-html, body {
+html,
+body {
   overscroll-behavior-y: none;
   overscroll-behavior-x: none;
 }
@@ -100,10 +100,10 @@ html, body {
 
 /* Add League Spartan font class */
 .font-league-spartan {
-  font-family: 'League Spartan', sans-serif;
+  font-family: "League Spartan", sans-serif;
 }
 
 /* Add Bungee Inline font class */
 .font-bungee-inline {
-  font-family: 'Bungee Inline', cursive;
+  font-family: "Bungee Inline", cursive;
 }

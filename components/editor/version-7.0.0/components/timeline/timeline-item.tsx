@@ -310,7 +310,7 @@ const TimelineItem: React.FC<TimelineItemProps> = ({
       case OverlayType.CAPTION:
         return isHandle
           ? "bg-blue-500"
-          : "bg-blue-500/20 hover:bg-blue-500/30 border-blue-500 text-blue-700";
+          : "bg-blue-500/20 hover:bg-primarioLogo/30 border-blue-500 text-blue-700";
       case OverlayType.IMAGE:
         return isHandle
           ? "bg-emerald-500 dark:bg-emerald-500"

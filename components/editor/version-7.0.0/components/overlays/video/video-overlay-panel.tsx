@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -6,29 +6,25 @@ import { Button } from "@/components/ui/button";
 import { useEditorContext } from "../../../contexts/editor-context";
 import { useTimelinePositioning } from "../../../hooks/use-timeline-positioning";
 
-import { usePexelsVideos } from "../../../hooks/use-pexels-video";
+import { useReelmotionVideos } from "../../../hooks/use-reelmotion-videos";
 import { useAspectRatio } from "../../../hooks/use-aspect-ratio";
 import { useTimeline } from "../../../contexts/timeline-context";
 import { ClipOverlay, Overlay, OverlayType } from "../../../types";
 import { VideoDetails } from "./video-details";
 
-interface PexelsVideoFile {
-  quality: string;
-  link: string;
-}
-
-interface PexelsVideo {
-  id: number | string;
-  image: string;
-  video_files: PexelsVideoFile[];
+interface ReelmotionVideo {
+  id: string;
+  name: string | null;
+  video_url: string;
 }
 
 /**
  * VideoOverlayPanel is a component that provides video search and management functionality.
  * It allows users to:
- * - Search and browse videos from the Pexels API
+ * - Search and browse videos from the Reelmotion backend
  * - Add videos to the timeline as overlays
  * - Manage video properties when a video overlay is selected
+ * - Lazy load videos in batches of 15
  *
  * The component has two main states:
  * 1. Search/Browse mode: Shows a search input and grid of video thumbnails
@@ -41,8 +37,16 @@ interface PexelsVideo {
  * ```
  */
 export const VideoOverlayPanel: React.FC = () => {
-  const [searchQuery, setSearchQuery] = useState("");
-  const { videos, isLoading, fetchVideos } = usePexelsVideos();
+  const {
+    videos,
+    isLoading,
+    isLoadingMore,
+    hasMore,
+    loadMore,
+    searchQuery,
+    setSearchQuery,
+  } = useReelmotionVideos();
+  
   const {
     addOverlay,
     overlays,
@@ -54,6 +58,11 @@ export const VideoOverlayPanel: React.FC = () => {
   const { getAspectRatioDimensions } = useAspectRatio();
   const { visibleRows } = useTimeline();
   const [localOverlay, setLocalOverlay] = useState<Overlay | null>(null);
+  
+  // Ref for infinite scroll
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const loadMoreTriggerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (selectedOverlayId === null) {
@@ -70,14 +79,29 @@ export const VideoOverlayPanel: React.FC = () => {
     }
   }, [selectedOverlayId, overlays]);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      fetchVideos(searchQuery);
-    }
-  };
+  // Setup infinite scroll observer
+  useEffect(() => {
+    if (!loadMoreTriggerRef.current || !hasMore || isLoadingMore) return;
 
-  const handleAddClip = (video: PexelsVideo) => {
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isLoadingMore) {
+          loadMore();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    observerRef.current.observe(loadMoreTriggerRef.current);
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [hasMore, isLoadingMore, loadMore]);
+
+  const handleAddClip = async (video: ReelmotionVideo) => {
     const { width, height } = getAspectRatioDimensions();
 
     const { from, row } = findNextAvailablePosition(
@@ -86,33 +110,25 @@ export const VideoOverlayPanel: React.FC = () => {
       durationInFrames
     );
 
-    // Find the best quality video file (prioritize UHD > HD > SD)
-    const videoFile =
-      video.video_files.find(
-        (file: PexelsVideoFile) => file.quality === "uhd"
-      ) ||
-      video.video_files.find(
-        (file: PexelsVideoFile) => file.quality === "hd"
-      ) ||
-      video.video_files.find(
-        (file: PexelsVideoFile) => file.quality === "sd"
-      ) ||
-      video.video_files[0]; // Fallback to first file if no matches
+    // Get video duration
+    const videoDuration = await getVideoDuration(video.video_url);
+    const fps = 30; // Default FPS
+    const videoDurationInFrames = Math.floor(videoDuration * fps);
 
     const newOverlay: Overlay = {
       left: 0,
       top: 0,
       width,
       height,
-      durationInFrames: 200,
+      durationInFrames: videoDurationInFrames || 200, // Fallback to 200 if duration couldn't be determined
       from,
       id: Date.now(),
       rotation: 0,
       row,
       isDragging: false,
       type: OverlayType.VIDEO,
-      content: video.image,
-      src: videoFile?.link ?? "",
+      content: video.video_url,
+      src: video.video_url,
       videoStartTime: 0,
       styles: {
         opacity: 1,
@@ -125,62 +141,117 @@ export const VideoOverlayPanel: React.FC = () => {
     addOverlay(newOverlay);
   };
 
+  // Handle drag start
+  const handleDragStart = (e: React.DragEvent, video: ReelmotionVideo) => {
+    e.dataTransfer.effectAllowed = "copy";
+    e.dataTransfer.setData(
+      "application/reelmotion-video",
+      JSON.stringify({
+        type: "video",
+        video_url: video.video_url,
+        name: video.name,
+        id: video.id,
+      })
+    );
+  };
+
+  // Helper function to get video duration
+  const getVideoDuration = (videoUrl: string): Promise<number> => {
+    return new Promise((resolve, reject) => {
+      const video = document.createElement("video");
+      video.preload = "metadata";
+      video.src = videoUrl;
+      
+      video.onloadedmetadata = () => {
+        resolve(video.duration);
+      };
+      
+      video.onerror = () => {
+        console.error("Error loading video metadata");
+        resolve(200 / 30); // Fallback: 200 frames at 30fps
+      };
+    });
+  };
+
   const handleUpdateOverlay = (updatedOverlay: Overlay) => {
     setLocalOverlay(updatedOverlay);
     changeOverlay(updatedOverlay.id, updatedOverlay);
   };
 
   return (
-    <div className="flex flex-col gap-4 p-4 bg-gray-100/40 dark:bg-gray-900/40 h-full">
+    <div className="flex flex-col gap-4 p-4 bg-gray-100/40 dark:bg-darkBox  h-full">
       {!localOverlay ? (
         <>
-          <form onSubmit={handleSearch} className="flex gap-2">
+          <div className="flex gap-2">
             <Input
               placeholder="Search videos..."
               value={searchQuery}
-              className="bg-white dark:bg-gray-800 border-gray-200 dark:border-white/5 text-gray-900 dark:text-zinc-200 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus-visible:ring-blue-400"
+              className="bg-white dark:bg-darkBoxSub  border-gray-200 dark:border-white/5 text-gray-900 dark:text-zinc-200 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus-visible:ring-blue-400"
               onChange={(e) => setSearchQuery(e.target.value)}
               // NOTE: Stops zooming in on input focus on iPhone
               style={{ fontSize: "16px" }}
             />
-            <Button
-              type="submit"
-              variant="default"
-              disabled={isLoading}
-              className="bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-zinc-200 border-gray-200 dark:border-white/5"
-            >
-              <Search className="h-4 w-4" />
-            </Button>
-          </form>
+          </div>
 
-          <div className="columns-2 sm:columns-2 gap-3 space-y-3">
-            {isLoading ? (
-              Array.from({ length: 16 }).map((_, index) => (
-                <div
-                  key={`skeleton-${index}`}
-                  className="relative aspect-video w-full bg-gray-200 dark:bg-gray-800 animate-pulse rounded-sm break-inside-avoid mb-3"
-                />
-              ))
-            ) : videos.length > 0 ? (
-              videos.map((video) => (
-                <button
-                  key={video.id}
-                  className="relative block w-full cursor-pointer border border-transparent rounded-md overflow-hidden break-inside-avoid mb-3"
-                  onClick={() => handleAddClip(video)}
-                >
-                  <div className="relative">
-                    <img
-                      src={video.image}
-                      alt={`Video thumbnail ${video.id}`}
-                      className="w-full h-auto rounded-sm object-cover hover:opacity-60 transition-opacity duration-200"
-                    />
-                    <div className="absolute inset-0 bg-black/20 opacity-0 hover:opacity-100 transition-opacity duration-200" />
-                  </div>
-                </button>
-              ))
-            ) : (
-              <div className="col-span-full flex flex-col items-center justify-center py-8 text-gray-500"></div>
-            )}
+          <div
+            ref={scrollContainerRef}
+            className="flex-1 overflow-y-auto"
+          >
+            <div className="grid grid-cols-2 gap-3">
+              {isLoading ? (
+                Array.from({ length: 15 }).map((_, index) => (
+                  <div
+                    key={`skeleton-${index}`}
+                    className="relative aspect-video w-full bg-gray-200 dark:bg-darkBoxSub  animate-pulse rounded-sm"
+                  />
+                ))
+              ) : videos.length > 0 ? (
+                <>
+                  {videos.map((video) => (
+                    <button
+                      key={`${video.id}-${video.video_url}`}
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, video)}
+                      className="relative block w-full cursor-pointer border border-transparent rounded-md overflow-hidden"
+                      onClick={() => handleAddClip(video)}
+                    >
+                      <div className="relative">
+                        <video
+                          src={video.video_url}
+                          className="w-full h-auto rounded-sm object-cover hover:opacity-60 transition-opacity duration-200"
+                          muted
+                          playsInline
+                        />
+                        <div className="absolute inset-0 bg-black/20 opacity-0 hover:opacity-100 transition-opacity duration-200" />
+                        <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/70 to-transparent">
+                          <p className="text-white text-xs font-medium truncate">
+                            {video.name || "Untitled"}
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                  
+                  {/* Loading more indicator */}
+                  {isLoadingMore &&
+                    Array.from({ length: 15 }).map((_, index) => (
+                      <div
+                        key={`loading-more-${index}`}
+                        className="relative aspect-video w-full bg-gray-200 dark:bg-darkBoxSub  animate-pulse rounded-sm"
+                      />
+                    ))}
+
+                  {/* Intersection observer trigger */}
+                  {hasMore && !isLoadingMore && (
+                    <div ref={loadMoreTriggerRef} className="h-4 col-span-2" />
+                  )}
+                </>
+              ) : (
+                <div className="col-span-2 flex flex-col items-center justify-center py-8 text-gray-500">
+                  <p>No videos found</p>
+                </div>
+              )}
+            </div>
           </div>
         </>
       ) : (

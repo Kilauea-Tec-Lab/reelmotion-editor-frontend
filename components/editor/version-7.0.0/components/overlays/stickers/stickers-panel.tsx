@@ -75,10 +75,10 @@ const StickerPreview = memo(
         onMouseLeave={handleMouseLeave}
         className={`
           group relative w-full h-full
-          rounded-lg bg-gray-100/40 dark:bg-gray-800/40
-          border border-gray-800/10 dark:border-gray-700/10
+          rounded-lg bg-gray-100/40 dark:bg-darkBoxSub /40
+          border border-gray-100/10/10 dark:border-gray-700/10
           hover:border-blue-500/20 dark:hover:border-blue-500/20
-          hover:bg-blue-500/5 dark:hover:bg-blue-500/5
+          hover:bg-primarioLogo/5 dark:hover:bg-primarioLogo/5
           transition-all duration-200 overflow-hidden
           ${template.config.isPro ? "relative" : ""}
         `}
@@ -183,9 +183,9 @@ export function StickersPanel() {
   );
 
   return (
-    <div className="flex flex-col gap-4 p-4 bg-white dark:bg-gray-900/50 h-full">
+    <div className="flex flex-col gap-4 p-4 bg-white dark:bg-darkBox  h-full">
       <Tabs defaultValue={stickerCategories[0]} className="w-full">
-        <TabsList className="w-full flex space-x-1 bg-gray-100/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-lg p-1">
+        <TabsList className="w-full flex space-x-1 bg-gray-100/50 dark:bg-darkBoxSub /50 backdrop-blur-sm rounded-lg p-1">
           {stickerCategories.map((category) => (
             <TabsTrigger
               key={category}

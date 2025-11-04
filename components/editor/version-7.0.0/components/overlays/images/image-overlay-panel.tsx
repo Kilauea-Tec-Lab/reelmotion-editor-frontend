@@ -126,14 +126,14 @@ export const ImageOverlayPanel: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col gap-4 p-4 bg-white dark:bg-gray-900/50 h-full">
+    <div className="flex flex-col gap-4 p-4 bg-white dark:bg-darkBox  h-full">
       {!localOverlay ? (
         <>
           <form onSubmit={handleSearch} className="flex gap-2">
             <Input
               placeholder="Search images..."
               value={searchQuery}
-              className="bg-background border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-blue-400"
+              className="dark:bg-darkBox  border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-blue-400"
               onChange={(e) => setSearchQuery(e.target.value)}
               // NOTE: Stops zooming in on input focus on iPhone
               style={{ fontSize: "16px" }}
@@ -142,7 +142,7 @@ export const ImageOverlayPanel: React.FC = () => {
               type="submit"
               variant="default"
               disabled={isLoading}
-              className="bg-background hover:bg-muted text-foreground border-border"
+              className="dark:bg-darkBox  hover:bg-muted text-foreground border-border"
             >
               <Search className="h-4 w-4" />
             </Button>
@@ -169,7 +169,7 @@ export const ImageOverlayPanel: React.FC = () => {
                       alt={`Image thumbnail ${image.id}`}
                       className="rounded-sm object-cover w-full h-full hover:opacity-60 transition-opacity duration-200"
                     />
-                    <div className="absolute inset-0 bg-background/20 opacity-0 hover:opacity-100 transition-opacity duration-200" />
+                    <div className="absolute inset-0 dark:bg-darkBox /20 opacity-0 hover:opacity-100 transition-opacity duration-200" />
                   </div>
                 </button>
               ))

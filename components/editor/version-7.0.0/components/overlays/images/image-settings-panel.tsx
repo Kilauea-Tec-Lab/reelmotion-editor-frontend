@@ -50,6 +50,7 @@ export const ImageSettingsPanel: React.FC<ImageSettingsPanelProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* 
       <AnimationSettings
         animations={animationTemplates}
         selectedEnterAnimation={localOverlay.styles.animation?.enter}
@@ -57,6 +58,7 @@ export const ImageSettingsPanel: React.FC<ImageSettingsPanelProps> = ({
         onEnterAnimationSelect={handleEnterAnimationSelect}
         onExitAnimationSelect={handleExitAnimationSelect}
       />
+      */}
     </div>
   );
 };

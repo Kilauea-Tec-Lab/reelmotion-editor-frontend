@@ -102,6 +102,7 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
     canRedo,
     playbackRate,
     setPlaybackRate,
+    resetOverlays,
   } = useEditorContext();
 
   const { visibleRows, addRow, removeRow, zoomScale, setZoomScale } =
@@ -171,6 +172,7 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
   const [dropdownOpen, setDropdownOpen] = React.useState(false);
 
   const handleReset = () => {
+    resetOverlays();
     clearAllKeyframes();
     setDropdownOpen(false);
   };
@@ -198,7 +200,7 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
   };
 
   return (
-    <div className="flex justify-between items-center border-b border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-gray-900/30 px-3 py-3 backdrop-blur-sm border-l">
+    <div className="flex justify-between items-center border-b border-gray-200 dark:border-gray-100/10 bg-white/95 dark:bg-darkBox  px-3 py-3 backdrop-blur-sm border-l">
       {/* Left section: Undo/Redo & Loading */}
       <div className="flex items-center gap-1 flex-1 justify-start">
         <TooltipProvider delayDuration={50}>
@@ -217,12 +219,12 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
             <TooltipContent
               side="top"
               sideOffset={5}
-              className="bg-white dark:bg-gray-900 text-xs px-2 py-1 rounded-md z-[9999] border border-gray-200 dark:border-gray-700"
+              className="bg-white dark:bg-darkBox text-xs px-2 py-1 rounded-md z-[9999] border border-gray-200 dark:border-gray-700"
               align="start"
             >
               <div className="flex items-center gap-1">
                 <span className="text-gray-700 dark:text-zinc-200">Undo</span>
-                <kbd className="px-1 py-0.5 text-[10px] font-mono bg-gray-800 dark:bg-gray-800 text-white rounded-md border border-gray-700">
+                <kbd className="px-1 py-0.5 text-[10px] font-mono bg-gray-800 dark:bg-darkBoxSub  text-white rounded-md border border-gray-700">
                   ⌘Z
                 </kbd>
               </div>
@@ -244,12 +246,12 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
             <TooltipContent
               side="top"
               sideOffset={5}
-              className="bg-white dark:bg-gray-900 text-xs px-2 py-1 rounded-md z-[9999] border border-gray-200 dark:border-gray-700"
+              className="bg-white dark:bg-darkBox text-xs px-2 py-1 rounded-md z-[9999] border border-gray-200 dark:border-gray-700"
               align="start"
             >
               <div className="flex items-center gap-1">
                 <span className="text-gray-700 dark:text-zinc-200">Redo</span>
-                <kbd className="px-1 py-0.5 text-[10px] font-mono bg-gray-800 dark:bg-gray-800 text-white rounded-md border border-gray-700">
+                <kbd className="px-1 py-0.5 text-[10px] font-mono bg-gray-800 dark:bg-darkBoxSub  text-white rounded-md border border-gray-700">
                   ⌘Y
                 </kbd>
               </div>
@@ -272,6 +274,7 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
       <div className="flex items-center justify-center gap-2 flex-grow">
         {/* Playback Speed Control */}
         <DropdownMenu>
+          {/* 
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
@@ -281,8 +284,9 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
               {playbackRate}x
             </Button>
           </DropdownMenuTrigger>
+          */}
           <DropdownMenuContent
-            className="min-w-[100px] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700"
+            className="min-w-[100px] bg-white dark:bg-darkBox border border-gray-200 dark:border-gray-700"
             align="center"
           >
             {[0.25, 0.5, 1, 1.5, 2].map((speed) => (
@@ -307,7 +311,7 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
                 onClick={handlePlayPause}
                 size="sm"
                 variant="default"
-                className="h-7 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700"
+                className="h-7 bg-gray-100 hover:bg-gray-200 dark:bg-darkBoxSub  dark:hover:bg-gray-700"
               >
                 {isPlaying ? (
                   <Pause className="h-3 w-3 text-gray-700 dark:text-white" />
@@ -319,14 +323,14 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
             <TooltipContent
               side="top"
               sideOffset={5}
-              className="bg-white dark:bg-gray-900 text-xs px-2 py-1 rounded-md z-[9999] border border-gray-200 dark:border-gray-700"
+              className="bg-white dark:bg-darkBox text-xs px-2 py-1 rounded-md z-[9999] border border-gray-200 dark:border-gray-700"
               align="center"
             >
               <div className="flex items-center gap-1">
                 <span className="text-gray-700 dark:text-zinc-200">
                   {isPlaying ? "Pause" : "Play"}
                 </span>
-                <kbd className="px-1 py-0.5 text-[10px] font-mono bg-gray-800 dark:bg-gray-800 text-white rounded-md border border-gray-700">
+                <kbd className="px-1 py-0.5 text-[10px] font-mono bg-gray-800 dark:bg-darkBoxSub  text-white rounded-md border border-gray-700">
                   ⌥ Space
                 </kbd>
               </div>
@@ -366,7 +370,7 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
               <TooltipContent
                 side="top"
                 sideOffset={5}
-                className="bg-white dark:bg-gray-900 text-xs px-2 py-1 rounded-md z-[9999] border border-gray-200 dark:border-gray-700"
+                className="bg-white dark:bg-darkBox text-xs px-2 py-1 rounded-md z-[9999] border border-gray-200 dark:border-gray-700"
                 align="center"
               >
                 <span className="text-gray-700 dark:text-zinc-200">
@@ -400,7 +404,7 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
               <TooltipContent
                 side="top"
                 sideOffset={5}
-                className="bg-white dark:bg-gray-900 text-xs px-2 py-1 rounded-md z-[9999] border border-gray-200 dark:border-gray-700"
+                className="bg-white dark:bg-darkBox text-xs px-2 py-1 rounded-md z-[9999] border border-gray-200 dark:border-gray-700"
                 align="center"
               >
                 <span className="text-gray-700 dark:text-zinc-200">
@@ -427,7 +431,7 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
             <TooltipContent
               side="top"
               sideOffset={5}
-              className="bg-white dark:bg-gray-900 text-xs px-2 py-1 rounded-md z-[9999] border border-gray-200 dark:border-gray-700"
+              className="bg-white dark:bg-darkBox text-xs px-2 py-1 rounded-md z-[9999] border border-gray-200 dark:border-gray-700"
               align="end"
             >
               <span className="text-gray-700 dark:text-zinc-200">
@@ -451,7 +455,7 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            className="w-60 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700"
+            className="w-60 bg-white dark:bg-darkBox border border-gray-200 dark:border-gray-700"
             side="top"
             align="end"
             sideOffset={8}
@@ -474,7 +478,7 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
                   disabled={visibleRows <= INITIAL_ROWS}
                   size="sm"
                   variant="outline"
-                  className="flex-1 h-8 bg-gray-100 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 hover:bg-gray-200 dark:hover:bg-gray-700"
+                  className="flex-1 h-8 bg-gray-100 dark:bg-darkBoxSub /50 border-gray-200 dark:border-gray-700 hover:bg-gray-200 dark:hover:bg-gray-700"
                 >
                   <Minus className="h-4 w-4 text-gray-700 dark:text-zinc-200" />
                 </Button>
@@ -486,7 +490,7 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
                   disabled={visibleRows >= MAX_ROWS}
                   size="sm"
                   variant="outline"
-                  className="flex-1 h-8 bg-gray-100 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 hover:bg-gray-200 dark:hover:bg-gray-700"
+                  className="flex-1 h-8 bg-gray-100 dark:bg-darkBoxSub /50 border-gray-200 dark:border-gray-700 hover:bg-gray-200 dark:hover:bg-gray-700"
                 >
                   <Plus className="h-4 w-4 text-gray-700 dark:text-zinc-200" />
                 </Button>
@@ -499,8 +503,8 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
               <Label className="text-xs text-gray-400 dark:text-zinc-500">
                 Aspect Ratio
               </Label>
-              <div className="grid grid-cols-3 gap-1 pt-1">
-                {["16:9", "9:16", "4:5"].map((ratio) => (
+              <div className="grid grid-cols-2 gap-1 pt-1">
+                {["16:9", "9:16", "1:1", "4:5"].map((ratio) => (
                   <Button
                     key={ratio}
                     onClick={() => handleAspectRatioChange(ratio)}
@@ -508,8 +512,8 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
                     variant={aspectRatio === ratio ? "default" : "outline"}
                     className={`h-8 transition-colors ${
                       aspectRatio === ratio
-                        ? "bg-blue-600 hover:bg-blue-500 text-white border-0"
-                        : "bg-gray-100 dark:bg-gray-900/50 border-gray-200 dark:border-gray-700 hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-700 dark:text-zinc-300"
+                        ? "bg-primarioLogo hover:bg-primarioLogo text-white border-0"
+                        : "bg-gray-100 dark:bg-darkBox  border-gray-200 dark:border-gray-700 hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-700 dark:text-zinc-300"
                     }`}
                   >
                     {ratio}
@@ -527,7 +531,7 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
                 variant="outline"
                 size="sm"
                 className="w-full text-gray-600 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-zinc-200
-                  bg-white hover:bg-gray-50 dark:bg-gray-800/50 dark:hover:bg-gray-700/80
+                  bg-white hover:bg-gray-50 dark:bg-darkBoxSub /50 dark:hover:bg-gray-700/80
                   border-gray-200 dark:border-gray-700"
               >
                 Reset Timeline

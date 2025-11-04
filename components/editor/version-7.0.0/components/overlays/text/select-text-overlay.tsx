@@ -77,7 +77,7 @@ export const SelectTextOverlay: React.FC<SelectTextOverlayProps> = () => {
           <div
             key={key}
             onClick={() => handleAddOverlay(option)}
-            className="group relative overflow-hidden border-2  bg-gray-200  dark:bg-gray-900/40  rounded-md border-white/10 transition-all duration-200 dark:hover:border-white/20 hover:border-blue-500/80 cursor-pointer"
+            className="group relative overflow-hidden border-2  bg-gray-200  dark:bg-darkBox   rounded-md border-white/10 transition-all duration-200 dark:hover:border-white/20 hover:border-blue-500/80 cursor-pointer"
           >
             {/* Preview Container */}
             <div className="aspect-[16/6] w-full flex items-center justify-center p-2 pb-12">

@@ -149,8 +149,8 @@ export const CaptionTimeline: React.FC<CaptionTimelineProps> = ({
                 isActive
                   ? "border-2 dark:bg-sky-950 dark:border-sky-700 dark:ring-sky-700/20 bg-sky-100 border-sky-600 ring-2 ring-sky-200"
                   : isUpcoming || isPast
-                  ? "border dark:bg-gray-900 dark:border-gray-800 bg-gray-50 border-gray-200 opacity-75"
-                  : "dark:bg-gray-950 dark:hover:bg-gray-900 dark:border-gray-800 dark:hover:border-gray-700 bg-white hover:bg-gray-50/80 border-gray-200 hover:border-gray-300"
+                  ? "border dark:bg-darkBox dark:border-gray-100/10 bg-gray-50 border-gray-200 opacity-75"
+                  : "dark:bg-gray-950 dark:hover:bg-gray-900 dark:border-gray-100/10 dark:hover:border-gray-700 bg-white hover:bg-gray-50/80 border-gray-200 hover:border-gray-300"
               }`}
           >
             <CardContent className="pl-3 pr-3 pt-3 space-y-2 pb-1 rounded-sm">
@@ -172,8 +172,8 @@ export const CaptionTimeline: React.FC<CaptionTimelineProps> = ({
                   placeholder:text-gray-400 dark:placeholder:text-gray-500
                   ${
                     isActive
-                      ? "dark:bg-gray-900 dark:text-gray-100 dark:border-sky-700 bg-white text-gray-900 border-sky-500 ring-1 ring-sky-400/30"
-                      : "dark:bg-gray-950 dark:text-gray-300 dark:border-gray-800 dark:hover:border-gray-700 bg-white text-gray-800 border-gray-200 hover:border-gray-300"
+                      ? "dark:bg-darkBox dark:text-gray-100 dark:border-sky-700 bg-white text-gray-900 border-sky-500 ring-1 ring-sky-400/30"
+                      : "dark:bg-gray-950 dark:text-gray-300 dark:border-gray-100/10 dark:hover:border-gray-700 bg-white text-gray-800 border-gray-200 hover:border-gray-300"
                   }
                 `}
                 placeholder="Enter caption text..."

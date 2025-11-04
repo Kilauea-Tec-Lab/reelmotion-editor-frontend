@@ -108,7 +108,7 @@ export const VideoSettingsPanel: React.FC<VideoSettingsPanelProps> = ({
   return (
     <div className="space-y-2">
       {/* Volume Settings */}
-      <div className="space-y-4 rounded-md bg-gray-100/50 dark:bg-gray-800/50 p-4 border border-gray-200 dark:border-gray-700">
+      <div className="space-y-4 rounded-md bg-gray-100/50 dark:bg-darkBoxSub /50 p-4 border border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
             Volume
@@ -121,7 +121,7 @@ export const VideoSettingsPanel: React.FC<VideoSettingsPanelProps> = ({
             }
             className={`text-xs px-2.5 py-1.5 rounded-md transition-colors ${
               (localOverlay?.styles?.volume ?? 1) === 0
-                ? "bg-blue-500/20 text-blue-600 dark:text-blue-400 hover:bg-blue-500/30"
+                ? "bg-blue-500/20 text-blue-600 dark:text-blue-400 hover:bg-primarioLogo/30"
                 : "bg-gray-200/50 dark:bg-gray-700/50 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-700"
             }`}
           >
@@ -139,7 +139,7 @@ export const VideoSettingsPanel: React.FC<VideoSettingsPanelProps> = ({
             onChange={(e) =>
               handleStyleChange({ volume: parseFloat(e.target.value) })
             }
-            className="flex-1 accent-blue-500 h-1.5 rounded-full bg-gray-200 dark:bg-gray-700"
+            className="flex-1 accent-primarioLogo h-1.5 rounded-full bg-gray-200 dark:bg-gray-700"
           />
           <span className="text-xs text-gray-600 dark:text-gray-400 min-w-[40px] text-right">
             {Math.round((localOverlay?.styles?.volume ?? 1) * 100)}%
@@ -148,7 +148,8 @@ export const VideoSettingsPanel: React.FC<VideoSettingsPanelProps> = ({
       </div>
 
       {/* Speed Settings */}
-      <div className="space-y-4 rounded-md bg-gray-100/50 dark:bg-gray-800/50 p-4 border border-gray-200 dark:border-gray-700">
+      {/*
+      <div className="space-y-4 rounded-md bg-gray-100/50 dark:bg-darkBoxSub /50 p-4 border border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
             Playback Speed
@@ -160,7 +161,7 @@ export const VideoSettingsPanel: React.FC<VideoSettingsPanelProps> = ({
             }}
             className={`text-xs px-2.5 py-1.5 rounded-md transition-colors ${
               (localOverlay?.speed ?? 1) !== 1
-                ? "bg-blue-500/20 text-blue-600 dark:text-blue-400 hover:bg-blue-500/30"
+                ? "bg-blue-500/20 text-blue-600 dark:text-blue-400 hover:bg-primarioLogo/30"
                 : "bg-gray-200/50 dark:bg-gray-700/50 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-700"
             }`}
           >
@@ -188,8 +189,10 @@ export const VideoSettingsPanel: React.FC<VideoSettingsPanelProps> = ({
           </Select>
         </div>
       </div>
+      */}
 
       {/* Animation Settings - Using the new AnimationSettings component */}
+      {/* 
       <AnimationSettings
         animations={animationTemplates}
         selectedEnterAnimation={localOverlay?.styles?.animation?.enter}
@@ -197,6 +200,7 @@ export const VideoSettingsPanel: React.FC<VideoSettingsPanelProps> = ({
         onEnterAnimationSelect={handleEnterAnimationSelect}
         onExitAnimationSelect={handleExitAnimationSelect}
       />
+      */}
     </div>
   );
 };

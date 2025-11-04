@@ -63,7 +63,7 @@ export const AnimationPreview: React.FC<AnimationPreviewProps> = ({
       className={`relative aspect-square w-full rounded-lg border ${
         isSelected
           ? "border-blue-500 bg-blue-500/10 shadow-[0_0_0_1px_rgba(59,130,246,0.5)]"
-          : "border-border bg-background hover:border-muted-foreground/50 hover:bg-muted/10 dark:bg-muted/30 dark:hover:bg-muted/50"
+          : "border-border dark:bg-darkBox  hover:border-muted-foreground/50 hover:bg-muted/10 dark:bg-muted/30 dark:hover:bg-darkBoxSub"
       } p-3 transition-all duration-200 group backdrop-blur-sm`}
     >
       <div className="flex h-full flex-col items-center justify-center gap-0 sm:gap-3">
@@ -140,7 +140,7 @@ const AnimationSection: React.FC<AnimationSectionProps> = ({
       className="w-full mb-4 px-0 mx-0"
     >
       <div className="border border-gray-200 dark:border-gray-700 rounded-md overflow-hidden">
-        <CollapsibleTrigger className="w-full flex justify-between items-center px-4 py-3 bg-gray-50 dark:bg-gray-800/80 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+        <CollapsibleTrigger className="w-full flex justify-between items-center px-4 py-3 bg-gray-50 dark:bg-darkBoxSub /80 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
           <div className="flex items-center">
             <span className="font-medium text-xs text-gray-700 dark:text-gray-300">
               {title}
@@ -169,7 +169,7 @@ const AnimationSection: React.FC<AnimationSectionProps> = ({
           </svg>
         </CollapsibleTrigger>
         <CollapsibleContent>
-          <div className="p-2 bg-white dark:bg-gray-900/50">
+          <div className="p-2 bg-white dark:bg-darkBox ">
             <div className="grid grid-cols-4 gap-3">{children}</div>
           </div>
         </CollapsibleContent>
@@ -235,7 +235,7 @@ export const AnimationSettings: React.FC<AnimationSettingsProps> = ({
 
   return (
     <div className={`space-y-3 ${className}`}>
-      <div className="rounded-md bg-gray-100/50 dark:bg-gray-800/50 p-4 border border-gray-200 dark:border-gray-700">
+      <div className="rounded-md bg-gray-100/50 dark:bg-darkBoxSub /50 p-4 border border-gray-200 dark:border-gray-700">
         <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3.5">
           Animations
         </h3>

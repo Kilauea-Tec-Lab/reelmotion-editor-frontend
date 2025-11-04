@@ -106,7 +106,7 @@ export const MediaFilterPresetSelector: React.FC<
       {/* Current filter display and toggle button */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="flex justify-between items-center w-full bg-background border border-input rounded-md text-xs p-2 hover:border-accent-foreground transition-colors text-foreground"
+        className="flex justify-between items-center w-full dark:bg-darkBox  border border-input rounded-md text-xs p-2 hover:border-accent-foreground transition-colors text-foreground"
       >
         <span>{getCurrentPresetName()}</span>
         <ChevronDown
@@ -118,7 +118,7 @@ export const MediaFilterPresetSelector: React.FC<
 
       {/* Expanded filter grid */}
       {isExpanded && (
-        <div className="mt-2 grid grid-cols-3 gap-2 bg-background p-2 rounded-md border border-input shadow-sm">
+        <div className="mt-2 grid grid-cols-3 gap-2 dark:bg-darkBox  p-2 rounded-md border border-input shadow-sm">
           {MEDIA_FILTER_PRESETS.map((preset) => {
             const isActive = getCurrentPresetId() === preset.id;
             return (
@@ -131,12 +131,24 @@ export const MediaFilterPresetSelector: React.FC<
               >
                 {/* Media thumbnail with filter applied */}
                 <div className="relative h-12 w-full mb-1 rounded overflow-hidden">
-                  <img
-                    src={getMediaContent()}
-                    alt={`${preset.name} preview`}
-                    className="w-full h-full object-cover"
-                    style={{ filter: preset.filter }}
-                  />
+                  {localOverlay.type === "video" ? (
+                    <video
+                      src={getMediaContent()}
+                      muted
+                      playsInline
+                      loop
+                      autoPlay
+                      className="w-full h-full object-cover"
+                      style={{ filter: preset.filter }}
+                    />
+                  ) : (
+                    <img
+                      src={getMediaContent()}
+                      alt={`${preset.name} preview`}
+                      className="w-full h-full object-cover"
+                      style={{ filter: preset.filter }}
+                    />
+                  )}
                   {isActive && (
                     <div className="absolute top-1 right-1 bg-primary rounded-full p-0.5">
                       <Check className="h-3 w-3 text-background" />

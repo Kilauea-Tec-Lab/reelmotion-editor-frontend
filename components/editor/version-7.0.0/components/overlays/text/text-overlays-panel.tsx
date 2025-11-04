@@ -33,7 +33,7 @@ export const TextOverlaysPanel: React.FC = () => {
   const isValidTextOverlay = localOverlay && selectedOverlayId !== null;
 
   return (
-    <div className="p-2 h-full bg-background">
+    <div className="p-2 h-full dark:bg-darkBox ">
       {!isValidTextOverlay ? (
         <SelectTextOverlay setLocalOverlay={handleSetLocalOverlay} />
       ) : (

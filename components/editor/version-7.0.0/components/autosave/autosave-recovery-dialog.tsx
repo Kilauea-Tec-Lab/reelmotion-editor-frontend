@@ -91,7 +91,7 @@ export const AutosaveRecoveryDialog: React.FC<AutosaveRecoveryDialogProps> = ({
         </div>
       ),
       className:
-        "shadow-[0_4px_20px_-1px] shadow-gray-400/50 border border-gray-300 bg-white text-gray-900 dark:shadow-gray-950/70 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100",
+        "shadow-[0_4px_20px_-1px] shadow-gray-400/50 border border-gray-300 bg-white text-gray-900 dark:shadow-gray-950/70 dark:border-gray-600 dark:bg-darkBoxSub  dark:text-gray-100",
       onOpenChange: (open) => {
         if (!open) {
           handleDiscard();

@@ -11,6 +11,10 @@ import {
   Sticker,
   Layout,
   ChevronLeft,
+  Icon,
+  ArrowBigLeft,
+  ArrowDownLeft,
+  ArrowLeft,
 } from "lucide-react";
 import Image from "next/image";
 import {
@@ -71,7 +75,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       case OverlayType.IMAGE:
         return "Image";
       case OverlayType.LOCAL_DIR:
-        return "Local";
+        return "Uploads";
       case OverlayType.STICKER:
         return "Stickers";
       case OverlayType.TEMPLATE:
@@ -89,13 +93,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       panel: OverlayType.VIDEO,
       type: OverlayType.VIDEO,
     },
+    /*
     {
       title: getPanelTitle(OverlayType.TEXT),
       url: "#",
       icon: Type,
       panel: OverlayType.TEXT,
       type: OverlayType.TEXT,
-    },
+    },*/
     {
       title: getPanelTitle(OverlayType.SOUND),
       url: "#",
@@ -103,6 +108,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       panel: OverlayType.SOUND,
       type: OverlayType.SOUND,
     },
+    /*
     {
       title: getPanelTitle(OverlayType.CAPTION),
       url: "#",
@@ -110,6 +116,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       panel: OverlayType.CAPTION,
       type: OverlayType.CAPTION,
     },
+    */
+    /*
     {
       title: getPanelTitle(OverlayType.IMAGE),
       url: "#",
@@ -117,13 +125,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       panel: OverlayType.IMAGE,
       type: OverlayType.IMAGE,
     },
+    */
+    /*
     {
       title: getPanelTitle(OverlayType.STICKER),
       url: "#",
       icon: Sticker,
       panel: OverlayType.STICKER,
       type: OverlayType.STICKER,
-    },
+    },*/
     {
       title: getPanelTitle(OverlayType.LOCAL_DIR),
       url: "#",
@@ -131,13 +141,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       panel: OverlayType.LOCAL_DIR,
       type: OverlayType.LOCAL_DIR,
     },
+    /*
     {
       title: getPanelTitle(OverlayType.TEMPLATE),
       url: "#",
       icon: Layout,
       panel: OverlayType.TEMPLATE,
       type: OverlayType.TEMPLATE,
-    },
+    },*/
   ];
 
   /**
@@ -170,13 +181,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar
       collapsible="icon"
-      className="overflow-hidden [&>[data-sidebar=sidebar]]:flex-row border-r border-1 bg-background"
+      className="overflow-hidden [&>[data-sidebar=sidebar]]:flex-row border-r border-1 dark:bg-darkBox border-gray-100/10"
       {...props}
     >
       {/* First sidebar */}
       <Sidebar
         collapsible="none"
-        className="!w-[calc(var(--sidebar-width-icon)_+_1px)] bg-background border-r"
+        className="!w-[calc(var(--sidebar-width-icon)_+_1px)] dark:bg-darkBox border-gray-100/10 border-r"
       >
         <SidebarHeader className="">
           <SidebarMenu>
@@ -185,7 +196,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <a href="#">
                   <div className="flex aspect-square size-9 items-center justify-center rounded-lg">
                     <Image
-                      src="/icons/logo-rve.png"
+                      src="/icons/icon_reelmotion_ai.png"
                       alt="Logo"
                       width={27}
                       height={27}
@@ -225,7 +236,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   </TooltipTrigger>
                   <TooltipContent
                     side="right"
-                    className="border bg-background text-foreground"
+                    className="border dark:bg-darkBox  text-foreground"
                   >
                     {item.title}
                   </TooltipContent>
@@ -234,24 +245,43 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             ))}
           </SidebarGroup>
         </SidebarContent>
-        <SidebarFooter className="border-t ">
-          <SidebarMenu>
-            <div className="flex items-center justify-between">
-              <SidebarMenuButton
-                asChild
-                className="text-xs text-foreground hover:text-muted-foreground transition-colors"
-              >
-                <Link href="/">V7</Link>
-              </SidebarMenuButton>
-            </div>
-          </SidebarMenu>
+        <SidebarFooter className="border-t">
+          <SidebarGroup>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <SidebarMenuButton
+                    asChild
+                    size="lg"
+                    className="flex flex-col items-center gap-2 px-1.5 py-2 text-muted-foreground hover:bg-muted hover:text-foreground"
+                  >
+                    <a href={process.env.NEXT_PUBLIC_REELMOTION_URL}>
+                      <ArrowLeft
+                        className="h-4 w-4 text-gray-700 dark:text-white font-light"
+                        strokeWidth={1.25}
+                      />
+                      <span className="text-[8px] font-medium leading-none">
+                        Return
+                      </span>
+                    </a>
+                  </SidebarMenuButton>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="border dark:bg-darkBox  text-foreground"
+                >
+                  Return
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </SidebarGroup>
         </SidebarFooter>
       </Sidebar>
 
       {/* Second sidebar */}
       <Sidebar
         collapsible="none"
-        className="hidden flex-1 md:flex bg-background border-r"
+        className="hidden flex-1 md:flex dark:bg-darkBox  border-r border-gray-100/10"
       >
         <SidebarHeader className="gap-3.5 border-b px-4 py-[12px]">
           <div className="flex w-full items-center justify-between">
@@ -273,7 +303,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             </div>
           </div>
         </SidebarHeader>
-        <SidebarContent className="text-foreground bg-background">
+        <SidebarContent className="text-foreground dark:bg-darkBox ">
           {renderActivePanel()}
         </SidebarContent>
       </Sidebar>

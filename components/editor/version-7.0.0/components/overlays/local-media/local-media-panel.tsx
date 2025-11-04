@@ -113,7 +113,7 @@ export const LocalMediaPanel: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col gap-4 p-4 bg-white dark:bg-gray-900/50 h-full">
+    <div className="flex flex-col gap-4 p-4 bg-white dark:bg-darkBox  h-full">
       <LocalMediaGallery onSelectMedia={handleAddToTimeline} />
     </div>
   );

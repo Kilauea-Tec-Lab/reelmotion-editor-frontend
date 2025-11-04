@@ -211,7 +211,7 @@ export function MobileNavBar() {
 
   return (
     <>
-      <div className="md:hidden flex flex-col border-t border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-gray-900/30 backdrop-blur-sm">
+      <div className="md:hidden flex flex-col border-t border-gray-200 dark:border-gray-100/10 bg-white/95 dark:bg-darkBox  backdrop-blur-sm">
         <div className="relative flex-1 flex">
           {/* Left fade gradient to indicate scrollable content */}
           {showScrollIndicator && (
@@ -241,7 +241,7 @@ export function MobileNavBar() {
                       }
                       ${
                         activePanel === item.panel
-                          ? "bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-white shadow-sm"
+                          ? "bg-gray-100 text-gray-900 dark:bg-darkBoxSub  dark:text-white shadow-sm"
                           : "text-gray-700 dark:text-zinc-200 hover:bg-gray-50 dark:hover:bg-gray-800/50"
                       } transition-all`}
                     >
@@ -263,7 +263,7 @@ export function MobileNavBar() {
                     });
                   }
                 }}
-                className="flex items-center justify-center h-9 min-w-9 px-2 rounded bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400"
+                className="flex items-center justify-center h-9 min-w-9 px-2 rounded bg-gray-50 dark:bg-darkBoxSub /50 text-gray-500 dark:text-gray-400"
               >
                 <Plus className="h-4 w-4" />
               </button>

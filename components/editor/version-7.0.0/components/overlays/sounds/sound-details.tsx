@@ -79,7 +79,7 @@ export const SoundDetails: React.FC<SoundDetailsProps> = ({
   return (
     <div className="space-y-4">
       {/* Sound Info with Play Button */}
-      <div className="flex items-center gap-3 p-4 bg-background/50 rounded-md border">
+      <div className="flex items-center gap-3 p-4 dark:bg-darkBox /50 rounded-md border">
         <Button
           variant="ghost"
           size="sm"
@@ -104,7 +104,7 @@ export const SoundDetails: React.FC<SoundDetailsProps> = ({
       <div className="space-y-4 mt-4">
         <div className="space-y-6">
           {/* Volume Settings */}
-          <div className="space-y-4 rounded-md bg-background/50 p-4 border">
+          <div className="space-y-4 rounded-md dark:bg-darkBox /50 p-4 border">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-medium text-foreground">Volume</h3>
               <button
@@ -133,7 +133,7 @@ export const SoundDetails: React.FC<SoundDetailsProps> = ({
                 onChange={(e) =>
                   handleStyleChange({ volume: parseFloat(e.target.value) })
                 }
-                className="flex-1 accent-primary h-1.5 rounded-full bg-muted"
+                className="flex-1 accent-primarioLogo h-1.5 rounded-full bg-muted"
               />
               <span className="text-xs text-muted-foreground min-w-[40px] text-right">
                 {Math.round((localOverlay?.styles?.volume ?? 1) * 100)}%
