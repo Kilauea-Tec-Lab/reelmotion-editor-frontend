@@ -140,7 +140,6 @@ export function LocalMediaGallery({
 
   // Render media item
   const renderMediaItem = (file: any) => {
-    console.log(file);
     return (
       <div
         key={file.id}

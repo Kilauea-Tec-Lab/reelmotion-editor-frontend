@@ -50,19 +50,27 @@ export const uploadMediaFile = async (file: File): Promise<UserMediaItem> => {
       throw new Error(errorData.error || "Failed to upload file");
     }
 
-    const { id, serverPath, size } = await response.json();
+    const responseData = await response.json();
+    
+    // Use backend thumbnail if available, otherwise use generated one
+    const backendThumbnail = responseData.thumbnail || responseData.backendResponse?.upload?.thumbnail_url;
+    const finalThumbnail = backendThumbnail || thumbnail || "";
+    
+    // Use backend duration if available, otherwise use generated one
+    const backendDuration = responseData.duration || responseData.backendResponse?.upload?.duration;
+    const finalDuration = backendDuration !== null && backendDuration !== undefined ? backendDuration : duration;
 
     // Create media item for IndexedDB
     const mediaItem: UserMediaItem = {
-      id,
+      id: responseData.id,
       userId,
-      name: file.name,
+      name: responseData.fileName || file.name,
       type: fileType,
-      serverPath,
-      size,
+      serverPath: responseData.serverPath,
+      size: responseData.size || file.size,
       lastModified: file.lastModified,
-      thumbnail: thumbnail || "",
-      duration,
+      thumbnail: finalThumbnail,
+      duration: finalDuration,
       createdAt: Date.now(),
     };
 

@@ -409,7 +409,7 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
             <ZoomKeyboardShortcuts />
             <EditorProvider value={editorContextValue}>
               <TimelineRowAdjuster />
-              <LocalMediaProvider>
+              <LocalMediaProvider backendUploads={editorData?.uploads || []}>
                 <AssetLoadingProvider>
                   <AppSidebar />
                   <SidebarInset>

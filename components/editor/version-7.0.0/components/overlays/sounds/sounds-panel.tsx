@@ -4,11 +4,11 @@ import { Play, Pause } from "lucide-react";
 import { LocalSound, OverlayType, SoundOverlay } from "../../../types";
 import { useState, useEffect, useRef } from "react";
 
-import { localSounds } from "../../../templates/sound-templates";
 import { useTimelinePositioning } from "../../../hooks/use-timeline-positioning";
 import { useEditorContext } from "../../../contexts/editor-context";
 import { useTimeline } from "../../../contexts/timeline-context";
 import { SoundDetails } from "./sound-details";
+import { useEditorAuth } from "../../../hooks/use-editor-auth";
 
 /**
  * SoundsPanel Component
@@ -38,6 +38,20 @@ const SoundsPanel: React.FC = () => {
   const { findNextAvailablePosition } = useTimelinePositioning();
   const { visibleRows } = useTimeline();
   const [localOverlay, setLocalOverlay] = useState<SoundOverlay | null>(null);
+  const { editorData } = useEditorAuth();
+
+  // Convert project_voices to LocalSound format
+  const localSounds: LocalSound[] = React.useMemo(() => {
+    if (!editorData?.project_voices) return [];
+    
+    return editorData.project_voices.map((voice) => ({
+      id: voice.id,
+      title: voice.name,
+      artist: voice.description || "Project Voice",
+      duration: 15, // Default duration, can be updated if available
+      file: voice.audio_url,
+    }));
+  }, [editorData?.project_voices]);
 
   useEffect(() => {
     if (selectedOverlayId === null) {

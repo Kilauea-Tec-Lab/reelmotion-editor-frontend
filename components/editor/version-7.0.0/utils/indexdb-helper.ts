@@ -5,7 +5,7 @@
  */
 
 const DB_NAME = 'VideoEditorProDB';
-const DB_VERSION = 1;
+const DB_VERSION = 3; // Incrementado para forzar actualización
 const PROJECTS_STORE = 'projects';
 const AUTOSAVE_STORE = 'autosave';
 
@@ -15,11 +15,24 @@ const AUTOSAVE_STORE = 'autosave';
  */
 export const initDatabase = (): Promise<IDBDatabase> => {
   return new Promise((resolve, reject) => {
+    // Check if IndexedDB is available
+    if (typeof indexedDB === 'undefined') {
+      reject(new Error('IndexedDB is not available in this environment'));
+      return;
+    }
+
     const request = indexedDB.open(DB_NAME, DB_VERSION);
 
     request.onerror = (event) => {
-      console.error('Error opening IndexedDB:', event);
-      reject('Error opening IndexedDB');
+      const error = (event.target as IDBOpenDBRequest).error;
+      console.error('Error opening IndexedDB:', error);
+      
+      let errorMessage = 'Error opening IndexedDB';
+      if (error) {
+        errorMessage += `: ${error.name} - ${error.message}`;
+      }
+      
+      reject(new Error(errorMessage));
     };
 
     request.onsuccess = (event) => {
@@ -27,20 +40,29 @@ export const initDatabase = (): Promise<IDBDatabase> => {
       resolve(db);
     };
 
+    request.onblocked = () => {
+      console.warn('IndexedDB open request was blocked');
+      reject(new Error('IndexedDB is blocked by another tab'));
+    };
+
     request.onupgradeneeded = (event) => {
       const db = (event.target as IDBOpenDBRequest).result;
       
-      // Create projects store
-      if (!db.objectStoreNames.contains(PROJECTS_STORE)) {
-        const projectsStore = db.createObjectStore(PROJECTS_STORE, { keyPath: 'id' });
-        projectsStore.createIndex('name', 'name', { unique: false });
-        projectsStore.createIndex('lastModified', 'lastModified', { unique: false });
-      }
-      
-      // Create autosave store
-      if (!db.objectStoreNames.contains(AUTOSAVE_STORE)) {
-        const autosaveStore = db.createObjectStore(AUTOSAVE_STORE, { keyPath: 'id' });
-        autosaveStore.createIndex('timestamp', 'timestamp', { unique: false });
+      try {
+        // Create projects store
+        if (!db.objectStoreNames.contains(PROJECTS_STORE)) {
+          const projectsStore = db.createObjectStore(PROJECTS_STORE, { keyPath: 'id' });
+          projectsStore.createIndex('name', 'name', { unique: false });
+          projectsStore.createIndex('lastModified', 'lastModified', { unique: false });
+        }
+        
+        // Create autosave store
+        if (!db.objectStoreNames.contains(AUTOSAVE_STORE)) {
+          const autosaveStore = db.createObjectStore(AUTOSAVE_STORE, { keyPath: 'id' });
+          autosaveStore.createIndex('timestamp', 'timestamp', { unique: false });
+        }
+      } catch (error) {
+        console.error('Error creating object stores:', error);
       }
     };
   });

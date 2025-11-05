@@ -4,12 +4,35 @@ import { useEffect, useState } from "react";
 import Cookies from "js-cookie";
 import { useRouter } from "next/navigation";
 
+export interface BackendUpload {
+  id: string;
+  user_id: string;
+  type: number; // 1=image, 2=video, 3=audio
+  file_name: string;
+  file_url: string;
+  width: string | null;
+  height: string | null;
+  duration: string | null;
+  thumbnail_url: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProjectVoice {
+  id: string;
+  name: string;
+  description: string;
+  audio_url: string;
+}
+
 interface EditorData {
   code: number;
   projects: any[];
   voices: any[];
   edits: any[];
   videos: any[];
+  uploads?: BackendUpload[];
+  project_voices?: ProjectVoice[];
 }
 
 interface UseEditorAuthResult {

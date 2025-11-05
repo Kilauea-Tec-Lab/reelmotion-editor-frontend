@@ -9,6 +9,7 @@ import {
 import { formatDistanceToNow } from "date-fns";
 import { SaveEditDialog } from "./save-edit-dialog";
 import { LoadEditDialog } from "./load-edit-dialog";
+import { SaveRenderDialog } from "./save-render-dialog";
 
 /**
  * Interface representing a single video render attempt
@@ -75,6 +76,10 @@ const RenderControls: React.FC<RenderControlsProps> = ({
   const [isSaveDialogOpen, setIsSaveDialogOpen] = React.useState(false);
   // Track load dialog state
   const [isLoadDialogOpen, setIsLoadDialogOpen] = React.useState(false);
+  // Track save render dialog state
+  const [isSaveRenderDialogOpen, setIsSaveRenderDialogOpen] = React.useState(false);
+  // Track selected video URL for saving
+  const [selectedVideoUrl, setSelectedVideoUrl] = React.useState<string>("");
 
   // Check if rendering is disabled via environment variable
   const isRenderDisabled = process.env.NEXT_PUBLIC_DISABLE_RENDER === "true";
@@ -141,6 +146,11 @@ const RenderControls: React.FC<RenderControlsProps> = ({
     document.body.removeChild(a);
   };
 
+  const handleSaveClick = (url: string) => {
+    setSelectedVideoUrl(url);
+    setIsSaveRenderDialogOpen(true);
+  };
+
   const getDisplayFileName = (url: string) => {
     if (renderType === "ssr") {
       return url.split("/").pop();
@@ -172,6 +182,13 @@ const RenderControls: React.FC<RenderControlsProps> = ({
           onLoadEdit={onLoadEdit}
         />
       )}
+
+      {/* Save Render Dialog */}
+      <SaveRenderDialog
+        open={isSaveRenderDialogOpen}
+        onOpenChange={setIsSaveRenderDialogOpen}
+        videoUrl={selectedVideoUrl}
+      />
 
       <Button
         variant="ghost"
@@ -251,9 +268,10 @@ const RenderControls: React.FC<RenderControlsProps> = ({
                       size="icon"
                       variant="ghost"
                       className="text-zinc-200 hover:text-gray-800 h-6 w-6"
-                      onClick={() => handleDownload(render.url!)}
+                      onClick={() => handleSaveClick(render.url!)}
+                      title="Save video"
                     >
-                      <Download className="w-3.5 h-3.5" />
+                      <Save className="w-3.5 h-3.5" />
                     </Button>
                   )}
                 </div>
@@ -272,7 +290,7 @@ const RenderControls: React.FC<RenderControlsProps> = ({
         title={isRenderDisabled ? "Rendering is currently disabled" : undefined}
       >
         {isRenderDisabled ? (
-          "Render Video"
+          "Export Video"
         ) : state.status === "rendering" ? (
           <>
             <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
@@ -284,7 +302,7 @@ const RenderControls: React.FC<RenderControlsProps> = ({
             Preparing...
           </>
         ) : (
-          `Render Video`
+          `Export Video`
         )}
       </Button>
     </>

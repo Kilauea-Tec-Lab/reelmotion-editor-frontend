@@ -46,6 +46,7 @@ export const useAutosave = (
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const lastSavedStateRef = useRef<string>("");
   const [hasCheckedForAutosave, setHasCheckedForAutosave] = useState(false);
+  const [indexedDBAvailable, setIndexedDBAvailable] = useState(true);
 
   // Check for existing autosave on mount, but only once
   useEffect(() => {
@@ -59,7 +60,8 @@ export const useAutosave = (
         }
         setHasCheckedForAutosave(true);
       } catch (error) {
-        console.error("Failed to check for autosave:", error);
+        console.warn("IndexedDB not available for autosave, continuing without it");
+        setIndexedDBAvailable(false);
         setHasCheckedForAutosave(true);
       }
     };
@@ -69,8 +71,8 @@ export const useAutosave = (
 
   // Set up autosave timer
   useEffect(() => {
-    // Don't start autosave if projectId is not valid
-    if (!projectId) return;
+    // Don't start autosave if projectId is not valid or IndexedDB is not available
+    if (!projectId || !indexedDBAvailable) return;
 
     const saveIfChanged = async () => {
       const currentStateString = JSON.stringify(state);
@@ -82,7 +84,9 @@ export const useAutosave = (
           lastSavedStateRef.current = currentStateString;
           if (onSave) onSave();
         } catch (error) {
-          console.error("Autosave failed:", error);
+          console.warn("Autosave skipped - IndexedDB not available");
+          // Disable further autosave attempts
+          setIndexedDBAvailable(false);
         }
       }
     };
@@ -97,7 +101,7 @@ export const useAutosave = (
         timerRef.current = null;
       }
     };
-  }, [projectId, state, interval, onSave]);
+  }, [projectId, state, interval, onSave, indexedDBAvailable]);
 
   // Function to manually save state
   const saveState = async () => {

@@ -76,7 +76,29 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await backendResponse.json();
-    return NextResponse.json({ success: true, ...result });
+    
+    // Map backend response to frontend format
+    const upload = result.upload;
+    const mappedResponse = {
+      success: true,
+      id: upload.id,
+      fileName: upload.file_name,
+      serverPath: upload.file_url,
+      thumbnail: upload.thumbnail_url,
+      size: file.size,
+      type: file.type,
+      fileType: upload.type,
+      width: upload.width,
+      height: upload.height,
+      duration: upload.duration,
+      userId: upload.user_id,
+      createdAt: upload.created_at,
+      updatedAt: upload.updated_at,
+      // Include original backend response for debugging
+      backendResponse: result
+    };
+    
+    return NextResponse.json(mappedResponse);
     
   } catch (error) {
     return NextResponse.json({ error: 'Failed to process upload', details: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });

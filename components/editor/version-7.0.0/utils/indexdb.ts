@@ -11,7 +11,7 @@ import { isIndexedDBSupported } from './browser-check';
 
 // Database configuration
 const DB_NAME = 'VideoEditorDB';
-const DB_VERSION = 1;
+const DB_VERSION = 3; // Incrementado para forzar actualización
 const MEDIA_STORE = 'userMedia';
 
 // Media item interface
@@ -41,8 +41,26 @@ const initDB = (): Promise<IDBDatabase> => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
 
     request.onerror = (event) => {
-      console.error('Error opening IndexedDB:', event);
-      reject(new Error('Could not open IndexedDB'));
+      const error = (event.target as IDBOpenDBRequest).error;
+      console.error('Error opening IndexedDB:', error);
+      
+      // Provide more detailed error information
+      let errorMessage = 'Could not open IndexedDB';
+      if (error) {
+        errorMessage += `: ${error.name} - ${error.message}`;
+      }
+      
+      // Check if it's a quota exceeded error
+      if (error?.name === 'QuotaExceededError') {
+        errorMessage = 'Storage quota exceeded. Please clear some space.';
+      }
+      
+      // Check if IndexedDB is blocked (private browsing)
+      if (error?.name === 'UnknownError' || error?.name === 'InvalidStateError') {
+        errorMessage = 'IndexedDB is blocked. Please disable private browsing mode or check browser permissions.';
+      }
+      
+      reject(new Error(errorMessage));
     };
 
     request.onsuccess = (event) => {
@@ -50,15 +68,24 @@ const initDB = (): Promise<IDBDatabase> => {
       resolve(db);
     };
 
+    request.onblocked = () => {
+      console.warn('IndexedDB open request was blocked');
+      reject(new Error('IndexedDB is blocked by another tab. Please close other tabs and try again.'));
+    };
+
     request.onupgradeneeded = (event) => {
       const db = (event.target as IDBOpenDBRequest).result;
       
       // Create object store for user media
       if (!db.objectStoreNames.contains(MEDIA_STORE)) {
-        const store = db.createObjectStore(MEDIA_STORE, { keyPath: 'id' });
-        store.createIndex('userId', 'userId', { unique: false });
-        store.createIndex('type', 'type', { unique: false });
-        store.createIndex('createdAt', 'createdAt', { unique: false });
+        try {
+          const store = db.createObjectStore(MEDIA_STORE, { keyPath: 'id' });
+          store.createIndex('userId', 'userId', { unique: false });
+          store.createIndex('type', 'type', { unique: false });
+          store.createIndex('createdAt', 'createdAt', { unique: false });
+        } catch (error) {
+          console.error('Error creating object store:', error);
+        }
       }
     };
   });
@@ -253,5 +280,40 @@ export const clearUserMedia = async (userId: string): Promise<boolean> => {
       return false;
     }
     throw error;
+  }
+};
+
+/**
+ * Reset IndexedDB - Deletes and recreates the database
+ * Use this if the database becomes corrupted
+ */
+export const resetIndexedDB = async (): Promise<boolean> => {
+  try {
+    if (!isIndexedDBSupported()) {
+      console.warn('IndexedDB is not supported');
+      return false;
+    }
+
+    return new Promise((resolve, reject) => {
+      const deleteRequest = indexedDB.deleteDatabase(DB_NAME);
+      
+      deleteRequest.onsuccess = () => {
+        console.log('IndexedDB successfully deleted and will be recreated on next use');
+        resolve(true);
+      };
+      
+      deleteRequest.onerror = (event) => {
+        console.error('Error deleting IndexedDB:', event);
+        reject(new Error('Failed to reset IndexedDB'));
+      };
+      
+      deleteRequest.onblocked = () => {
+        console.warn('IndexedDB deletion was blocked. Close all tabs using this app and try again.');
+        reject(new Error('IndexedDB deletion blocked by other tabs'));
+      };
+    });
+  } catch (error) {
+    console.error('Error resetting IndexedDB:', error);
+    return false;
   }
 };
