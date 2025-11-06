@@ -77,14 +77,14 @@ export const SoundDetails: React.FC<SoundDetailsProps> = ({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 w-full overflow-hidden">
       {/* Sound Info with Play Button */}
-      <div className="flex items-center gap-3 p-4 dark:bg-darkBox /50 rounded-md border">
+      <div className="flex items-center gap-3 p-4 dark:bg-darkBox /50 rounded-md border w-full">
         <Button
           variant="ghost"
           size="sm"
           onClick={togglePlay}
-          className="h-8 w-8 rounded-full bg-transparent hover:bg-accent text-foreground"
+          className="h-8 w-8 rounded-full bg-transparent hover:bg-accent text-foreground flex-shrink-0"
         >
           {isPlaying ? (
             <Pause className="h-4 w-4" />
@@ -92,8 +92,8 @@ export const SoundDetails: React.FC<SoundDetailsProps> = ({
             <Play className="h-4 w-4" />
           )}
         </Button>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-foreground truncate">
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-foreground truncate w-full">
             {localOverlay.content}
           </p>
         </div>
