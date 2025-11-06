@@ -35,13 +35,17 @@ export function LocalMediaGallery({
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Filter media files based on active tab
-  const filteredMedia = localMediaFiles.filter((file) => {
-    if (activeTab === "all") return true;
-    return file.type === activeTab;
-  });
+  // Filter media files based on active tab and reverse to show newest first
+  const filteredMedia = localMediaFiles
+    .filter((file) => {
+      if (activeTab === "all") return true;
+      return file.type === activeTab;
+    })
+    .reverse();
 
   // Handle file upload
   const handleFileUpload = async (
@@ -51,6 +55,7 @@ export function LocalMediaGallery({
     if (files && files.length > 0) {
       try {
         setUploadError(null);
+        setIsUploading(true);
         await addMediaFile(files[0]);
         // Reset the input value to allow uploading the same file again
         event.target.value = "";
@@ -58,6 +63,8 @@ export function LocalMediaGallery({
         console.error("Error uploading file:", error);
         setUploadError("Failed to upload file. Please try again.");
         event.target.value = "";
+      } finally {
+        setIsUploading(false);
       }
     }
   };
@@ -78,6 +85,18 @@ export function LocalMediaGallery({
     if (selectedFile && onSelectMedia) {
       onSelectMedia(selectedFile);
       setPreviewOpen(false);
+    }
+  };
+
+  // Handle media deletion
+  const handleDeleteMedia = async (fileId: string) => {
+    try {
+      setDeletingId(fileId);
+      await removeMediaFile(fileId);
+    } catch (error) {
+      console.error("Error deleting file:", error);
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -140,14 +159,26 @@ export function LocalMediaGallery({
 
   // Render media item
   const renderMediaItem = (file: any) => {
+    const isDeleting = deletingId === file.id;
+    
     return (
       <div
         key={file.id}
         className="relative group/item border dark:border-gray-700 border-gray-200 rounded-md overflow-hidden cursor-pointer 
           hover:border-blue-500 dark:hover:border-blue-400 transition-all 
           bg-white dark:bg-darkBoxSub /80 shadow-sm hover:shadow-md"
-        onClick={() => handleMediaSelect(file)}
+        onClick={() => !isDeleting && handleMediaSelect(file)}
       >
+        {/* Deleting Overlay */}
+        {isDeleting && (
+          <div className="absolute inset-0 bg-black/60 dark:bg-black/80 z-10 flex items-center justify-center">
+            <div className="flex flex-col items-center space-y-2">
+              <Loader2 className="w-8 h-8 text-white animate-spin" />
+              <p className="text-white text-xs font-medium">Deleting...</p>
+            </div>
+          </div>
+        )}
+
         {/* Thumbnail */}
         <div className="aspect-video relative">
           {file.type === "image" && (
@@ -187,18 +218,42 @@ export function LocalMediaGallery({
         </div>
 
         {/* Delete button */}
-        <button
-          className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 
-            text-white p-1.5 rounded-full opacity-0 group-hover/item:opacity-100 transition-all duration-200 
-            shadow-sm hover:shadow-md transform hover:scale-105"
-          onClick={(e) => {
-            e.stopPropagation();
-            removeMediaFile(file.id);
-          }}
-          title="Delete media"
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-        </button>
+        {!isDeleting && (
+          <button
+            className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 
+              text-white p-1.5 rounded-full opacity-0 group-hover/item:opacity-100 transition-all duration-200 
+              shadow-sm hover:shadow-md transform hover:scale-105"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDeleteMedia(file.id);
+            }}
+            title="Delete media"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        )}
+      </div>
+    );
+  };
+
+  // Render uploading skeleton
+  const renderUploadingSkeleton = () => {
+    return (
+      <div
+        key="uploading-skeleton"
+        className="relative border dark:border-gray-700 border-gray-200 rounded-md overflow-hidden 
+          bg-white dark:bg-darkBoxSub/80 shadow-sm animate-pulse"
+      >
+        {/* Thumbnail skeleton */}
+        <div className="aspect-video relative bg-gray-200 dark:bg-gray-800 flex items-center justify-center">
+          <Loader2 className="w-8 h-8 text-gray-400 dark:text-gray-500 animate-spin" />
+        </div>
+
+        {/* Media info skeleton */}
+        <div className="p-2.5 space-y-2">
+          <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-3/4"></div>
+          <div className="h-3 bg-gray-200 dark:bg-gray-800 rounded w-1/2"></div>
+        </div>
       </div>
     );
   };
@@ -213,9 +268,9 @@ export function LocalMediaGallery({
             size="sm"
             className="gap-1"
             onClick={handleUploadClick}
-            disabled={isLoading}
+            disabled={isLoading || isUploading}
           >
-            {isLoading ? (
+            {isUploading ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
               <Upload className="w-4 h-4" />
@@ -229,7 +284,7 @@ export function LocalMediaGallery({
             className="hidden"
             onChange={handleFileUpload}
             accept="image/*,video/*,audio/*"
-            disabled={isLoading}
+            disabled={isLoading || isUploading}
           />
         </div>
       </div>
@@ -286,12 +341,12 @@ export function LocalMediaGallery({
         </TabsList>
 
         <TabsContent value={activeTab} className="flex-1 overflow-y-auto p-0">
-          {isLoading ? (
+          {isLoading && localMediaFiles.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center space-y-4 text-sm text-gray-500">
               <Loader2 className="w-5 h-5 animate-spin" />
               <p>Loading media files...</p>
             </div>
-          ) : filteredMedia.length === 0 ? (
+          ) : filteredMedia.length === 0 && !isUploading ? (
             <div className="h-full flex flex-col items-center justify-center text-center space-y-3">
               <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-darkBoxSub  flex items-center justify-center">
                 <Upload className="w-4 h-4 text-gray-400" />
@@ -313,6 +368,7 @@ export function LocalMediaGallery({
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-2 gap-2 ">
+              {isUploading && renderUploadingSkeleton()}
               {filteredMedia.map(renderMediaItem)}
             </div>
           )}

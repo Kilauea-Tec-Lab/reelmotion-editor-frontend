@@ -9,6 +9,7 @@
 
 import { getUserId } from "./user-id";
 import { UserMediaItem, addMediaItem } from "./indexdb";
+import Cookies from "js-cookie";
 
 /**
  * Uploads a file to the server and stores the reference in IndexedDB
@@ -31,43 +32,55 @@ export const uploadMediaFile = async (file: File): Promise<UserMediaItem> => {
       throw new Error("Unsupported file type");
     }
 
-    // Get user ID
+    // Get user ID and auth token
     const userId = getUserId();
+    const token = Cookies.get("token");
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "https://backend.reelmotion.ai";
 
     // Create form data for upload
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("userId", userId);
+    formData.append("type", fileType === "video" ? "2" : fileType === "image" ? "1" : "3"); // 1=image, 2=video, 3=audio
 
-    // Upload file to server
-    const response = await fetch("/api/latest/local-media/upload", {
+    // Upload file directly to backend
+    const response = await fetch(`${backendUrl}/editor/upload-file`, {
       method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
       body: formData,
     });
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.error || "Failed to upload file");
+      throw new Error(errorData.error || errorData.message || "Failed to upload file");
     }
 
     const responseData = await response.json();
     
+    // Check if response has the expected structure
+    if (!responseData.upload) {
+      throw new Error("Invalid response structure from backend");
+    }
+
+    const uploadData = responseData.upload;
+    
     // Use backend thumbnail if available, otherwise use generated one
-    const backendThumbnail = responseData.thumbnail || responseData.backendResponse?.upload?.thumbnail_url;
-    const finalThumbnail = backendThumbnail || thumbnail || "";
+    const finalThumbnail = uploadData.thumbnail_url || thumbnail || "";
     
     // Use backend duration if available, otherwise use generated one
-    const backendDuration = responseData.duration || responseData.backendResponse?.upload?.duration;
-    const finalDuration = backendDuration !== null && backendDuration !== undefined ? backendDuration : duration;
+    const finalDuration = uploadData.duration !== null && uploadData.duration !== undefined 
+      ? uploadData.duration 
+      : duration;
 
     // Create media item for IndexedDB
     const mediaItem: UserMediaItem = {
-      id: responseData.id,
+      id: uploadData.id,
       userId,
-      name: responseData.fileName || file.name,
+      name: uploadData.file_name || file.name,
       type: fileType,
-      serverPath: responseData.serverPath,
-      size: responseData.size || file.size,
+      serverPath: uploadData.file_url,
+      size: file.size, // Backend doesn't return size, use original file size
       lastModified: file.lastModified,
       thumbnail: finalThumbnail,
       duration: finalDuration,
@@ -192,12 +205,21 @@ export const deleteMediaFile = async (
   filePath: string
 ): Promise<boolean> => {
   try {
-    const response = await fetch("/api/media/delete", {
+    // Get token from cookies
+    const token = Cookies.get("authToken");
+    if (!token) {
+      throw new Error("Authentication token not found");
+    }
+
+    // Delete file directly from backend
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "https://backend.reelmotion.ai";
+    const response = await fetch(`${backendUrl}/api/editor/delete-upload`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ userId, filePath }),
+      body: JSON.stringify({ path: filePath }),
     });
 
     if (!response.ok) {
