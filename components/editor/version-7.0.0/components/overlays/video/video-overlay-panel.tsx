@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Search } from "lucide-react";
+import { Search, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
@@ -58,6 +58,7 @@ export const VideoOverlayPanel: React.FC = () => {
   const { getAspectRatioDimensions } = useAspectRatio();
   const { visibleRows } = useTimeline();
   const [localOverlay, setLocalOverlay] = useState<Overlay | null>(null);
+  const [loadedVideos, setLoadedVideos] = useState<Set<string>>(new Set());
   
   // Ref for infinite scroll
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -178,6 +179,10 @@ export const VideoOverlayPanel: React.FC = () => {
     changeOverlay(updatedOverlay.id, updatedOverlay);
   };
 
+  const handleVideoLoaded = (videoId: string) => {
+    setLoadedVideos((prev) => new Set(prev).add(videoId));
+  };
+
   return (
     <div className="flex flex-col gap-4 p-4 bg-gray-100/40 dark:bg-darkBox  h-full">
       {!localOverlay ? (
@@ -215,14 +220,29 @@ export const VideoOverlayPanel: React.FC = () => {
                       className="relative block w-full cursor-pointer border border-transparent rounded-md overflow-hidden"
                       onClick={() => handleAddClip(video)}
                     >
-                      <div className="relative">
+                      <div className="relative aspect-video bg-gray-200 dark:bg-darkBoxSub">
+                        {/* Loading spinner */}
+                        {!loadedVideos.has(video.id) && (
+                          <div className="absolute inset-0 flex items-center justify-center z-10">
+                            <Loader2 className="w-8 h-8 text-gray-400 dark:text-gray-500 animate-spin" />
+                          </div>
+                        )}
+                        
+                        {/* Video element */}
                         <video
                           src={video.video_url}
-                          className="w-full h-auto rounded-sm object-cover hover:opacity-60 transition-opacity duration-200"
+                          className={`w-full h-full rounded-sm object-cover hover:opacity-60 transition-opacity duration-200 ${
+                            !loadedVideos.has(video.id) ? 'opacity-0' : 'opacity-100'
+                          }`}
                           muted
                           playsInline
+                          onLoadedData={() => handleVideoLoaded(video.id)}
                         />
+                        
+                        {/* Hover overlay */}
                         <div className="absolute inset-0 bg-black/20 opacity-0 hover:opacity-100 transition-opacity duration-200" />
+                        
+                        {/* Video name */}
                         <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/70 to-transparent">
                           <p className="text-white text-xs font-medium truncate">
                             {video.name || "Untitled"}
