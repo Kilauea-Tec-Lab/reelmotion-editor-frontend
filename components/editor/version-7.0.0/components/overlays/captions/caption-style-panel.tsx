@@ -60,7 +60,7 @@ export const CaptionStylePanel: React.FC<CaptionStylePanelProps> = ({
             className={`group relative overflow-hidden rounded-lg border transition-all duration-200
               ${
                 localOverlay?.template === key
-                  ? "border-blue-500 bg-blue-500/10 ring-2 ring-blue-500/30 dark:ring-blue-400/30"
+                  ? "border-primarioLogo bg-blue-500/10 ring-2 ring-primarioLogo dark:ring-primarioLogo"
                   : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 bg-gray-50/50 dark:bg-darkBoxSub /30 hover:bg-gray-100/80 dark:hover:bg-gray-800/50"
               }`}
           >

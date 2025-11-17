@@ -148,7 +148,6 @@ export const VideoSettingsPanel: React.FC<VideoSettingsPanelProps> = ({
       </div>
 
       {/* Speed Settings */}
-      {/*
       <div className="space-y-4 rounded-md bg-gray-100/50 dark:bg-darkBoxSub /50 p-4 border border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -189,10 +188,8 @@ export const VideoSettingsPanel: React.FC<VideoSettingsPanelProps> = ({
           </Select>
         </div>
       </div>
-      */}
 
       {/* Animation Settings - Using the new AnimationSettings component */}
-      {/* 
       <AnimationSettings
         animations={animationTemplates}
         selectedEnterAnimation={localOverlay?.styles?.animation?.enter}
@@ -200,7 +197,6 @@ export const VideoSettingsPanel: React.FC<VideoSettingsPanelProps> = ({
         onEnterAnimationSelect={handleEnterAnimationSelect}
         onExitAnimationSelect={handleExitAnimationSelect}
       />
-      */}
     </div>
   );
 };

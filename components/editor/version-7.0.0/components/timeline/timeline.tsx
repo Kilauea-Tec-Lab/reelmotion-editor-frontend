@@ -472,7 +472,7 @@ const Timeline: React.FC<TimelineProps> = ({
 
   // Render
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col max-h-60 overflow-scroll">
       <div className="flex ">
         {/* Row Drag Handles Column */}
         <div className="hidden md:block w-7 flex-shrink-0 border-l border-r border-gray-200 dark:border-gray-100/10 bg-gray-50 dark:bg-darkBox ">

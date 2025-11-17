@@ -62,7 +62,7 @@ export const AnimationPreview: React.FC<AnimationPreviewProps> = ({
       onMouseLeave={() => setIsHovering(false)}
       className={`relative aspect-square w-full rounded-lg border ${
         isSelected
-          ? "border-blue-500 bg-blue-500/10 shadow-[0_0_0_1px_rgba(59,130,246,0.5)]"
+          ? "border-primarioLogo bg-blue-500/10 shadow-[0_0_0_1px_rgba(59,130,246,0.5)]"
           : "border-border dark:bg-darkBox  hover:border-muted-foreground/50 hover:bg-muted/10 dark:bg-muted/30 dark:hover:bg-darkBoxSub"
       } p-3 transition-all duration-200 group backdrop-blur-sm`}
     >
@@ -73,7 +73,7 @@ export const AnimationPreview: React.FC<AnimationPreviewProps> = ({
           <div
             className={`absolute inset-0 rounded-full ${
               isSelected
-                ? "border-blue-500 border-dashed border-2"
+                ? "border-primarioLogo border-dashed border-2"
                 : "border-foreground/30 dark:border-foreground/50 border-[1.5px]"
             } transition-all duration-500 h-6`}
             style={{
@@ -96,7 +96,7 @@ export const AnimationPreview: React.FC<AnimationPreviewProps> = ({
         <span
           className={`mt-4 text-[7px] tracking-wide transition-all duration-200 ${
             isSelected
-              ? "text-blue-500"
+              ? "text-primarioLogo"
               : "text-muted-foreground/80 group-hover:text-foreground dark:text-muted-foreground dark:group-hover:text-foreground"
           }`}
         >

@@ -93,14 +93,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       panel: OverlayType.VIDEO,
       type: OverlayType.VIDEO,
     },
-    /*
+    
     {
       title: getPanelTitle(OverlayType.TEXT),
       url: "#",
       icon: Type,
       panel: OverlayType.TEXT,
       type: OverlayType.TEXT,
-    },*/
+    },
     {
       title: getPanelTitle(OverlayType.SOUND),
       url: "#",
@@ -126,14 +126,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       type: OverlayType.IMAGE,
     },
     */
-    /*
+    
     {
       title: getPanelTitle(OverlayType.STICKER),
       url: "#",
       icon: Sticker,
       panel: OverlayType.STICKER,
       type: OverlayType.STICKER,
-    },*/
+    },
     {
       title: getPanelTitle(OverlayType.LOCAL_DIR),
       url: "#",
