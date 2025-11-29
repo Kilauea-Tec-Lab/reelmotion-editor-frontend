@@ -9,6 +9,7 @@ import { audioVisualiser } from "./audio-visualiser";
 import { matrixRain } from "./matrix-effect";
 import { boomEffect } from "./boom-effect";
 import { barChart } from "./bar-chart";
+import { defaultStickers } from "./default-stickers";
 
 // Import other sticker templates here
 
@@ -21,6 +22,7 @@ const templates: StickerTemplate[] = [
   matrixRain,
   boomEffect,
   barChart,
+  ...defaultStickers,
   ...emojiStickers,
   ...shapeStickers,
   // Add other sticker templates here

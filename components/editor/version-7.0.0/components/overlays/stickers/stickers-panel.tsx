@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useRef } from "react";
+import React, { memo, useCallback, useRef, useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useEditorContext } from "../../../contexts/editor-context";
@@ -12,6 +12,7 @@ import { useTimeline } from "../../../contexts/timeline-context";
 import { Player } from "@remotion/player";
 import { Sequence } from "remotion";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { StickerDetails } from "./sticker-details";
 
 // Wrapper component for sticker preview with static frame
 const StickerPreview = memo(
@@ -111,11 +112,29 @@ const StickerPreview = memo(
 StickerPreview.displayName = "StickerPreview";
 
 export function StickersPanel() {
-  const { addOverlay, overlays, durationInFrames } = useEditorContext();
+  const { addOverlay, overlays, durationInFrames, selectedOverlayId, changeOverlay } = useEditorContext();
   const { findNextAvailablePosition } = useTimelinePositioning();
   const { visibleRows } = useTimeline();
   const stickerCategories = getStickerCategories();
   const isMobile = useIsMobile();
+  const [localOverlay, setLocalOverlay] = useState<Overlay | null>(null);
+
+  useEffect(() => {
+    if (selectedOverlayId === null) {
+      setLocalOverlay(null);
+      return;
+    }
+
+    const selectedOverlay = overlays.find(
+      (overlay) => overlay.id === selectedOverlayId
+    );
+
+    if (selectedOverlay?.type === OverlayType.STICKER) {
+      setLocalOverlay(selectedOverlay);
+    } else {
+      setLocalOverlay(null);
+    }
+  }, [selectedOverlayId, overlays]);
 
   const handleStickerClick = useCallback(
     (templateId: string) => {
@@ -163,6 +182,11 @@ export function StickersPanel() {
     ]
   );
 
+  const handleUpdateOverlay = (updatedOverlay: Overlay) => {
+    setLocalOverlay(updatedOverlay);
+    changeOverlay(updatedOverlay.id, updatedOverlay);
+  };
+
   const renderStickerContent = (category: string) => (
     <div className="grid grid-cols-2 gap-3 pt-3 pb-3">
       {templatesByCategory[category]?.map((template) => (
@@ -181,6 +205,16 @@ export function StickersPanel() {
       ))}
     </div>
   );
+
+  // If a sticker is selected, show the details panel
+  if (localOverlay && localOverlay.type === OverlayType.STICKER) {
+    return (
+      <StickerDetails
+        localOverlay={localOverlay}
+        setLocalOverlay={handleUpdateOverlay as (overlay: any) => void}
+      />
+    );
+  }
 
   return (
     <div className="flex flex-col gap-4 p-4 bg-white dark:bg-darkBox  h-full">

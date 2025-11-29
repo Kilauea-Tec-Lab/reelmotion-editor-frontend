@@ -45,7 +45,15 @@ export const useAspectRatio = (
           ? 9 / 16
           : aspectRatio === "1:1"
           ? 1
-          : 4 / 5;
+          : aspectRatio === "4:5"
+          ? 4 / 5
+          : aspectRatio === "4:3"
+          ? 4 / 3
+          : aspectRatio === "2:1"
+          ? 2 / 1
+          : aspectRatio === "3:4"
+          ? 3 / 4
+          : 16 / 9;
 
       // Compare container ratio with target ratio to determine fitting strategy
       const containerRatio = containerWidth / containerHeight;
@@ -78,9 +86,15 @@ export const useAspectRatio = (
       case "1:1":
         return { width: 1080, height: 1080 }; // Square Post
       case "16:9":
-        return { width: 1280, height: 720 }; // Square Post
+        return { width: 1280, height: 720 }; // HD Video
+      case "4:3":
+        return { width: 1024, height: 768 }; // Classic TV
+      case "2:1":
+        return { width: 2048, height: 1024 }; // Panoramic
+      case "3:4":
+        return { width: 1080, height: 1440 }; // Vertical Portrait
       default:
-        return { width: 1920, height: 1080 }; // Laptop (16:9)
+        return { width: 1920, height: 1080 }; // Full HD (16:9)
     }
   }, [aspectRatio]);
 

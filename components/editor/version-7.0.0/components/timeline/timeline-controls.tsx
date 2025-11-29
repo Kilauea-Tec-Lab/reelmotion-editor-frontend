@@ -43,7 +43,7 @@ import { useKeyframeContext } from "../../contexts/keyframe-context";
 import { Separator } from "@/components/ui/separator";
 
 // Types
-type AspectRatioOption = "16:9" | "9:16" | "1:1" | "4:5";
+type AspectRatioOption = "16:9" | "9:16" | "1:1" | "4:5" | "4:3" | "2:1" | "3:4";
 
 /**
  * Props for the TimelineControls component.
@@ -504,7 +504,7 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
                 Aspect Ratio
               </Label>
               <div className="grid grid-cols-2 gap-1 pt-1">
-                {["16:9", "9:16", "1:1", "4:5"].map((ratio) => (
+                {["16:9", "9:16", "1:1", "4:5", "4:3", "2:1", "3:4"].map((ratio) => (
                   <Button
                     key={ratio}
                     onClick={() => handleAspectRatioChange(ratio)}

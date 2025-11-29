@@ -87,6 +87,10 @@ export const smileysEmojis = [
   createEmojiTemplate("joy", "Face with Tears of Joy", "😂"),
   createEmojiTemplate("heart-eyes", "Heart Eyes", "😍"),
   createEmojiTemplate("cool", "Cool Face", "😎"),
+  createEmojiTemplate("wink", "Winking Face", "😉"),
+  createEmojiTemplate("kiss", "Kissing Face", "😘"),
+  createEmojiTemplate("thinking", "Thinking Face", "🤔"),
+  createEmojiTemplate("sunglasses", "Smiling Face with Sunglasses", "😎"),
 ];
 
 export const emotionsEmojis = [
@@ -94,6 +98,10 @@ export const emotionsEmojis = [
   createEmojiTemplate("fire", "Fire", "🔥"),
   createEmojiTemplate("hundred", "100 Points", "💯"),
   createEmojiTemplate("sparkles", "Sparkles", "✨"),
+  createEmojiTemplate("thumbs-up", "Thumbs Up", "👍"),
+  createEmojiTemplate("clap", "Clapping Hands", "👏"),
+  createEmojiTemplate("muscle", "Flexed Biceps", "💪"),
+  createEmojiTemplate("pray", "Folded Hands", "🙏"),
 ];
 
 export const objectsEmojis = [
@@ -101,11 +109,31 @@ export const objectsEmojis = [
   createEmojiTemplate("gift", "Gift", "🎁"),
   createEmojiTemplate("balloon", "Balloon", "🎈"),
   createEmojiTemplate("party", "Party Popper", "🎉"),
+  createEmojiTemplate("trophy", "Trophy", "🏆"),
+  createEmojiTemplate("crown", "Crown", "👑"),
+  createEmojiTemplate("diamond", "Gem Stone", "💎"),
+  createEmojiTemplate("rocket", "Rocket", "🚀"),
 ];
 
-// Export all emoji stickers
+export const foodEmojis = [
+  createEmojiTemplate("pizza", "Pizza", "🍕"),
+  createEmojiTemplate("burger", "Hamburger", "🍔"),
+  createEmojiTemplate("cake", "Birthday Cake", "🎂"),
+  createEmojiTemplate("coffee", "Coffee", "☕"),
+];
+
+export const natureEmojis = [
+  createEmojiTemplate("rainbow", "Rainbow", "🌈"),
+  createEmojiTemplate("sun", "Sun", "☀️"),
+  createEmojiTemplate("moon", "Crescent Moon", "🌙"),
+  createEmojiTemplate("lightning", "Lightning", "⚡"),
+];
+
+// Export all emoji stickers (30 total)
 export const emojiStickers = [
   ...smileysEmojis,
   ...emotionsEmojis,
   ...objectsEmojis,
+  ...foodEmojis,
+  ...natureEmojis,
 ];

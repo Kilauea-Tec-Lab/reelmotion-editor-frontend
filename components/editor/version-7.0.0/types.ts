@@ -353,7 +353,7 @@ export type LocalClip = {
   videoUrl: string;
 };
 
-export type AspectRatio = "16:9" | "1:1" | "4:5" | "9:16";
+export type AspectRatio = "16:9" | "1:1" | "4:5" | "9:16" | "4:3" | "2:1" | "3:4";
 
 export interface TimelineRow {
   id: number;

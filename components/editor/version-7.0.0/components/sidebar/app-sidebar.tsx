@@ -108,7 +108,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       panel: OverlayType.SOUND,
       type: OverlayType.SOUND,
     },
-    /*
     {
       title: getPanelTitle(OverlayType.CAPTION),
       url: "#",
@@ -116,7 +115,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       panel: OverlayType.CAPTION,
       type: OverlayType.CAPTION,
     },
-    */
     /*
     {
       title: getPanelTitle(OverlayType.IMAGE),
