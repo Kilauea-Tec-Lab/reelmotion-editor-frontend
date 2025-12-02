@@ -8,6 +8,13 @@ interface PexelsVideo {
   height: number;
   url: string; // URL to the video on Pexels website
   image: string; // Thumbnail image URL
+  duration?: number; // Duration in seconds
+  tags?: string[]; // Array of tags
+  user?: {
+    id: number;
+    name: string;
+    url: string;
+  };
   video_files: Array<{
     // Array of different video formats/qualities
     id: number;
@@ -23,32 +30,41 @@ export function usePexelsVideos() {
   const [videos, setVideos] = useState<PexelsVideo[]>([]);
   // State for tracking loading status during API calls
   const [isLoading, setIsLoading] = useState(false);
+  // State for tracking current page
+  const [page, setPage] = useState(1);
+  // State for tracking if there are more results
+  const [hasMore, setHasMore] = useState(true);
 
-  // Function to fetch videos based on search query
-  const fetchVideos = async (query: string) => {
+  // Function to fetch videos based on search query or popular content
+  const fetchVideos = async (query: string, pageNum: number = 1, append: boolean = false) => {
     setIsLoading(true);
     try {
+      // Determine endpoint based on query
+      const endpoint = query === "popular"
+        ? `https://api.pexels.com/videos/popular?per_page=30&page=${pageNum}`
+        : `https://api.pexels.com/videos/search?query=${query}&per_page=30&page=${pageNum}&size=medium`;
+      
       // Make API request to Pexels
-      // Parameters:
-      // - query: search term
-      // - per_page: number of results to return
-      // - size: size of videos to fetch
-      // - orientation: aspect ratio of videos
-      const response = await fetch(
-        `https://api.pexels.com/videos/search?query=${query}&per_page=200&size=medium`,
-        {
-          headers: {
-            Authorization: process.env.NEXT_PUBLIC_PEXELS_API_KEY || "",
-          },
-        }
-      );
+      const response = await fetch(endpoint, {
+        headers: {
+          Authorization: process.env.NEXT_PUBLIC_PEXELS_API_KEY || "",
+        },
+      });
 
       // Check if the request was successful
       if (!response.ok)
         throw new Error(`HTTP error! status: ${response.status}`);
 
       const data = await response.json();
-      setVideos(data.videos);
+      
+      if (append) {
+        setVideos(prev => [...prev, ...data.videos]);
+      } else {
+        setVideos(data.videos);
+      }
+      
+      setPage(pageNum);
+      setHasMore(data.videos.length > 0);
     } catch (error) {
       // Log error and show user-friendly toast notification
       console.error("Error fetching Pexels media:", error);
@@ -65,5 +81,5 @@ export function usePexelsVideos() {
   };
 
   // Return hook values and functions
-  return { videos, isLoading, fetchVideos };
+  return { videos, isLoading, fetchVideos, page, hasMore };
 }

@@ -12,6 +12,7 @@ import {
   Redo2,
   Loader2,
   SquareSquare,
+  Scissors,
 } from "lucide-react";
 import { useEditorContext } from "../../contexts/editor-context";
 import { useTimeline } from "../../contexts/timeline-context";
@@ -103,6 +104,9 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
     playbackRate,
     setPlaybackRate,
     resetOverlays,
+    splitOverlay,
+    selectedOverlayId,
+    overlays,
   } = useEditorContext();
 
   const { visibleRows, addRow, removeRow, zoomScale, setZoomScale } =
@@ -199,6 +203,33 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
     setZoomScale(ZOOM_CONSTRAINTS.min);
   };
 
+  // Handler for scissors button - split selected overlay at current frame
+  const handleSplitOverlay = () => {
+    if (selectedOverlayId !== null) {
+      const selectedOverlay = overlays.find(o => o.id === selectedOverlayId);
+      if (selectedOverlay) {
+        // Calculate the split position relative to the overlay
+        const splitPosition = currentFrame - selectedOverlay.from;
+        
+        // Only split if the current frame is within the overlay bounds
+        if (splitPosition > 0 && splitPosition < selectedOverlay.durationInFrames) {
+          splitOverlay(selectedOverlayId, currentFrame);
+        }
+      }
+    }
+  };
+
+  // Check if split button should be enabled
+  const canSplit = React.useMemo(() => {
+    if (selectedOverlayId === null) return false;
+    
+    const selectedOverlay = overlays.find(o => o.id === selectedOverlayId);
+    if (!selectedOverlay) return false;
+    
+    const splitPosition = currentFrame - selectedOverlay.from;
+    return splitPosition > 0 && splitPosition < selectedOverlay.durationInFrames;
+  }, [selectedOverlayId, overlays, currentFrame]);
+
   return (
     <div className="flex justify-between items-center border-b border-gray-200 dark:border-gray-100/10 bg-white/95 dark:bg-darkBox  px-3 py-3 backdrop-blur-sm border-l">
       {/* Left section: Undo/Redo & Loading */}
@@ -255,6 +286,31 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
                   ⌘Y
                 </kbd>
               </div>
+            </TooltipContent>
+          </Tooltip>
+
+          {/* Scissors Button */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                onClick={handleSplitOverlay}
+                disabled={!canSplit}
+                size="icon"
+                variant="ghost"
+                className="h-7 w-7 text-gray-700 dark:text-zinc-200 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100/80 dark:hover:bg-gray-800/80"
+              >
+                <Scissors className="h-3.5 w-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent
+              side="top"
+              sideOffset={5}
+              className="bg-white dark:bg-darkBox text-xs px-2 py-1 rounded-md z-[9999] border border-gray-200 dark:border-gray-700"
+              align="start"
+            >
+              <span className="text-gray-700 dark:text-zinc-200">
+                {canSplit ? "Split at playhead" : "Select an overlay to split"}
+              </span>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>

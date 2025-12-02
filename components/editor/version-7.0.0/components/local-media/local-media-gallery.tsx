@@ -37,6 +37,7 @@ export function LocalMediaGallery({
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Filter media files based on active tab and reverse to show newest first
@@ -47,24 +48,71 @@ export function LocalMediaGallery({
     })
     .reverse();
 
-  // Handle file upload
+  // Handle file upload (unified for both button and drag&drop)
+  const uploadFile = async (file: File) => {
+    try {
+      setUploadError(null);
+      setIsUploading(true);
+      await addMediaFile(file);
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      setUploadError("Failed to upload file. Please try again.");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  // Handle file upload from input
   const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
     const files = event.target.files;
     if (files && files.length > 0) {
-      try {
-        setUploadError(null);
-        setIsUploading(true);
-        await addMediaFile(files[0]);
-        // Reset the input value to allow uploading the same file again
-        event.target.value = "";
-      } catch (error) {
-        console.error("Error uploading file:", error);
-        setUploadError("Failed to upload file. Please try again.");
-        event.target.value = "";
-      } finally {
-        setIsUploading(false);
+      await uploadFile(files[0]);
+      // Reset the input value to allow uploading the same file again
+      event.target.value = "";
+    }
+  };
+
+  // Handle drag events
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Only set dragging to false if we're leaving the drop zone entirely
+    if (e.currentTarget === e.target) {
+      setIsDragging(false);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      
+      // Validate file type
+      const isValidType = file.type.startsWith('image/') || 
+                         file.type.startsWith('video/') || 
+                         file.type.startsWith('audio/');
+      
+      if (isValidType) {
+        await uploadFile(file);
+      } else {
+        setUploadError("Invalid file type. Please upload an image, video, or audio file.");
       }
     }
   };
@@ -74,10 +122,11 @@ export function LocalMediaGallery({
     fileInputRef.current?.click();
   };
 
-  // Handle media selection
+  // Handle media selection - add directly to timeline
   const handleMediaSelect = (file: any) => {
-    setSelectedFile(file);
-    setPreviewOpen(true);
+    if (onSelectMedia) {
+      onSelectMedia(file);
+    }
   };
 
   // Add media to timeline
@@ -340,7 +389,25 @@ export function LocalMediaGallery({
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value={activeTab} className="flex-1 overflow-y-auto p-0">
+        <TabsContent 
+          value={activeTab} 
+          className="flex-1 overflow-y-auto p-0 relative"
+          onDragEnter={handleDragEnter}
+          onDragLeave={handleDragLeave}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
+        >
+          {/* Drag & Drop Overlay */}
+          {isDragging && (
+            <div className="absolute inset-0 z-50 bg-blue-500/10 dark:bg-blue-500/20 border-2 border-dashed border-blue-500 dark:border-blue-400 rounded-lg flex items-center justify-center backdrop-blur-sm">
+              <div className="text-center space-y-2">
+                <Upload className="w-12 h-12 mx-auto text-blue-600 dark:text-blue-400 animate-bounce" />
+                <p className="text-lg font-medium text-blue-600 dark:text-blue-400">Drop files here</p>
+                <p className="text-sm text-blue-500 dark:text-blue-300">Images, videos, or audio files</p>
+              </div>
+            </div>
+          )}
+
           {isLoading && localMediaFiles.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center space-y-4 text-sm text-gray-500">
               <Loader2 className="w-5 h-5 animate-spin" />
@@ -354,7 +421,7 @@ export function LocalMediaGallery({
               <div className="space-y-1">
                 <p className="text-sm font-medium">No media files</p>
                 <p className="text-xs text-gray-500">
-                  Upload your first media file to get started
+                  Upload or drag & drop your first media file
                 </p>
               </div>
               <Button

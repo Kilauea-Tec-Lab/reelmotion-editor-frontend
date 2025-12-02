@@ -15,6 +15,7 @@ import {
   ArrowBigLeft,
   ArrowDownLeft,
   ArrowLeft,
+  Library,
 } from "lucide-react";
 import Image from "next/image";
 import {
@@ -41,6 +42,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { ImageOverlayPanel } from "../overlays/images/image-overlay-panel";
+import { LibraryPanel } from "../overlays/library/library-panel";
 import { LocalMediaPanel } from "../overlays/local-media/local-media-panel";
 import { StickersPanel } from "../overlays/stickers/stickers-panel";
 import { TemplateOverlayPanel } from "../overlays/templates/template-overlay-panel";
@@ -74,6 +76,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         return "Caption";
       case OverlayType.IMAGE:
         return "Image";
+      case OverlayType.LIBRARY:
+        return "Library";
       case OverlayType.LOCAL_DIR:
         return "Uploads";
       case OverlayType.STICKER:
@@ -124,13 +128,19 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       type: OverlayType.IMAGE,
     },
     */
-    
     {
       title: getPanelTitle(OverlayType.STICKER),
       url: "#",
       icon: Sticker,
       panel: OverlayType.STICKER,
       type: OverlayType.STICKER,
+    },
+    {
+      title: getPanelTitle(OverlayType.LIBRARY),
+      url: "#",
+      icon: Library,
+      panel: OverlayType.LIBRARY,
+      type: OverlayType.LIBRARY,
     },
     {
       title: getPanelTitle(OverlayType.LOCAL_DIR),
@@ -167,6 +177,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         return <ImageOverlayPanel />;
       case OverlayType.STICKER:
         return <StickersPanel />;
+      case OverlayType.LIBRARY:
+        return <LibraryPanel />;
       case OverlayType.LOCAL_DIR:
         return <LocalMediaPanel />;
       case OverlayType.TEMPLATE:

@@ -6,6 +6,7 @@ export enum OverlayType {
   VIDEO = "video",
   SOUND = "sound",
   CAPTION = "caption",
+  LIBRARY = "library",
   LOCAL_DIR = "local-dir",
   STICKER = "sticker",
   TEMPLATE = "template",

@@ -11,6 +11,12 @@ export const SoundLayerContent: React.FC<SoundLayerContentProps> = ({
   overlay,
   baseUrl,
 }) => {
+  // Validate that src exists
+  if (!overlay.src) {
+    console.error("Sound overlay missing src:", overlay);
+    return null;
+  }
+
   // Determine the audio source URL
   let audioSrc = overlay.src;
 

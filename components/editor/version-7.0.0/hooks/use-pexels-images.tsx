@@ -7,6 +7,8 @@ interface PexelsImage {
   width: number;
   height: number;
   url: string; // URL to the image on Pexels website
+  alt?: string; // Alt text/description
+  photographer?: string; // Photographer name
   src: {
     original: string;
     large2x: string;
@@ -23,31 +25,41 @@ export function usePexelsImages() {
   const [images, setImages] = useState<PexelsImage[]>([]);
   // State for tracking loading status during API calls
   const [isLoading, setIsLoading] = useState(false);
+  // State for tracking current page
+  const [page, setPage] = useState(1);
+  // State for tracking if there are more results
+  const [hasMore, setHasMore] = useState(true);
 
-  // Function to fetch images based on search query
-  const fetchImages = async (query: string) => {
+  // Function to fetch images based on search query or curated content
+  const fetchImages = async (query: string, pageNum: number = 1, append: boolean = false) => {
     setIsLoading(true);
     try {
+      // Determine endpoint based on query
+      const endpoint = query === "curated"
+        ? `https://api.pexels.com/v1/curated?per_page=30&page=${pageNum}`
+        : `https://api.pexels.com/v1/search?query=${query}&per_page=30&page=${pageNum}`;
+      
       // Make API request to Pexels
-      // Parameters:
-      // - query: search term
-      // - per_page: number of results to return
-      // - orientation: aspect ratio of images
-      const response = await fetch(
-        `https://api.pexels.com/v1/search?query=${query}&per_page=200`,
-        {
-          headers: {
-            Authorization: process.env.NEXT_PUBLIC_PEXELS_API_KEY || "",
-          },
-        }
-      );
+      const response = await fetch(endpoint, {
+        headers: {
+          Authorization: process.env.NEXT_PUBLIC_PEXELS_API_KEY || "",
+        },
+      });
 
       // Check if the request was successful
       if (!response.ok)
         throw new Error(`HTTP error! status: ${response.status}`);
 
       const data = await response.json();
-      setImages(data.photos);
+      
+      if (append) {
+        setImages(prev => [...prev, ...data.photos]);
+      } else {
+        setImages(data.photos);
+      }
+      
+      setPage(pageNum);
+      setHasMore(data.photos.length > 0);
     } catch (error) {
       // Log error and show user-friendly toast notification
       console.error("Error fetching Pexels media:", error);
@@ -64,5 +76,5 @@ export function usePexelsImages() {
   };
 
   // Return hook values and functions
-  return { images, isLoading, fetchImages };
+  return { images, isLoading, fetchImages, page, hasMore };
 }
