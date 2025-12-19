@@ -41,6 +41,7 @@ import { KeyframeProvider } from "./contexts/keyframe-context";
 import { AssetLoadingProvider } from "./contexts/asset-loading-context";
 import { useTimeline } from "./contexts/timeline-context";
 import { ZOOM_CONSTRAINTS } from "./constants";
+import { inferAspectRatioFromDimensions } from "./utils/aspect-ratio-utils";
 
 // Component to handle zoom keyboard shortcuts
 // Must be inside TimelineProvider to access zoom context
@@ -261,9 +262,20 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
       if (editionData.inputProps.overlays) {
         setOverlays(editionData.inputProps.overlays);
       }
-      
-      // Note: aspectRatio and playerDimensions are managed by composition settings
-      // They're derived from width/height in inputProps if needed
+
+      // Restore aspect ratio if present (new schema) or infer from width/height (old schema)
+      const savedAspectRatio =
+        editionData.aspectRatio ?? editionData.inputProps?.aspectRatio;
+
+      if (savedAspectRatio) {
+        setAspectRatio(savedAspectRatio);
+      } else {
+        const inferred = inferAspectRatioFromDimensions(
+          editionData.inputProps?.width,
+          editionData.inputProps?.height
+        );
+        if (inferred) setAspectRatio(inferred);
+      }
     }
   };
 
@@ -319,8 +331,10 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
       fps: FPS,
       width: compositionWidth,
       height: compositionHeight,
+      aspectRatio,
       src: "",
     },
+    aspectRatio,
     // Include current edit info if available
     editId: currentEditId,
     editName: currentEditName,

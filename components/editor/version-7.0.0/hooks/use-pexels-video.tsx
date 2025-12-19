@@ -39,23 +39,14 @@ export function usePexelsVideos() {
   const fetchVideos = async (query: string, pageNum: number = 1, append: boolean = false) => {
     setIsLoading(true);
     try {
-      // Determine endpoint based on query
-      const endpoint = query === "popular"
-        ? `https://api.pexels.com/videos/popular?per_page=30&page=${pageNum}`
-        : `https://api.pexels.com/videos/search?query=${query}&per_page=30&page=${pageNum}&size=medium`;
-      
-      // Make API request to Pexels
-      const response = await fetch(endpoint, {
-        headers: {
-          Authorization: process.env.NEXT_PUBLIC_PEXELS_API_KEY || "",
-        },
-      });
+      const endpoint = `/api/pexels/videos?query=${encodeURIComponent(query)}&per_page=30&page=${pageNum}`;
 
-      // Check if the request was successful
-      if (!response.ok)
-        throw new Error(`HTTP error! status: ${response.status}`);
+      const response = await fetch(endpoint);
+      const data = await response.json().catch(() => null);
 
-      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data?.error || data?.message || `HTTP error! status: ${response.status}`);
+      }
       
       if (append) {
         setVideos(prev => [...prev, ...data.videos]);
@@ -71,7 +62,9 @@ export function usePexelsVideos() {
       toast({
         title: "Error fetching media",
         description:
-          "Failed to fetch media. Have you added your own Pexels API key?",
+          error instanceof Error
+            ? error.message
+            : "Failed to fetch media. Check your Pexels API key and try again.",
         variant: "destructive",
       });
     } finally {

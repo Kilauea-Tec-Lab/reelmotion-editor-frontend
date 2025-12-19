@@ -3,6 +3,7 @@ import { Player, PlayerRef } from "@remotion/player";
 import { Main } from "../../remotion/main";
 import { useEditorContext } from "../../contexts/editor-context";
 import { FPS } from "../../constants";
+import { toast } from "@/hooks/use-toast";
 
 /**
  * Props for the VideoPlayer component
@@ -153,6 +154,17 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ playerRef }) => {
               durationInFrames={PLAYER_CONFIG.durationInFrames}
               fps={PLAYER_CONFIG.fps}
               inputProps={inputProps}
+              onError={(err) => {
+                console.error("Remotion Player error:", err);
+                toast({
+                  title: "Playback error",
+                  description:
+                    err instanceof Error
+                      ? err.message
+                      : "The browser failed to play a media asset.",
+                  variant: "destructive",
+                });
+              }}
               errorFallback={() => <></>}
               overflowVisible
             />

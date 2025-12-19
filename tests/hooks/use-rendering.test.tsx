@@ -4,7 +4,10 @@ import {
   getProgress as ssrGetProgress,
   renderVideo as ssrRenderVideo,
 } from "../../components/editor/version-7.0.0/ssr-helpers/api";
-import { renderVideo as lambdaRenderVideo } from "../../components/editor/version-7.0.0/lambda-helpers/api";
+import {
+  getProgress as lambdaGetProgress,
+  renderVideo as lambdaRenderVideo,
+} from "../../components/editor/version-7.0.0/lambda-helpers/api";
 
 // Mock the API modules
 jest.mock("../../components/editor/version-7.0.0/ssr-helpers/api");
@@ -181,6 +184,66 @@ describe("useRendering", () => {
       status: "error",
       error: mockError,
       renderId: null,
+    });
+  });
+
+  it("should retry progress polling when rate limited (Rate Exceeded)", async () => {
+    const mockRenderId = "lambda-render-id";
+    const bucketName = "lambda-bucket";
+
+    (lambdaRenderVideo as jest.Mock).mockResolvedValueOnce({
+      renderId: mockRenderId,
+      bucketName,
+    });
+
+    (lambdaGetProgress as jest.Mock)
+      .mockRejectedValueOnce(new Error("Rate Exceeded."))
+      .mockResolvedValueOnce({ type: "progress", progress: 0.25 })
+      .mockResolvedValueOnce({
+        type: "done",
+        url: "https://example.com/video.mp4",
+        size: 1234,
+      });
+
+    const { result } = renderHook(() =>
+      useRendering(mockId, mockInputProps, "lambda")
+    );
+
+    await act(async () => {
+      result.current.renderMedia();
+      await Promise.resolve();
+    });
+
+    // The hook should be in rendering state even if first progress poll is throttled.
+    expect(result.current.state).toEqual({
+      status: "rendering",
+      progress: 0,
+      renderId: mockRenderId,
+      bucketName,
+    });
+
+    // First retry backoff for lambda starts at 4000ms
+    await act(async () => {
+      jest.advanceTimersByTime(4000);
+      await Promise.resolve();
+    });
+
+    expect(result.current.state).toEqual({
+      status: "rendering",
+      progress: 0.25,
+      renderId: mockRenderId,
+    });
+
+    // Next poll interval for lambda is 2500ms
+    await act(async () => {
+      jest.advanceTimersByTime(2500);
+      await Promise.resolve();
+    });
+
+    expect(result.current.state).toEqual({
+      status: "done",
+      url: "https://example.com/video.mp4",
+      size: 1234,
     });
   });
 });

@@ -223,7 +223,7 @@ export const LocalMediaProvider: React.FC<{
             }
           } else {
             // Delete from local server (old uploads)
-            await deleteMediaFile(userId, fileToRemove.path);
+            await deleteMediaFile(userId, fileToRemove.id);
 
             // Delete from IndexedDB
             await deleteFromIndexDB(id);
@@ -272,7 +272,7 @@ export const LocalMediaProvider: React.FC<{
           }
         } else {
           // Delete from local server
-          await deleteMediaFile(userId, file.path);
+          await deleteMediaFile(userId, file.id);
         }
       }
 

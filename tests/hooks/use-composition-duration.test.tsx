@@ -10,8 +10,8 @@ describe("useCompositionDuration", () => {
   it("should return minimum duration when no overlays are provided", () => {
     const { result } = renderHook(() => useCompositionDuration([]));
 
-    expect(result.current.durationInFrames).toBe(FPS * 1); // 1 second minimum
-    expect(result.current.durationInSeconds).toBe(1);
+    expect(result.current.durationInFrames).toBe(FPS * 60); // 1 minute minimum
+    expect(result.current.durationInSeconds).toBe(60);
     expect(result.current.fps).toBe(FPS);
   });
 
@@ -61,9 +61,9 @@ describe("useCompositionDuration", () => {
 
     const { result } = renderHook(() => useCompositionDuration(overlays));
 
-    // Second overlay starts at 20 and lasts 40 frames, so total should be 60
-    expect(result.current.durationInFrames).toBe(60);
-    expect(result.current.durationInSeconds).toBe(60 / FPS);
+    // Total content is 60 frames, but minimum timeline is 60 seconds
+    expect(result.current.durationInFrames).toBe(FPS * 60);
+    expect(result.current.durationInSeconds).toBe(60);
   });
 
   it("should handle overlapping overlays correctly", () => {
@@ -112,8 +112,38 @@ describe("useCompositionDuration", () => {
 
     const { result } = renderHook(() => useCompositionDuration(overlays));
 
-    expect(result.current.durationInFrames).toBe(50);
-    expect(result.current.durationInSeconds).toBe(50 / FPS);
+    expect(result.current.durationInFrames).toBe(FPS * 60);
+    expect(result.current.durationInSeconds).toBe(60);
+  });
+
+  it("should grow beyond 1 minute when content is longer", () => {
+    const overlays: Overlay[] = [
+      {
+        from: 0,
+        durationInFrames: FPS * 70,
+        id: 6,
+        type: OverlayType.VIDEO,
+        left: 0,
+        top: 0,
+        width: 100,
+        height: 100,
+        isDragging: false,
+        rotation: 0,
+        row: 0,
+        content: "long-video.mp4",
+        src: "long-video.mp4",
+        styles: {
+          opacity: 1,
+          zIndex: 1,
+          transform: "none",
+        },
+      },
+    ];
+
+    const { result } = renderHook(() => useCompositionDuration(overlays));
+
+    expect(result.current.durationInFrames).toBe(FPS * 70);
+    expect(result.current.durationInSeconds).toBe(70);
   });
 
   it("should provide correct utility functions", () => {
@@ -142,7 +172,7 @@ describe("useCompositionDuration", () => {
 
     const { result } = renderHook(() => useCompositionDuration(overlays));
 
-    expect(result.current.getDurationInFrames()).toBe(60);
-    expect(result.current.getDurationInSeconds()).toBe(60 / FPS);
+    expect(result.current.getDurationInFrames()).toBe(FPS * 60);
+    expect(result.current.getDurationInSeconds()).toBe(60);
   });
 });

@@ -6,7 +6,7 @@ import {
 } from "remotion";
 import { ClipOverlay } from "../../../types";
 import { animationTemplates } from "../../../templates/animation-templates";
-import { toAbsoluteUrl } from "../../../utils/url-helper";
+import { resolveVideoUrl } from "../../../utils/url-helper";
 import { useEffect } from "react";
 
 /**
@@ -40,6 +40,8 @@ export const VideoLayerContent: React.FC<VideoLayerContentProps> = ({
 }) => {
   const frame = useCurrentFrame();
 
+  const videoSrc = resolveVideoUrl(overlay.src, baseUrl);
+
   useEffect(() => {
     console.log(`Preparing to load video: ${overlay.src}`);
     const handle = delayRender("Loading video");
@@ -67,7 +69,7 @@ export const VideoLayerContent: React.FC<VideoLayerContentProps> = ({
       // Ensure we don't leave hanging render delays
       continueRender(handle);
     };
-  }, [overlay.src]);
+  }, [overlay.src, videoSrc]);
 
   // Calculate if we're in the exit phase (last 30 frames)
   const isExitPhase = frame >= overlay.durationInFrames - 30;
@@ -113,18 +115,6 @@ export const VideoLayerContent: React.FC<VideoLayerContentProps> = ({
     alignItems: "center",
     justifyContent: "center",
   };
-
-  // Determine the video source URL
-  let videoSrc = overlay.src;
-
-  // If it's a relative URL and baseUrl is provided, use baseUrl
-  if (overlay.src.startsWith("/") && baseUrl) {
-    videoSrc = `${baseUrl}${overlay.src}`;
-  }
-  // Otherwise use the toAbsoluteUrl helper for relative URLs
-  else if (overlay.src.startsWith("/")) {
-    videoSrc = toAbsoluteUrl(overlay.src);
-  }
 
   return (
     <div style={containerStyle}>

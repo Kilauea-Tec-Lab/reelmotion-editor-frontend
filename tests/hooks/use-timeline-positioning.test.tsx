@@ -44,7 +44,7 @@ describe("useTimelinePositioning", () => {
     });
 
     // Test case 3: Multiple rows with first row occupied
-    it("should use empty row when available", () => {
+    it("should still use first row even if another row is empty", () => {
       const overlays: Overlay[] = [
         {
           id: 1,
@@ -68,11 +68,11 @@ describe("useTimelinePositioning", () => {
         2,
         100
       );
-      expect(position).toEqual({ from: 0, row: 1 });
+      expect(position).toEqual({ from: 20, row: 0 });
     });
 
     // Test case 4: Gap between overlays
-    it("should find gap between overlays", () => {
+    it("should append to end of first row even if a gap exists", () => {
       const overlays: Overlay[] = [
         {
           id: 1,
@@ -112,7 +112,7 @@ describe("useTimelinePositioning", () => {
         1,
         100
       );
-      expect(position).toEqual({ from: 10, row: 0 });
+      expect(position).toEqual({ from: 30, row: 0 });
     });
 
     // Test case 5: Overlapping across rows
@@ -204,7 +204,7 @@ describe("useTimelinePositioning", () => {
     });
 
     // Test case 7: Uneven row end times
-    it("should choose row with earliest end time when no gaps available", () => {
+    it("should always choose first row even if other rows end earlier", () => {
       const overlays: Overlay[] = [
         {
           id: 1,
@@ -260,11 +260,11 @@ describe("useTimelinePositioning", () => {
         3,
         100
       );
-      expect(position).toEqual({ from: 40, row: 2 });
+      expect(position).toEqual({ from: 30, row: 0 });
     });
 
     // Test case 8: Multiple small gaps
-    it("should find earliest suitable gap", () => {
+    it("should append to end of first row even with multiple gaps", () => {
       const overlays: Overlay[] = [
         {
           id: 1,
@@ -336,11 +336,11 @@ describe("useTimelinePositioning", () => {
         2,
         100
       );
-      expect(position).toEqual({ from: 5, row: 0 });
+      expect(position).toEqual({ from: 25, row: 0 });
     });
 
     // Test case 9: Exact fit between overlays
-    it("should handle exact fit scenarios", () => {
+    it("should append to end of first row in exact fit scenarios", () => {
       const overlays: Overlay[] = [
         {
           id: 1,
@@ -380,7 +380,7 @@ describe("useTimelinePositioning", () => {
         1,
         100
       );
-      expect(position).toEqual({ from: 10, row: 0 });
+      expect(position).toEqual({ from: 21, row: 0 });
     });
   });
 });

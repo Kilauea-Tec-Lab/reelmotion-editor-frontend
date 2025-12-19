@@ -34,12 +34,14 @@ These instructions will get you a copy of the project up and running on your loc
 4. Create a `.env.local` file in the root directory and add your configuration:
 
    ```
-   NEXT_PUBLIC_PEXELS_API_KEY=your_pexels_api_key_here
+   PEXELS_API_KEY=your_pexels_api_key_here
    NEXT_PUBLIC_DISABLE_RENDER=false
    ```
 
    **Environment Variables:**
-   - `NEXT_PUBLIC_PEXELS_API_KEY`: Your Pexels API key for accessing stock videos and images
+
+   - `PEXELS_API_KEY`: Your Pexels API key for accessing stock videos and images (server-side, recommended)
+   - `NEXT_PUBLIC_PEXELS_API_KEY`: Legacy fallback (not recommended; would expose the key to the browser)
    - `NEXT_PUBLIC_DISABLE_RENDER`: Set to `"true"` to disable video rendering functionality (optional, defaults to false)
 
    You can obtain a free Pexels API key by:

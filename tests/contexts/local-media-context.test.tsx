@@ -170,7 +170,7 @@ describe("LocalMediaContext", () => {
 
       expect(deleteMediaFile).toHaveBeenCalledWith(
         "test-user-id",
-        mockLocalMediaFile.path
+        mockLocalMediaFile.id
       );
       expect(deleteMediaItem).toHaveBeenCalledWith(mockLocalMediaFile.id);
       expect(result.current.localMediaFiles).toHaveLength(0);
@@ -209,7 +209,7 @@ describe("LocalMediaContext", () => {
 
       expect(deleteMediaFile).toHaveBeenCalledWith(
         "test-user-id",
-        mockLocalMediaFile.path
+        mockLocalMediaFile.id
       );
       expect(clearUserMedia).toHaveBeenCalledWith("test-user-id");
       expect(result.current.localMediaFiles).toHaveLength(0);

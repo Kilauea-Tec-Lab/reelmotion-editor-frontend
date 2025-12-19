@@ -221,25 +221,10 @@ const uploadDirectlyToGCS = async (file: File, type: number): Promise<string> =>
 
     console.log("File uploaded successfully to GCS");
 
-    // Make file public
-    const makePublicUrl = `https://storage.googleapis.com/storage/v1/b/${bucketName}/o/${encodeURIComponent(fileName)}/acl`;
-    const aclResponse = await fetch(makePublicUrl, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        entity: "allUsers",
-        role: "READER",
-      }),
-    });
-
-    if (!aclResponse.ok) {
-      console.warn("Failed to make file public, but file was uploaded");
-    } else {
-      console.log("File made public successfully");
-    }
+    // NOTE: Do not call the object ACL endpoint here.
+    // Many buckets are configured with "uniform bucket-level access" which disables object ACLs,
+    // causing noisy 400 errors in the browser even though the upload succeeded.
+    // Public access (if desired) should be managed via bucket IAM/policies.
 
     // Return public URL
     const publicUrl = `https://storage.googleapis.com/${bucketName}/${fileName}`;
@@ -881,8 +866,8 @@ export const getMediaDuration = async (
  * Deletes a media file from the server
  */
 export const deleteMediaFile = async (
-  userId: string,
-  filePath: string
+  _userId: string,
+  uploadId: string
 ): Promise<boolean> => {
   try {
     // Get token from cookies (same as upload)
@@ -892,14 +877,14 @@ export const deleteMediaFile = async (
     }
 
     // Delete file directly from backend
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "https://backend.reelmotion.ai/api";
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "https://backend.reelmotion.ai";
     const response = await fetch(`${backendUrl}/editor/delete-upload`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ path: filePath }),
+      body: JSON.stringify({ id: uploadId }),
     });
 
     if (!response.ok) {

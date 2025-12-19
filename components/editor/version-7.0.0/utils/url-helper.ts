@@ -70,3 +70,37 @@ export const resolveMediaUrl = (url: string, baseUrl?: string): string => {
   // In SSR context, use the base URL
   return toAbsoluteUrl(url);
 };
+
+/**
+ * Resolve a video URL and, when it is cross-origin, route it through the local proxy
+ * to improve playback reliability (CORS/range headers) for Remotion's Player/OffthreadVideo.
+ */
+export const resolveVideoUrl = (url: string, baseUrl?: string): string => {
+  const resolved = resolveMediaUrl(url, baseUrl);
+
+  // Only proxy absolute http(s) URLs.
+  if (!resolved.startsWith("http://") && !resolved.startsWith("https://")) {
+    return resolved;
+  }
+
+  // Avoid double-proxying.
+  if (resolved.includes("/api/proxy-video") || resolved.includes("/api/proxy-video?")) {
+    return resolved;
+  }
+
+  // Determine current origin for building same-origin proxy URL.
+  const origin = (() => {
+    try {
+      if (baseUrl) return new URL(baseUrl).origin;
+    } catch {
+      // ignore
+    }
+    if (typeof window !== "undefined") return window.location.origin;
+    return getBaseUrl();
+  })();
+
+  // If already same-origin, no need to proxy.
+  if (resolved.startsWith(origin)) return resolved;
+
+  return `${origin}/api/proxy-video?url=${encodeURIComponent(resolved)}`;
+};

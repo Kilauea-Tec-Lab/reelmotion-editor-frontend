@@ -15,16 +15,25 @@ jest.mock("../../components/editor/version-7.0.0/utils/indexdb-helper", () => ({
 
 describe("useAutosave", () => {
   let consoleErrorSpy: jest.SpyInstance;
+  let consoleWarnSpy: jest.SpyInstance;
 
   beforeEach(() => {
     jest.clearAllMocks();
     jest.useFakeTimers();
     consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();
+
+    // Ensure mock implementations don't leak across tests (clearAllMocks does not reset them)
+    (hasAutosave as jest.Mock).mockResolvedValue(null);
+    (saveEditorState as jest.Mock).mockResolvedValue(undefined);
+    (loadEditorState as jest.Mock).mockResolvedValue(null);
+
+    consoleWarnSpy = jest.spyOn(console, "warn").mockImplementation();
   });
 
   afterEach(() => {
     jest.useRealTimers();
     consoleErrorSpy.mockRestore();
+    consoleWarnSpy.mockRestore();
   });
 
   it("should check for existing autosave on mount", async () => {
@@ -78,7 +87,6 @@ describe("useAutosave", () => {
   });
 
   it("should handle errors when checking for autosave", async () => {
-    const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();
     const onAutosaveDetected = jest.fn();
     (hasAutosave as jest.Mock).mockRejectedValue(new Error("Check failed"));
 
@@ -89,12 +97,9 @@ describe("useAutosave", () => {
 
     expect(hasAutosave).toHaveBeenCalledWith("test-project");
     expect(onAutosaveDetected).not.toHaveBeenCalled();
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      "Failed to check for autosave:",
-      expect.any(Error)
+    expect(consoleWarnSpy).toHaveBeenCalledWith(
+      "IndexedDB not available for autosave, continuing without it"
     );
-
-    consoleErrorSpy.mockRestore();
   });
 
   it("should cleanup interval timer on unmount", async () => {

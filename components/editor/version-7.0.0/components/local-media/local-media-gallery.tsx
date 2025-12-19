@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useLocalMedia } from "../../contexts/local-media-context";
 import { formatBytes, formatDuration } from "../../utils/format-utils";
 import { Button } from "../../../../ui/button";
@@ -39,6 +39,70 @@ export function LocalMediaGallery({
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dragCounterRef = useRef(0);
+
+  const resetDragState = () => {
+    dragCounterRef.current = 0;
+    setIsDragging(false);
+  };
+
+  const isFileDrag = (e: React.DragEvent) => {
+    const types = Array.from(e.dataTransfer?.types || []);
+    return types.includes("Files");
+  };
+
+  useEffect(() => {
+    // macOS/Safari can miss dragleave in some edge cases; ensure we always recover.
+    const handleWindowReset = () => resetDragState();
+
+    window.addEventListener("drop", handleWindowReset);
+    window.addEventListener("dragend", handleWindowReset);
+    window.addEventListener("blur", handleWindowReset);
+
+    return () => {
+      window.removeEventListener("drop", handleWindowReset);
+      window.removeEventListener("dragend", handleWindowReset);
+      window.removeEventListener("blur", handleWindowReset);
+    };
+  }, []);
+
+  const getAcceptForTab = (tab: string) => {
+    switch (tab) {
+      case "image":
+        return "image/*";
+      case "video":
+        return "video/*";
+      case "audio":
+        return "audio/*";
+      case "all":
+      default:
+        return "image/*,video/*,audio/*";
+    }
+  };
+
+  const isFileAllowedForTab = (file: File, tab: string) => {
+    const isAnyMedia =
+      file.type.startsWith("image/") ||
+      file.type.startsWith("video/") ||
+      file.type.startsWith("audio/");
+
+    if (tab === "all") return isAnyMedia;
+    return file.type.startsWith(`${tab}/`);
+  };
+
+  const getTabUploadLabel = (tab: string) => {
+    switch (tab) {
+      case "image":
+        return "image";
+      case "video":
+        return "video";
+      case "audio":
+        return "audio";
+      case "all":
+      default:
+        return "image, video, or audio";
+    }
+  };
 
   // Filter media files based on active tab and reverse to show newest first
   const filteredMedia = localMediaFiles
@@ -68,7 +132,17 @@ export function LocalMediaGallery({
   ) => {
     const files = event.target.files;
     if (files && files.length > 0) {
-      await uploadFile(files[0]);
+      const file = files[0];
+
+      if (!isFileAllowedForTab(file, activeTab)) {
+        setUploadError(
+          `Invalid file type. Please upload a ${getTabUploadLabel(activeTab)} file.`
+        );
+        event.target.value = "";
+        return;
+      }
+
+      await uploadFile(file);
       // Reset the input value to allow uploading the same file again
       event.target.value = "";
     }
@@ -78,42 +152,58 @@ export function LocalMediaGallery({
   const handleDragEnter = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setIsDragging(true);
+
+    if (!isFileDrag(e)) return;
+
+    dragCounterRef.current += 1;
+    if (!isDragging) setIsDragging(true);
   };
 
   const handleDragLeave = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    // Only set dragging to false if we're leaving the drop zone entirely
-    if (e.currentTarget === e.target) {
-      setIsDragging(false);
+
+    // If we leave the window entirely, force reset.
+    if (
+      e.clientX <= 0 ||
+      e.clientY <= 0 ||
+      e.clientX >= window.innerWidth ||
+      e.clientY >= window.innerHeight
+    ) {
+      resetDragState();
+      return;
     }
+
+    dragCounterRef.current = Math.max(0, dragCounterRef.current - 1);
+    if (dragCounterRef.current === 0) setIsDragging(false);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
+
+    if (isFileDrag(e) && !isDragging) {
+      setIsDragging(true);
+    }
   };
 
   const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setIsDragging(false);
+    resetDragState();
 
     const files = e.dataTransfer.files;
     if (files && files.length > 0) {
       const file = files[0];
-      
-      // Validate file type
-      const isValidType = file.type.startsWith('image/') || 
-                         file.type.startsWith('video/') || 
-                         file.type.startsWith('audio/');
-      
-      if (isValidType) {
-        await uploadFile(file);
-      } else {
-        setUploadError("Invalid file type. Please upload an image, video, or audio file.");
+
+      if (!isFileAllowedForTab(file, activeTab)) {
+        setUploadError(
+          `Invalid file type. Please upload a ${getTabUploadLabel(activeTab)} file.`
+        );
+        return;
       }
+
+      await uploadFile(file);
     }
   };
 
@@ -332,7 +422,7 @@ export function LocalMediaGallery({
             type="file"
             className="hidden"
             onChange={handleFileUpload}
-            accept="image/*,video/*,audio/*"
+            accept={getAcceptForTab(activeTab)}
             disabled={isLoading || isUploading}
           />
         </div>
@@ -399,11 +489,15 @@ export function LocalMediaGallery({
         >
           {/* Drag & Drop Overlay */}
           {isDragging && (
-            <div className="absolute inset-0 z-50 bg-blue-500/10 dark:bg-blue-500/20 border-2 border-dashed border-blue-500 dark:border-blue-400 rounded-lg flex items-center justify-center backdrop-blur-sm">
+            <div className="absolute inset-0 z-50 bg-blue-500/10 dark:bg-blue-500/20 border-2 border-dashed border-blue-500 dark:border-blue-400 rounded-lg flex items-center justify-center backdrop-blur-sm pointer-events-none">
               <div className="text-center space-y-2">
                 <Upload className="w-12 h-12 mx-auto text-blue-600 dark:text-blue-400 animate-bounce" />
                 <p className="text-lg font-medium text-blue-600 dark:text-blue-400">Drop files here</p>
-                <p className="text-sm text-blue-500 dark:text-blue-300">Images, videos, or audio files</p>
+                <p className="text-sm text-blue-500 dark:text-blue-300">
+                  {activeTab === "all"
+                    ? "Images, videos, or audio files"
+                    : `${getTabUploadLabel(activeTab)[0].toUpperCase()}${getTabUploadLabel(activeTab).slice(1)} files`}
+                </p>
               </div>
             </div>
           )}

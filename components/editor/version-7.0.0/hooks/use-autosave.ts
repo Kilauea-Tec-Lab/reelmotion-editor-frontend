@@ -48,6 +48,22 @@ export const useAutosave = (
   const [hasCheckedForAutosave, setHasCheckedForAutosave] = useState(false);
   const [indexedDBAvailable, setIndexedDBAvailable] = useState(true);
 
+  const getStateSignature = (value: any): string => {
+    try {
+      return JSON.stringify(value);
+    } catch {
+      const aspectRatio = value?.aspectRatio ?? "";
+      const width = value?.playerDimensions?.width ?? "";
+      const height = value?.playerDimensions?.height ?? "";
+      const overlaysCount = Array.isArray(value?.overlays)
+        ? value.overlays.length
+        : "";
+      return `a:${String(aspectRatio)}|d:${String(width)}x${String(
+        height
+      )}|n:${String(overlaysCount)}`;
+    }
+  };
+
   // Check for existing autosave on mount, but only once
   useEffect(() => {
     const checkForAutosave = async () => {
@@ -75,7 +91,7 @@ export const useAutosave = (
     if (!projectId || !indexedDBAvailable) return;
 
     const saveIfChanged = async () => {
-      const currentStateString = JSON.stringify(state);
+      const currentStateString = getStateSignature(state);
 
       // Only save if state has changed since last save
       if (currentStateString !== lastSavedStateRef.current) {
@@ -107,7 +123,7 @@ export const useAutosave = (
   const saveState = async () => {
     try {
       await saveEditorState(projectId, state);
-      lastSavedStateRef.current = JSON.stringify(state);
+      lastSavedStateRef.current = getStateSignature(state);
       if (onSave) onSave();
       return true;
     } catch (error) {

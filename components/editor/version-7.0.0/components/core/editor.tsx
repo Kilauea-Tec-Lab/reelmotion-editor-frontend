@@ -183,7 +183,11 @@ export const Editor: React.FC = () => {
         onSplitOverlay={splitOverlay}
         setCurrentFrame={(frame) => {
           if (playerRef.current) {
-            playerRef.current.seekTo(frame / FPS);
+            try {
+              playerRef.current.seekTo(frame / FPS);
+            } catch (error) {
+              console.error("Failed to seek player:", error);
+            }
           }
         }}
         setOverlays={setOverlays}

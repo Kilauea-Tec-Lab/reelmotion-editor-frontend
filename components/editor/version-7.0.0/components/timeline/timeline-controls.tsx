@@ -13,6 +13,7 @@ import {
   Loader2,
   SquareSquare,
   Scissors,
+  SkipBack,
 } from "lucide-react";
 import { useEditorContext } from "../../contexts/editor-context";
 import { useTimeline } from "../../contexts/timeline-context";
@@ -107,6 +108,7 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
     splitOverlay,
     selectedOverlayId,
     overlays,
+    playerRef,
   } = useEditorContext();
 
   const { visibleRows, addRow, removeRow, zoomScale, setZoomScale } =
@@ -157,6 +159,14 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
 
   const handleAspectRatioChange = (value: string) => {
     setAspectRatio(value as AspectRatioOption);
+  };
+
+  const handleGoToStart = () => {
+    try {
+      playerRef.current?.seekTo(0);
+    } catch (error) {
+      console.error("Failed to seek to start:", error);
+    }
   };
 
   const handleRemoveRow = () => {
@@ -361,6 +371,29 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
           </DropdownMenuContent>
         </DropdownMenu>
         <TooltipProvider delayDuration={50}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                onClick={handleGoToStart}
+                size="icon"
+                variant="ghost"
+                disabled={currentFrame <= 0}
+                className="h-7 w-7 text-gray-700 dark:text-zinc-200 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100/80 dark:hover:bg-gray-800/80"
+              >
+                <SkipBack className="h-3.5 w-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent
+              side="top"
+              sideOffset={5}
+              className="bg-white dark:bg-darkBox text-xs px-2 py-1 rounded-md z-[9999] border border-gray-200 dark:border-gray-700"
+              align="center"
+            >
+              <span className="text-gray-700 dark:text-zinc-200">
+                Go to start
+              </span>
+            </TooltipContent>
+          </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button

@@ -45,6 +45,17 @@ const wait = async (milliSeconds: number) => {
 
 type RenderType = "ssr" | "lambda";
 
+const isRateLimitError = (err: unknown) => {
+  const message = err instanceof Error ? err.message : String(err);
+  const lower = message.toLowerCase();
+
+  return (
+    lower.includes("rate exceeded") ||
+    lower.includes("too many requests") ||
+    lower.includes("throttl")
+  );
+};
+
 // Custom hook to manage video rendering process
 export const useRendering = (
   id: string,
@@ -88,12 +99,37 @@ export const useRendering = (
 
       let pending = true;
 
+      const basePollingIntervalMs = renderType === "lambda" ? 2500 : 1000;
+      const initialThrottleBackoffMs = renderType === "lambda" ? 4000 : 2000;
+      let throttleBackoffMs = initialThrottleBackoffMs;
+      const maxThrottleBackoffMs = 15000;
+
       while (pending) {
         console.log(`Checking progress for renderId=${renderId}`);
-        const result = await getProgress({
-          id: renderId,
-          bucketName: typeof bucketName === "string" ? bucketName : "",
-        });
+        let result: Awaited<ReturnType<typeof getProgress>>;
+
+        try {
+          result = await getProgress({
+            id: renderId,
+            bucketName: typeof bucketName === "string" ? bucketName : "",
+          });
+          throttleBackoffMs = initialThrottleBackoffMs;
+        } catch (err) {
+          if (isRateLimitError(err)) {
+            console.warn(
+              `Progress check throttled (Rate Exceeded). Retrying in ${throttleBackoffMs}ms`,
+              err
+            );
+            await wait(throttleBackoffMs);
+            throttleBackoffMs = Math.min(
+              Math.round(throttleBackoffMs * 1.8),
+              maxThrottleBackoffMs
+            );
+            continue;
+          }
+
+          throw err;
+        }
         console.log("result", result);
         switch (result.type) {
           case "error": {
@@ -125,7 +161,7 @@ export const useRendering = (
               progress: result.progress,
               renderId: renderId,
             });
-            await wait(1000);
+            await wait(basePollingIntervalMs);
           }
         }
       }

@@ -20,6 +20,7 @@ interface SaveEditDialogProps {
   editionData: {
     id: string;
     inputProps: any;
+    aspectRatio?: string;
     editId?: string | null;
     editName?: string | null;
   };
@@ -67,6 +68,7 @@ export const SaveEditDialog: React.FC<SaveEditDialogProps> = ({
         edition_array: JSON.stringify({
           id: editionData.id,
           inputProps: editionData.inputProps,
+          aspectRatio: editionData.aspectRatio,
         }),
       };
 
