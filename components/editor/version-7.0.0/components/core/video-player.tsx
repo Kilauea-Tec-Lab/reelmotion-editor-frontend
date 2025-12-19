@@ -19,6 +19,23 @@ interface VideoPlayerProps {
  * The player automatically resizes based on its container and maintains the specified aspect ratio
  */
 export const VideoPlayer: React.FC<VideoPlayerProps> = ({ playerRef }) => {
+  const PlayerErrorFallback: React.FC<any> = ({ error }) => {
+    useEffect(() => {
+      if (!error) return;
+      console.error("Remotion Player error:", error);
+      toast({
+        title: "Playback error",
+        description:
+          error instanceof Error
+            ? error.message
+            : "The browser failed to play a media asset.",
+        variant: "destructive",
+      });
+    }, [error]);
+
+    return null;
+  };
+
   const {
     overlays,
     setSelectedOverlayId,
@@ -154,18 +171,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ playerRef }) => {
               durationInFrames={PLAYER_CONFIG.durationInFrames}
               fps={PLAYER_CONFIG.fps}
               inputProps={inputProps}
-              onError={(err) => {
-                console.error("Remotion Player error:", err);
-                toast({
-                  title: "Playback error",
-                  description:
-                    err instanceof Error
-                      ? err.message
-                      : "The browser failed to play a media asset.",
-                  variant: "destructive",
-                });
-              }}
-              errorFallback={() => <></>}
+              errorFallback={PlayerErrorFallback}
               overflowVisible
             />
           </div>
