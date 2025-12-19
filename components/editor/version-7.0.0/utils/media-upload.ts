@@ -242,56 +242,99 @@ const uploadDirectlyToGCS = async (file: File, type: number): Promise<string> =>
  */
 const getGoogleCloudAccessToken = async (): Promise<string> => {
   try {
-    const clientEmail = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_EMAIL || process.env.GOOGLE_CLIENT_EMAIL;
-    
-    // Try Base64 encoded key first (for Netlify), then raw key (for local dev)
-    let privateKey: string;
-    const privateKeyBase64 = process.env.GOOGLE_CLOUD_PRIVATE_KEY_BASE64 || 
-                             process.env.NEXT_PUBLIC_GOOGLE_PRIVATE_KEY_BASE64;
-    const privateKeyRaw = process.env.NEXT_PUBLIC_GOOGLE_PRIVATE_KEY || process.env.GOOGLE_PRIVATE_KEY;
-
-    if (privateKeyBase64) {
-      // Decode from Base64 (for Netlify)
-      console.log("Using Base64 encoded private key");
-      privateKey = Buffer.from(privateKeyBase64, 'base64').toString('utf-8');
-    } else if (privateKeyRaw) {
-      // Use raw key with newline replacement (for local dev)
-      console.log("Using raw private key with newline replacement");
-      privateKey = privateKeyRaw.replace(/\\n/g, '\n');
-    } else {
-      throw new Error("Missing Google Cloud private key");
-    }
+    const clientEmail = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_EMAIL;
+    const privateKeyBase64 = process.env.NEXT_PUBLIC_GOOGLE_PRIVATE_KEY_BASE64;
 
     if (!clientEmail) {
+      console.error('❌ Missing Google Cloud client email');
       throw new Error("Missing Google Cloud client email");
     }
 
+    if (!privateKeyBase64) {
+      console.error('❌ Missing Google Cloud private key (Base64)');
+      console.error('Environment check:', {
+        hasClientEmail: !!clientEmail,
+        hasPrivateKeyBase64: !!privateKeyBase64,
+        nodeEnv: process.env.NODE_ENV,
+      });
+      throw new Error("Missing Google Cloud private key");
+    }
+
+    // Decode from Base64
+    console.log("✅ Using Base64 encoded private key");
+    let privateKey: string;
+    try {
+      const sanitizedBase64 = privateKeyBase64.trim().replace(/^['"]|['"]$/g, "");
+      privateKey = Buffer.from(sanitizedBase64, 'base64').toString('utf-8');
+    } catch (decodeError) {
+      console.error('❌ Error decoding Base64 private key:', decodeError);
+      throw new Error('Failed to decode private key from Base64');
+    }
+
+    // Normalize + reconstruct PEM to avoid cases where the END marker is not on its own line
+    // (jose will throw "unexpected '-' after base64 padding" if the footer is glued to the base64 body)
+    privateKey = privateKey
+      .replace(/\r\n/g, "\n")
+      .replace(/\\n/g, "\n")
+      .trim();
+
+    if (privateKey.includes('-----BEGIN RSA PRIVATE KEY-----')) {
+      console.error('❌ Private key is PKCS#1 (BEGIN RSA PRIVATE KEY). It must be PKCS#8 (BEGIN PRIVATE KEY).');
+      throw new Error('Invalid private key format: expected PKCS#8');
+    }
+
+    const pemMatch = privateKey.match(/-----BEGIN PRIVATE KEY-----([\s\S]*?)-----END PRIVATE KEY-----/);
+    if (!pemMatch) {
+      console.error('❌ PEM markers not found after decoding');
+      console.error('PEM marker check:', {
+        hasBegin: privateKey.includes('-----BEGIN PRIVATE KEY-----'),
+        hasEnd: privateKey.includes('-----END PRIVATE KEY-----'),
+      });
+      throw new Error('Invalid private key PEM after decoding');
+    }
+
+    const pemBody = pemMatch[1].replace(/[\r\n\s]/g, "");
+    const wrappedBody = pemBody.match(/.{1,64}/g)?.join("\n") ?? pemBody;
+    privateKey = `-----BEGIN PRIVATE KEY-----\n${wrappedBody}\n-----END PRIVATE KEY-----\n`;
+
     // Validate private key format
     if (!privateKey.includes('-----BEGIN PRIVATE KEY-----')) {
-      console.error('Invalid key format. Key starts with:', privateKey.substring(0, 50));
+      console.error('❌ Invalid key format. Key starts with:', privateKey.substring(0, 50));
       throw new Error('Invalid private key format after decoding');
     }
 
-    console.log('Private key validated successfully');
+    console.log('✅ Private key validated successfully');
 
     // Create JWT
     const now = Math.floor(Date.now() / 1000);
     
     // Import private key
-    const key = await importPKCS8(privateKey, "RS256");
+    let key;
+    try {
+      key = await importPKCS8(privateKey, "RS256");
+    } catch (importError) {
+      console.error('❌ Error importing private key:', importError);
+      throw new Error('Failed to import private key');
+    }
     
     // Create and sign JWT
-    const jwt = await new SignJWT({
-      scope: "https://www.googleapis.com/auth/devstorage.full_control",
-    })
-      .setProtectedHeader({ alg: "RS256" })
-      .setIssuedAt(now)
-      .setIssuer(clientEmail)
-      .setAudience("https://oauth2.googleapis.com/token")
-      .setExpirationTime(now + 3600)
-      .sign(key);
+    let jwt;
+    try {
+      jwt = await new SignJWT({
+        scope: "https://www.googleapis.com/auth/devstorage.full_control",
+      })
+        .setProtectedHeader({ alg: "RS256" })
+        .setIssuedAt(now)
+        .setIssuer(clientEmail)
+        .setAudience("https://oauth2.googleapis.com/token")
+        .setExpirationTime(now + 3600)
+        .sign(key);
 
-    console.log("JWT created successfully");
+      console.log("✅ JWT created successfully");
+    } catch (jwtError) {
+      console.error('❌ Error creating JWT:', jwtError);
+      throw new Error('Failed to create JWT token');
+    }
 
     // Exchange JWT for access token
     const response = await fetch("https://oauth2.googleapis.com/token", {
@@ -307,7 +350,7 @@ const getGoogleCloudAccessToken = async (): Promise<string> => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Token exchange error:", errorText);
+      console.error("❌ Token exchange error:", errorText);
       throw new Error("Failed to exchange JWT for access token");
     }
 
