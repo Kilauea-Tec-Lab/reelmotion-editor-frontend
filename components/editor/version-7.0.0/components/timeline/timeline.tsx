@@ -289,27 +289,47 @@ const Timeline: React.FC<TimelineProps> = ({
     
     const videoData = e.dataTransfer.getData("application/reelmotion-video");
     const soundData = e.dataTransfer.getData("application/reelmotion-sound");
+    const textData = e.dataTransfer.getData("application/reelmotion-text");
+    const stickerData = e.dataTransfer.getData("application/reelmotion-sticker");
+    const libraryImageData = e.dataTransfer.getData("application/reelmotion-library-image");
+    const libraryVideoData = e.dataTransfer.getData("application/reelmotion-library-video");
+    
+    // Helper function to calculate drop position
+    const getDropPosition = () => {
+      const timelineRect = timelineRef.current?.getBoundingClientRect();
+      if (!timelineRect) return null;
+      
+      const dropX = e.clientX - timelineRect.left;
+      const dropY = e.clientY - timelineRect.top;
+      
+      // Calculate frame position from X coordinate
+      const timelineWidth = timelineRect.width * zoomScale;
+      const framePosition = Math.round((dropX / timelineWidth) * durationInFrames);
+      
+      // Calculate row from Y coordinate (accounting for header)
+      const headerHeight = 21;
+      const rowY = dropY - headerHeight;
+      const targetRow = Math.max(0, Math.min(visibleRows - 1, Math.floor(rowY / ROW_HEIGHT)));
+      
+      // Find the last occupied frame in the target row
+      const overlaysInRow = overlays.filter(o => o.row === targetRow);
+      const lastFrameInRow = overlaysInRow.length > 0
+        ? Math.max(...overlaysInRow.map(o => o.from + o.durationInFrames))
+        : 0;
+      
+      return {
+        targetRow,
+        newOverlayStartFrame: Math.max(lastFrameInRow, 0),
+      };
+    };
     
     if (videoData) {
       try {
         const data = JSON.parse(videoData);
         const { width, height } = { width: 1280, height: 720 }; // Default dimensions
         
-        // Calculate drop position
-        const timelineRect = timelineRef.current?.getBoundingClientRect();
-        if (!timelineRect) return;
-        
-        const dropX = e.clientX - timelineRect.left;
-        const dropY = e.clientY - timelineRect.top;
-        
-        // Calculate frame position from X coordinate
-        const timelineWidth = timelineRect.width * zoomScale;
-        const framePosition = Math.round((dropX / timelineWidth) * durationInFrames);
-        
-        // Calculate row from Y coordinate (accounting for header)
-        const headerHeight = 21; // 1.3rem converted to pixels
-        const rowY = dropY - headerHeight;
-        const targetRow = Math.max(0, Math.min(visibleRows - 1, Math.floor(rowY / ROW_HEIGHT)));
+        const position = getDropPosition();
+        if (!position) return;
         
         // Get video duration
         const getVideoDuration = (videoUrl: string): Promise<number> => {
@@ -332,25 +352,16 @@ const Timeline: React.FC<TimelineProps> = ({
         const fps = 30;
         const videoDurationInFrames = Math.floor(videoDuration * fps);
         
-        // Find the last occupied frame in the target row
-        const overlaysInRow = overlays.filter(o => o.row === targetRow);
-        const lastFrameInRow = overlaysInRow.length > 0
-          ? Math.max(...overlaysInRow.map(o => o.from + o.durationInFrames))
-          : 0;
-        
-        // Place the new overlay after the last element in the row
-        const newOverlayStartFrame = Math.max(lastFrameInRow, 0);
-        
         const newOverlay: Overlay = {
           left: 0,
           top: 0,
           width,
           height,
           durationInFrames: videoDurationInFrames || 200,
-          from: newOverlayStartFrame,
+          from: position.newOverlayStartFrame,
           id: Date.now(),
           rotation: 0,
-          row: targetRow,
+          row: position.targetRow,
           isDragging: false,
           type: OverlayType.VIDEO,
           content: data.video_url,
@@ -364,7 +375,6 @@ const Timeline: React.FC<TimelineProps> = ({
           },
         };
         
-        // Add the overlay to the array
         setOverlays([...overlays, newOverlay]);
         setSelectedOverlayId(newOverlay.id);
       } catch (error) {
@@ -373,39 +383,16 @@ const Timeline: React.FC<TimelineProps> = ({
     } else if (soundData) {
       try {
         const data = JSON.parse(soundData);
-        
-        // Calculate drop position
-        const timelineRect = timelineRef.current?.getBoundingClientRect();
-        if (!timelineRect) return;
-        
-        const dropX = e.clientX - timelineRect.left;
-        const dropY = e.clientY - timelineRect.top;
-        
-        // Calculate frame position from X coordinate
-        const timelineWidth = timelineRect.width * zoomScale;
-        const framePosition = Math.round((dropX / timelineWidth) * durationInFrames);
-        
-        // Calculate row from Y coordinate (accounting for header)
-        const headerHeight = 21;
-        const rowY = dropY - headerHeight;
-        const targetRow = Math.max(0, Math.min(visibleRows - 1, Math.floor(rowY / ROW_HEIGHT)));
-        
-        // Find the last occupied frame in the target row
-        const overlaysInRow = overlays.filter(o => o.row === targetRow);
-        const lastFrameInRow = overlaysInRow.length > 0
-          ? Math.max(...overlaysInRow.map(o => o.from + o.durationInFrames))
-          : 0;
-        
-        // Place the new overlay after the last element in the row
-        const newOverlayStartFrame = Math.max(lastFrameInRow, 0);
+        const position = getDropPosition();
+        if (!position) return;
         
         const newOverlay: Overlay = {
           id: Date.now(),
           type: OverlayType.SOUND,
           content: data.title,
           src: data.file,
-          from: newOverlayStartFrame,
-          row: targetRow,
+          from: position.newOverlayStartFrame,
+          row: position.targetRow,
           left: 0,
           top: 0,
           width: 1920,
@@ -422,6 +409,137 @@ const Timeline: React.FC<TimelineProps> = ({
         setSelectedOverlayId(newOverlay.id);
       } catch (error) {
         console.error("Error dropping sound:", error);
+      }
+    } else if (textData) {
+      try {
+        const data = JSON.parse(textData);
+        const position = getDropPosition();
+        if (!position) return;
+        
+        const newOverlay: Overlay = {
+          id: Date.now(),
+          type: OverlayType.TEXT,
+          content: data.content,
+          from: position.newOverlayStartFrame,
+          row: position.targetRow,
+          left: 100,
+          top: 100,
+          width: 300,
+          height: 50,
+          rotation: 0,
+          isDragging: false,
+          durationInFrames: 90,
+          styles: data.styles,
+        };
+        
+        setOverlays([...overlays, newOverlay]);
+        setSelectedOverlayId(newOverlay.id);
+      } catch (error) {
+        console.error("Error dropping text:", error);
+      }
+    } else if (stickerData) {
+      try {
+        const data = JSON.parse(stickerData);
+        const position = getDropPosition();
+        if (!position) return;
+        
+        const newOverlay: Overlay = {
+          id: Date.now(),
+          type: OverlayType.STICKER,
+          content: data.templateId,
+          category: data.category,
+          from: position.newOverlayStartFrame,
+          row: position.targetRow,
+          left: 0,
+          top: 0,
+          width: 150,
+          height: 150,
+          rotation: 0,
+          isDragging: false,
+          durationInFrames: 50,
+          styles: {
+            opacity: 1,
+            zIndex: 1,
+            ...data.styles,
+          },
+        };
+        
+        setOverlays([...overlays, newOverlay]);
+        setSelectedOverlayId(newOverlay.id);
+      } catch (error) {
+        console.error("Error dropping sticker:", error);
+      }
+    } else if (libraryImageData) {
+      try {
+        const data = JSON.parse(libraryImageData);
+        const position = getDropPosition();
+        if (!position) return;
+        
+        const { width, height } = { width: 1280, height: 720 };
+        
+        const newOverlay: Overlay = {
+          id: Date.now(),
+          type: OverlayType.IMAGE,
+          content: data.src,
+          src: data.src,
+          from: position.newOverlayStartFrame,
+          row: position.targetRow,
+          left: 0,
+          top: 0,
+          width,
+          height,
+          rotation: 0,
+          isDragging: false,
+          durationInFrames: 200,
+          styles: {
+            objectFit: "cover",
+            animation: {
+              enter: "fadeIn",
+              exit: "fadeOut",
+            },
+          },
+        };
+        
+        setOverlays([...overlays, newOverlay]);
+        setSelectedOverlayId(newOverlay.id);
+      } catch (error) {
+        console.error("Error dropping library image:", error);
+      }
+    } else if (libraryVideoData) {
+      try {
+        const data = JSON.parse(libraryVideoData);
+        const position = getDropPosition();
+        if (!position) return;
+        
+        const { width, height } = { width: 1280, height: 720 };
+        
+        const newOverlay: Overlay = {
+          id: Date.now(),
+          type: OverlayType.VIDEO,
+          content: data.image || "",
+          src: data.src,
+          from: position.newOverlayStartFrame,
+          row: position.targetRow,
+          left: 0,
+          top: 0,
+          width,
+          height,
+          rotation: 0,
+          isDragging: false,
+          durationInFrames: 200,
+          videoStartTime: 0,
+          styles: {
+            opacity: 1,
+            zIndex: 100,
+            transform: "none",
+            objectFit: "cover",
+          },
+        };
+        
+        setOverlays([...overlays, newOverlay]);
+        setSelectedOverlayId(newOverlay.id);
+      } catch (error) {
+        console.error("Error dropping library video:", error);
       }
     }
   };

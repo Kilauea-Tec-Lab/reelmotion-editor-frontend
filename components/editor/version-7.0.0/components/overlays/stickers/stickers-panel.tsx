@@ -182,6 +182,29 @@ export function StickersPanel() {
     ]
   );
 
+  /**
+   * Handle drag start for stickers
+   */
+  const handleDragStart = useCallback((e: React.DragEvent, templateId: string) => {
+    const template = Object.values(templatesByCategory)
+      .flat()
+      .find((t) => t.config.id === templateId);
+
+    if (!template) return;
+
+    e.dataTransfer.effectAllowed = "copy";
+    e.dataTransfer.setData(
+      "application/reelmotion-sticker",
+      JSON.stringify({
+        type: "sticker",
+        templateId: template.config.id,
+        category: template.config.category,
+        name: template.config.name || "Sticker",
+        styles: template.config.defaultProps?.styles,
+      })
+    );
+  }, []);
+
   const handleUpdateOverlay = (updatedOverlay: Overlay) => {
     setLocalOverlay(updatedOverlay);
     changeOverlay(updatedOverlay.id, updatedOverlay);
@@ -192,6 +215,8 @@ export function StickersPanel() {
       {templatesByCategory[category]?.map((template) => (
         <div
           key={template.config.id}
+          draggable
+          onDragStart={(e) => handleDragStart(e, template.config.id)}
           className={`
             h-[140px]
             ${template.config.layout === "double" ? "col-span-2" : ""}

@@ -70,12 +70,37 @@ export const SelectTextOverlay: React.FC<SelectTextOverlayProps> = () => {
     addOverlay(newOverlay);
   };
 
+  /**
+   * Handle drag start for text templates
+   */
+  const handleDragStart = (e: React.DragEvent, option: (typeof textOverlayTemplates)[0]) => {
+    e.dataTransfer.effectAllowed = "copy";
+    e.dataTransfer.setData(
+      "application/reelmotion-text",
+      JSON.stringify({
+        type: "text",
+        content: option.content ?? "Testing",
+        name: option.name,
+        styles: {
+          ...option.styles,
+          fontSize: "3rem",
+          opacity: 1,
+          zIndex: 1,
+          transform: "none",
+          textAlign: option.styles.textAlign as "left" | "center" | "right",
+        },
+      })
+    );
+  };
+
   return useMemo(
     () => (
       <div className="grid grid-cols-1 gap-3 p-2">
         {Object.entries(textOverlayTemplates).map(([key, option]) => (
           <div
             key={key}
+            draggable
+            onDragStart={(e) => handleDragStart(e, option)}
             onClick={() => handleAddOverlay(option)}
             className="group relative overflow-hidden border-2  bg-gray-200  dark:bg-darkBox   rounded-md border-white/10 transition-all duration-200 dark:hover:border-white/20 hover:border-blue-500/80 cursor-pointer"
           >

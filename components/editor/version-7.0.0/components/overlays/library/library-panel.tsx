@@ -209,6 +209,43 @@ export const LibraryPanel: React.FC = () => {
     addOverlay(newOverlay);
   };
 
+  /**
+   * Handle drag start for images
+   */
+  const handleImageDragStart = (e: React.DragEvent, image: any) => {
+    e.dataTransfer.effectAllowed = "copy";
+    e.dataTransfer.setData(
+      "application/reelmotion-library-image",
+      JSON.stringify({
+        type: "image",
+        src: image.src.large,
+        alt: image.alt || `Image #${image.id}`,
+        id: image.id,
+      })
+    );
+  };
+
+  /**
+   * Handle drag start for videos
+   */
+  const handleVideoDragStart = (e: React.DragEvent, video: any) => {
+    const videoFile = video.video_files.find(
+      (file: any) => file.quality === "hd" || file.quality === "sd"
+    ) || video.video_files[0];
+
+    e.dataTransfer.effectAllowed = "copy";
+    e.dataTransfer.setData(
+      "application/reelmotion-library-video",
+      JSON.stringify({
+        type: "video",
+        src: videoFile.link,
+        image: video.image,
+        duration: video.duration || 200,
+        id: video.id,
+      })
+    );
+  };
+
   return (
     <div className="flex flex-col h-full bg-white dark:bg-darkBox">
       <Tabs
@@ -255,6 +292,8 @@ export const LibraryPanel: React.FC = () => {
                   {images.map((image, index) => (
                     <div
                       key={`${image.id}-${index}`}
+                      draggable
+                      onDragStart={(e) => handleImageDragStart(e, image)}
                       className="relative aspect-square rounded-lg overflow-hidden cursor-pointer hover:opacity-80 transition-opacity group"
                       onClick={() => handleAddImage(image)}
                     >
@@ -319,6 +358,8 @@ export const LibraryPanel: React.FC = () => {
                   {videos.map((video, index) => (
                     <div
                       key={`${video.id}-${index}`}
+                      draggable
+                      onDragStart={(e) => handleVideoDragStart(e, video)}
                       className="relative aspect-video rounded-lg overflow-hidden cursor-pointer hover:opacity-80 transition-opacity group"
                       onClick={() => handleAddVideo(video)}
                     >

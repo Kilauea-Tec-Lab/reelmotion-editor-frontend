@@ -243,11 +243,36 @@ const uploadDirectlyToGCS = async (file: File, type: number): Promise<string> =>
 const getGoogleCloudAccessToken = async (): Promise<string> => {
   try {
     const clientEmail = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_EMAIL || process.env.GOOGLE_CLIENT_EMAIL;
-    const privateKey = process.env.NEXT_PUBLIC_GOOGLE_PRIVATE_KEY || process.env.GOOGLE_PRIVATE_KEY;
+    
+    // Try Base64 encoded key first (for Netlify), then raw key (for local dev)
+    let privateKey: string;
+    const privateKeyBase64 = process.env.GOOGLE_CLOUD_PRIVATE_KEY_BASE64 || 
+                             process.env.NEXT_PUBLIC_GOOGLE_PRIVATE_KEY_BASE64;
+    const privateKeyRaw = process.env.NEXT_PUBLIC_GOOGLE_PRIVATE_KEY || process.env.GOOGLE_PRIVATE_KEY;
 
-    if (!clientEmail || !privateKey) {
-      throw new Error("Missing Google Cloud credentials in environment variables");
+    if (privateKeyBase64) {
+      // Decode from Base64 (for Netlify)
+      console.log("Using Base64 encoded private key");
+      privateKey = Buffer.from(privateKeyBase64, 'base64').toString('utf-8');
+    } else if (privateKeyRaw) {
+      // Use raw key with newline replacement (for local dev)
+      console.log("Using raw private key with newline replacement");
+      privateKey = privateKeyRaw.replace(/\\n/g, '\n');
+    } else {
+      throw new Error("Missing Google Cloud private key");
     }
+
+    if (!clientEmail) {
+      throw new Error("Missing Google Cloud client email");
+    }
+
+    // Validate private key format
+    if (!privateKey.includes('-----BEGIN PRIVATE KEY-----')) {
+      console.error('Invalid key format. Key starts with:', privateKey.substring(0, 50));
+      throw new Error('Invalid private key format after decoding');
+    }
+
+    console.log('Private key validated successfully');
 
     // Create JWT
     const now = Math.floor(Date.now() / 1000);
