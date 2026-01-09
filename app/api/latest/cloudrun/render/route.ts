@@ -201,89 +201,69 @@ const validateGcpCredentials = () => {
 /**
  * POST endpoint handler for rendering media using Remotion Cloud Run
  * @description Handles video rendering requests by delegating to Google Cloud Run
- * @throws {Error} If rendering fails or GCP credentials are invalid
  * 
- * NOTE: This endpoint runs synchronously and waits for the render to complete.
- * Cloud Run has a 30-minute timeout, which is sufficient for most videos.
- * For Netlify deployment, ensure the function timeout is configured appropriately.
+ * IMPORTANT: Due to Netlify's function timeout limits (10-26s), this endpoint
+ * initiates the render and returns immediately. The actual rendering happens
+ * asynchronously in Cloud Run. The client should poll /progress to check status.
+ * 
+ * The render is started using a "fire and forget" pattern - we don't await
+ * the result. Cloud Run will continue processing even after we respond.
+ * 
+ * @throws {Error} If GCP credentials are invalid or missing
  */
 export const POST = executeApi(RenderRequest, async (req, body) => {
   console.log("[Cloud Run] Received render request:", JSON.stringify(body, null, 2));
 
-  // Validate GCP credentials
+  // Validate GCP credentials first (this can throw)
   validateGcpCredentials();
 
   // Generate a render ID for tracking
   const renderId = uuidv4();
   const bucketName = GCS_RENDERED_VIDEOS_BUCKET || "remotion-cloudrun-renders";
 
-  try {
-    console.log("[Cloud Run] Starting render on Cloud Run...");
-    console.log("[Cloud Run] Render ID:", renderId);
-    console.log("[Cloud Run] Bucket:", bucketName);
-    console.log("[Cloud Run] Service:", process.env.REMOTION_GCP_SERVICE_NAME);
-    console.log("[Cloud Run] Region:", GCP_REGION);
+  console.log("[Cloud Run] Starting render...");
+  console.log("[Cloud Run] Render ID:", renderId);
+  console.log("[Cloud Run] Bucket:", bucketName);
+  console.log("[Cloud Run] Service:", process.env.REMOTION_GCP_SERVICE_NAME);
+  console.log("[Cloud Run] Region:", GCP_REGION);
+  console.log("[Cloud Run] Serve URL:", process.env.REMOTION_GCP_SERVE_URL);
 
-    // Track progress in memory (for logging purposes only)
-    let lastProgress = 0;
+  // Start render WITHOUT awaiting - this is the key for Netlify compatibility
+  // The promise will be abandoned when the function returns, but Cloud Run
+  // will continue processing the request independently
+  const renderPromise = renderMediaOnCloudrun({
+    region: GCP_REGION as any,
+    serviceName: process.env.REMOTION_GCP_SERVICE_NAME!,
+    serveUrl: process.env.REMOTION_GCP_SERVE_URL!,
+    composition: body.id,
+    inputProps: body.inputProps,
+    codec: RENDER_CONFIG.CODEC,
+    crf: RENDER_CONFIG.CRF,
+    x264Preset: RENDER_CONFIG.X264_PRESET,
+    privacy: "public",
+    downloadBehavior: {
+      type: "download",
+      fileName: "video.mp4",
+    },
+    forceBucketName: bucketName,
+    renderIdOverride: renderId,
+  });
 
-    const result = await renderMediaOnCloudrun({
-      region: GCP_REGION as any,
-      serviceName: process.env.REMOTION_GCP_SERVICE_NAME!,
-      serveUrl: process.env.REMOTION_GCP_SERVE_URL!,
-      composition: body.id,
-      inputProps: body.inputProps,
-      codec: RENDER_CONFIG.CODEC,
-      crf: RENDER_CONFIG.CRF,
-      x264Preset: RENDER_CONFIG.X264_PRESET,
-      privacy: "public",
-      downloadBehavior: {
-        type: "download",
-        fileName: "video.mp4",
-      },
-      forceBucketName: bucketName,
-      renderIdOverride: renderId,
-      // Track progress updates (for logging)
-      updateRenderProgress: (progress: number, error?: boolean) => {
-        if (progress - lastProgress >= 0.1 || error) {
-          console.log(`[Cloud Run] Progress: ${(progress * 100).toFixed(1)}%${error ? ' (ERROR)' : ''}`);
-          lastProgress = progress;
-        }
-      },
+  // Log result when it completes (if the function is still running)
+  renderPromise
+    .then((result) => {
+      console.log("[Cloud Run] Render completed:", JSON.stringify(result, null, 2));
+    })
+    .catch((error) => {
+      console.error("[Cloud Run] Render failed:", error);
     });
 
-    console.log("[Cloud Run] Render result:", JSON.stringify(result, null, 2));
-
-    if (result.type === "crash") {
-      console.error("[Cloud Run] Render crashed:", result.message);
-      return {
-        type: "error" as const,
-        message: result.message || "Render crashed",
-        renderId,
-      };
-    }
-
-    // Render completed successfully
-    const publicUrl = result.publicUrl || `https://storage.googleapis.com/${result.bucketName}/renders/${renderId}/out.mp4`;
-    console.log("[Cloud Run] Render completed successfully:", publicUrl);
-    
-    return {
-      type: "done" as const,
-      renderId,
-      bucketName: result.bucketName,
-      url: publicUrl,
-      size: result.size * 1024, // Convert KB to bytes
-    };
-
-  } catch (error) {
-    const errorMessage = (error as Error).message || String(error);
-    console.error("[Cloud Run] Error in renderMediaOnCloudrun:", errorMessage);
-    console.error("[Cloud Run] Full error:", error);
-    
-    return {
-      type: "error" as const,
-      message: errorMessage,
-      renderId,
-    };
-  }
+  // Return immediately with the render ID
+  // Client should poll /api/latest/cloudrun/progress for updates
+  return {
+    type: "progress" as const,
+    renderId,
+    bucketName,
+    message: "Render started. Poll /api/latest/cloudrun/progress for updates.",
+  };
 });
