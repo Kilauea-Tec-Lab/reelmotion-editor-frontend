@@ -68,7 +68,7 @@ interface EditorContextProps {
   saveProject?: () => Promise<void>; // Manual save function
 
   // Add renderType to the context
-  renderType: "ssr" | "lambda";
+  renderType: "ssr" | "lambda" | "cloudrun";
 
   // Edition data for backend save
   editionData?: {

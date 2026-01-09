@@ -32,7 +32,7 @@ interface RenderItem {
  * @property {object} state - Current render state containing status, progress, and URL
  * @property {() => void} handleRender - Function to trigger a new render
  * @property {() => void} saveProject - Function to save the project (deprecated, use editionData)
- * @property {('ssr' | 'lambda')?} renderType - Type of render (SSR or Lambda)
+ * @property {('ssr' | 'lambda' | 'cloudrun')?} renderType - Type of render (SSR, Lambda, or Cloud Run)
  * @property {object} editionData - Edition data to be saved to backend
  * @property {function} onLoadEdit - Callback function when an edit is loaded
  */
@@ -40,7 +40,7 @@ interface RenderControlsProps {
   state: any;
   handleRender: () => void;
   saveProject?: () => Promise<void>;
-  renderType?: "ssr" | "lambda";
+  renderType?: "ssr" | "lambda" | "cloudrun";
   editionData?: {
     id: string;
     inputProps: any;
