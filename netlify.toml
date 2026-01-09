@@ -1,0 +1,25 @@
+# Netlify.toml configuration for Next.js with Cloud Run rendering
+
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[functions]
+  # Include Remotion packages in the function bundle
+  external_node_modules = ["@remotion/*"]
+  # Set node version
+  node_bundler = "esbuild"
+
+# Headers for CORS and caching
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+
+# Note: For long-running renders, consider:
+# 1. Upgrading to Netlify Pro for 26s function timeout
+# 2. Using Netlify Background Functions for up to 15 minutes
+# 3. The current implementation returns synchronously which may timeout
+#    for longer videos. If this happens, consider using a queue-based approach.

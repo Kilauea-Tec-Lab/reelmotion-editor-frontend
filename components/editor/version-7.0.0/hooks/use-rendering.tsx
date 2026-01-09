@@ -93,6 +93,55 @@ export const useRendering = (
           : cloudrunGetProgress;
 
       console.log("Calling renderVideo API with inputProps", inputProps);
+      
+      // Cloud Run renders synchronously and returns the result directly
+      if (renderType === "cloudrun") {
+        setState({
+          status: "rendering",
+          progress: 0.05,
+          renderId: "pending",
+        });
+        
+        const response = await renderVideo({ id, inputProps });
+        console.log("Cloud Run response:", response);
+        
+        // Check if response indicates an error
+        if ('type' in response && response.type === "error") {
+          const errorResponse = response as { type: "error"; message: string; renderId: string };
+          setState({
+            status: "error",
+            renderId: errorResponse.renderId,
+            error: new Error(errorResponse.message),
+          });
+          return;
+        }
+        
+        // Check if response indicates completion
+        if ('type' in response && response.type === "done") {
+          const doneResponse = response as { type: "done"; renderId: string; url: string; size: number };
+          setState({
+            size: doneResponse.size,
+            url: doneResponse.url,
+            status: "done",
+          });
+          return;
+        }
+        
+        // Fallback: treat as done if url exists
+        if ('url' in response && response.url) {
+          setState({
+            size: (response as any).size || 0,
+            url: (response as any).url,
+            status: "done",
+          });
+          return;
+        }
+        
+        // Unknown response format
+        throw new Error("Unexpected response format from Cloud Run render");
+      }
+
+      // For SSR and Lambda, continue with polling approach
       const response = await renderVideo({ id, inputProps });
       const renderId = response.renderId;
       const bucketName =

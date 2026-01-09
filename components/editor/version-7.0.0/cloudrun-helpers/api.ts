@@ -47,11 +47,23 @@ const makeRequest = async <Res>(
 
 /**
  * Response type for Cloud Run render requests
+ * Can be either:
+ * - Success: contains url and size when render completes
+ * - Error: contains error message
  */
-export interface CloudRunRenderResponse {
-  renderId: string;
-  bucketName: string;
-}
+export type CloudRunRenderResponse = 
+  | {
+      type: "done";
+      renderId: string;
+      bucketName: string;
+      url: string;
+      size: number;
+    }
+  | {
+      type: "error";
+      renderId: string;
+      message: string;
+    };
 
 /**
  * Initiates a video render using Google Cloud Run
