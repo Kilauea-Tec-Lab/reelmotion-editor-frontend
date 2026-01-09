@@ -215,11 +215,13 @@ export const POST = executeApi(RenderRequest, async (req, body) => {
         renderIdOverride: renderId,
         // Track progress updates
         updateRenderProgress: (progress: number, error?: boolean) => {
+          console.log(`[Cloud Run] Progress update: ${(progress * 100).toFixed(1)}%, error: ${error}`);
           if (error) {
+            console.error("[Cloud Run] Render reported error at progress:", progress);
             renderProgressStore.set(renderId, {
               status: "error",
-              progress: 0,
-              error: "Render failed",
+              progress: progress,
+              error: `Render failed at ${(progress * 100).toFixed(1)}%`,
               bucketName,
             });
           } else {
@@ -235,27 +237,32 @@ export const POST = executeApi(RenderRequest, async (req, body) => {
       console.log("[Cloud Run] Render result:", JSON.stringify(result, null, 2));
 
       if (result.type === "crash") {
+        console.error("[Cloud Run] Render crashed:", result.message);
         renderProgressStore.set(renderId, {
           status: "error",
           progress: 0,
-          error: result.message,
+          error: result.message || "Render crashed",
           bucketName,
         });
       } else {
+        const publicUrl = result.publicUrl || `https://storage.googleapis.com/${result.bucketName}/renders/${renderId}/out.mp4`;
+        console.log("[Cloud Run] Render completed successfully:", publicUrl);
         renderProgressStore.set(renderId, {
           status: "done",
           progress: 1,
-          url: result.publicUrl || `https://storage.googleapis.com/${result.bucketName}/renders/${renderId}/out.mp4`,
+          url: publicUrl,
           size: result.size * 1024, // Convert KB to bytes
           bucketName: result.bucketName,
         });
       }
     } catch (error) {
-      console.error("[Cloud Run] Error in renderMediaOnCloudrun:", error);
+      const errorMessage = (error as Error).message || String(error);
+      console.error("[Cloud Run] Error in renderMediaOnCloudrun:", errorMessage);
+      console.error("[Cloud Run] Full error:", error);
       renderProgressStore.set(renderId, {
         status: "error",
         progress: 0,
-        error: (error as Error).message,
+        error: errorMessage,
         bucketName,
       });
     }

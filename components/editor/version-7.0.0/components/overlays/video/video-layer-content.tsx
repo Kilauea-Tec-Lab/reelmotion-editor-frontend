@@ -1,13 +1,12 @@
 import {
   OffthreadVideo,
   useCurrentFrame,
-  delayRender,
-  continueRender,
+  prefetch,
 } from "remotion";
 import { ClipOverlay } from "../../../types";
 import { animationTemplates } from "../../../templates/animation-templates";
 import { resolveVideoUrl } from "../../../utils/url-helper";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 /**
  * Interface defining the props for the VideoLayerContent component
@@ -39,37 +38,33 @@ export const VideoLayerContent: React.FC<VideoLayerContentProps> = ({
   baseUrl,
 }) => {
   const frame = useCurrentFrame();
+  const [isReady, setIsReady] = useState(false);
 
   const videoSrc = resolveVideoUrl(overlay.src, baseUrl);
 
+  // Prefetch video to prevent black flash during transitions
   useEffect(() => {
-    console.log(`Preparing to load video: ${overlay.src}`);
-    const handle = delayRender("Loading video");
+    setIsReady(false);
+    
+    const { free, waitUntilDone } = prefetch(videoSrc, {
+      method: "blob-url",
+      contentType: "video/mp4",
+    });
 
-    // Create a video element to preload the video
-    const video = document.createElement("video");
-    video.src = videoSrc;
-
-    const handleLoadedMetadata = () => {
-      console.log(`Video metadata loaded: ${overlay.src}`);
-      continueRender(handle);
-    };
-
-    const handleError = (error: ErrorEvent) => {
-      console.error(`Error loading video ${overlay.src}:`, error);
-      continueRender(handle);
-    };
-
-    video.addEventListener("loadedmetadata", handleLoadedMetadata);
-    video.addEventListener("error", handleError);
+    waitUntilDone()
+      .then(() => {
+        setIsReady(true);
+      })
+      .catch((err) => {
+        console.warn(`Failed to prefetch video ${overlay.src}:`, err);
+        // Still show the video even if prefetch fails
+        setIsReady(true);
+      });
 
     return () => {
-      video.removeEventListener("loadedmetadata", handleLoadedMetadata);
-      video.removeEventListener("error", handleError);
-      // Ensure we don't leave hanging render delays
-      continueRender(handle);
+      free();
     };
-  }, [overlay.src, videoSrc]);
+  }, [videoSrc, overlay.src]);
 
   // Calculate if we're in the exit phase (last 30 frames)
   const isExitPhase = frame >= overlay.durationInFrames - 30;
@@ -111,10 +106,15 @@ export const VideoLayerContent: React.FC<VideoLayerContentProps> = ({
     height: "100%",
     padding: overlay.styles.padding || "0px",
     backgroundColor: overlay.styles.paddingBackgroundColor || "transparent",
-    display: "flex", // Use flexbox for centering
+    display: "flex",
     alignItems: "center",
     justifyContent: "center",
   };
+
+  // Show transparent container while loading to prevent black flash
+  if (!isReady) {
+    return <div style={containerStyle} />;
+  }
 
   return (
     <div style={containerStyle}>
@@ -124,6 +124,7 @@ export const VideoLayerContent: React.FC<VideoLayerContentProps> = ({
         style={videoStyle}
         volume={overlay.styles.volume ?? 1}
         playbackRate={overlay.speed ?? 1}
+        pauseWhenBuffering
       />
     </div>
   );

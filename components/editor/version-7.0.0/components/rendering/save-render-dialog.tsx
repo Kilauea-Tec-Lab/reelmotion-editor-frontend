@@ -198,25 +198,6 @@ export const SaveRenderDialog: React.FC<SaveRenderDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs value={saveMode} onValueChange={(v) => setSaveMode(v as any)}>
-          <TabsList className="w-full grid grid-cols-2 bg-gray-100/50 dark:bg-darkBoxSub/50 backdrop-blur-sm rounded-sm border border-gray-200 dark:border-gray-700 gap-1">
-            <TabsTrigger
-              value="name"
-              className="data-[state=active]:bg-primarioLogo data-[state=active]:text-gray-900 dark:data-[state=active]:text-white 
-              rounded-sm transition-all duration-200 text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-200 hover:bg-gray-200/50 dark:hover:bg-gray-700/50"
-            >
-              Save with Name
-            </TabsTrigger>
-            <TabsTrigger
-              value="project"
-              className="data-[state=active]:bg-primarioLogo data-[state=active]:text-gray-900 dark:data-[state=active]:text-white 
-              rounded-sm transition-all duration-200 text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-200 hover:bg-gray-200/50 dark:hover:bg-gray-700/50"
-            >
-              Associate with Project
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="name" className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="video-name">Video Name</Label>
               <Input
@@ -227,42 +208,6 @@ export const SaveRenderDialog: React.FC<SaveRenderDialogProps> = ({
                 disabled={isSaving}
               />
             </div>
-          </TabsContent>
-
-          <TabsContent value="project" className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="project-select">Select Project</Label>
-              {isLoading ? (
-                <div className="flex items-center justify-center py-4">
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                </div>
-              ) : (
-                <Select
-                  value={selectedProject}
-                  onValueChange={setSelectedProject}
-                  disabled={isSaving}
-                >
-                  <SelectTrigger id="project-select">
-                    <SelectValue placeholder="Choose a project" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {projects.length === 0 ? (
-                      <div className="py-2 px-2 text-sm text-muted-foreground">
-                        No projects available
-                      </div>
-                    ) : (
-                      projects.map((project) => (
-                        <SelectItem key={project.id} value={project.id}>
-                          {project.name}
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
-              )}
-            </div>
-          </TabsContent>
-        </Tabs>
 
         <DialogFooter className="gap-2 sm:gap-0">
           <Button

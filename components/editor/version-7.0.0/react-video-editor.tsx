@@ -19,6 +19,7 @@ import { useAspectRatio } from "./hooks/use-aspect-ratio";
 import { useCompositionDuration } from "./hooks/use-composition-duration";
 import { useHistory } from "./hooks/use-history";
 import { useEditorAuth } from "./hooks/use-editor-auth";
+import { useVideoPrefetch } from "./hooks/use-video-prefetch";
 
 // Types
 import { Overlay } from "./types";
@@ -125,8 +126,11 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
   const { isPlaying, currentFrame, playerRef, togglePlayPause, formatTime } =
     useVideoPlayer();
 
+  // Prefetch all videos in the timeline to prevent black flashes during transitions
+  useVideoPrefetch(overlays);
+
   // Composition duration calculations
-  const { durationInFrames, durationInSeconds } =
+  const { durationInFrames, contentDurationInFrames, durationInSeconds } =
     useCompositionDuration(overlays);
 
   // Aspect ratio and player dimension management
@@ -150,7 +154,7 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
 
   const inputProps = {
     overlays,
-    durationInFrames,
+    durationInFrames: contentDurationInFrames, // Use actual content duration for rendering
     fps: FPS,
     width: compositionWidth,
     height: compositionHeight,

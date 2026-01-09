@@ -239,8 +239,8 @@ const RenderControls: React.FC<RenderControlsProps> = ({
                       : "border-border"
                   }`}
                 >
-                  <div className="flex flex-col">
-                    <div className="text-xs text-zinc-200">
+                  <div className="flex flex-col min-w-0 flex-1 mr-2">
+                    <div className="text-xs text-zinc-200 truncate max-w-[160px]" title={render.status === "error" ? "Render Failed" : getDisplayFileName(render.url!)}>
                       {render.status === "error" ? (
                         <span className="text-red-400 font-medium">
                           Render Failed

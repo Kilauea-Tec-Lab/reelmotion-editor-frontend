@@ -1,7 +1,36 @@
 import React, { useMemo } from "react";
 import { Sequence } from "remotion";
 import { LayerContent } from "./layer-content";
-import { Overlay } from "../../types";
+import { Overlay, OverlayType } from "../../types";
+
+/**
+ * Get the base z-index for an overlay type
+ * Elements like text, stickers, captions always appear above videos/images
+ */
+const getTypeZIndex = (type: OverlayType | string): number => {
+  switch (type) {
+    case OverlayType.TEXT:
+    case "text":
+      return 500; // Text always on top
+    case OverlayType.CAPTION:
+    case "caption":
+      return 480; // Captions very high
+    case OverlayType.STICKER:
+    case "sticker":
+      return 460; // Stickers high
+    case OverlayType.SHAPE:
+    case "shape":
+      return 440; // Shapes above media
+    case OverlayType.IMAGE:
+    case "image":
+      return 200; // Images in middle
+    case OverlayType.VIDEO:
+    case "video":
+      return 100; // Videos at base
+    default:
+      return 100;
+  }
+};
 
 /**
  * Props for the Layer component
@@ -18,18 +47,18 @@ export const Layer: React.FC<{
   /**
    * Memoized style calculations for the layer
    * Handles positioning, dimensions, rotation, and z-index based on:
-   * - Overlay position (left, top)
-   * - Dimensions (width, height)
-   * - Rotation
-   * - Row position for z-index stacking
+   * - Overlay type (text/stickers always above videos/images)
+   * - Row position for secondary ordering within same type
    * - Selection state for pointer events
    *
    * @returns {React.CSSProperties} Computed styles for the layer
    */
   const style: React.CSSProperties = useMemo(() => {
-    // Higher row numbers should be at the bottom
-    // e.g. row 4 = z-index 60, row 0 = z-index 100
-    const zIndex = 100 - (overlay.row || 0) * 10;
+    // Base z-index from overlay type (text/stickers always above videos)
+    const typeZIndex = getTypeZIndex(overlay.type);
+    // Secondary ordering: higher rows are visually below within same type
+    const rowOffset = (overlay.row || 0) * 2;
+    const zIndex = typeZIndex - rowOffset;
     const isSelected = overlay.id === selectedOverlayId;
 
     return {
@@ -51,6 +80,7 @@ export const Layer: React.FC<{
     overlay.rotation,
     overlay.row,
     overlay.id,
+    overlay.type,
     selectedOverlayId,
   ]);
 

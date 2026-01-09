@@ -33,9 +33,9 @@ export const LAMBDA_FUNCTION_NAME = "remotion-render-4-0-272-mem2048mb-disk2048m
 export const REGION = "us-east-1";
 
 // Google Cloud Platform configuration
-export const GCP_PROJECT_ID = process.env.GCP_PROJECT_ID || "reelmotion-ai";
-export const GCP_REGION = "us-central1";
-export const GCS_RENDERED_VIDEOS_BUCKET = "reelmotion-rendered-videos";
+export const GCP_PROJECT_ID = process.env.GCP_PROJECT_ID || "deft-processor-465219-e0";
+export const GCP_REGION = process.env.REMOTION_GCP_REGION || "us-central1";
+export const GCS_RENDERED_VIDEOS_BUCKET = process.env.GCS_RENDERED_VIDEOS_BUCKET || "remotioncloudrun-buaw10zfzk";
 
 // Cloud Run configuration for video rendering
 export const CLOUDRUN_CONFIG = {
