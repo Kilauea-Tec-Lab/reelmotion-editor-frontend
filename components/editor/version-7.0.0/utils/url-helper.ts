@@ -8,16 +8,18 @@
 /**
  * CDN Configuration for Google Cloud Storage
  * The CDN provides faster delivery via Google's edge network
+ * Note: CDN routes are configured by actual file paths (chat_attachments, sounds, etc.)
+ * NOT by bucket type prefixes (images, videos, audio)
  */
 const CDN_CONFIG = {
   enabled: process.env.NEXT_PUBLIC_CDN_ENABLED === "true",
   baseUrl: process.env.NEXT_PUBLIC_CDN_URL || "https://cdn.reelmotion.ai",
-  // Map GCS bucket URLs to CDN paths
-  bucketMappings: {
-    "storage.googleapis.com/reelmotion-ai-videos": "videos",
-    "storage.googleapis.com/reelmotion-ai-audio": "audio",
-    "storage.googleapis.com/reelmotion-ai-images": "images",
-  } as Record<string, string>,
+  // Map GCS bucket URLs - paths are served directly without type prefix
+  bucketPatterns: [
+    "storage.googleapis.com/reelmotion-ai-videos",
+    "storage.googleapis.com/reelmotion-ai-audio",
+    "storage.googleapis.com/reelmotion-ai-images",
+  ],
 };
 
 /**
@@ -41,13 +43,15 @@ export const toCdnUrl = (url: string): string => {
     return url;
   }
 
-  // Check if URL matches any bucket mapping
-  for (const [bucketPattern, cdnPath] of Object.entries(CDN_CONFIG.bucketMappings)) {
+  // Check if URL matches any bucket pattern
+  for (const bucketPattern of CDN_CONFIG.bucketPatterns) {
     if (url.includes(bucketPattern)) {
-      // Extract the file path from the GCS URL
-      const match = url.match(new RegExp(`${bucketPattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/(.+)`));
+      // Extract the file path from the GCS URL (without the bucket name)
+      const escapedPattern = bucketPattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const match = url.match(new RegExp(`${escapedPattern}/(.+)`));
       if (match && match[1]) {
-        return `${CDN_CONFIG.baseUrl}/${cdnPath}/${match[1]}`;
+        // Return CDN URL with just the file path (no type prefix)
+        return `${CDN_CONFIG.baseUrl}/${match[1]}`;
       }
     }
   }
