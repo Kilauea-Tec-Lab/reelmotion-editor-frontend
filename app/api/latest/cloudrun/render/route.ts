@@ -2,7 +2,6 @@ import { renderMediaOnCloudrun } from "@remotion/cloudrun/client";
 import { RenderRequest } from "@/components/editor/version-7.0.0/types";
 import { executeApi } from "@/components/editor/version-7.0.0/cloudrun-helpers/api-response";
 import {
-  CLOUDRUN_CONFIG,
   GCP_REGION,
   GCS_RENDERED_VIDEOS_BUCKET,
   GCP_PROJECT_ID,
@@ -11,6 +10,7 @@ import { v4 as uuidv4 } from "uuid";
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
+import { renderProgressStore, type RenderProgressState } from "./progress-store";
 
 /**
  * Configuration for the Cloud Run render function
@@ -20,33 +20,6 @@ const RENDER_CONFIG = {
   CRF: 18,
   X264_PRESET: "medium" as const,
 } as const;
-
-/**
- * Type for render progress state
- */
-type RenderProgressState = {
-  status: "pending" | "rendering" | "done" | "error";
-  progress: number;
-  url?: string;
-  size?: number;
-  error?: string;
-  bucketName?: string;
-};
-
-/**
- * Global store for render progress that persists across hot-reloads in development
- * Uses globalThis pattern to maintain state between API route invocations
- */
-const globalForProgress = globalThis as unknown as {
-  renderProgressStore: Map<string, RenderProgressState>;
-};
-
-// Initialize the Map only once
-if (!globalForProgress.renderProgressStore) {
-  globalForProgress.renderProgressStore = new Map<string, RenderProgressState>();
-}
-
-export const renderProgressStore = globalForProgress.renderProgressStore;
 
 /**
  * Validates Google Cloud credentials are present in environment variables

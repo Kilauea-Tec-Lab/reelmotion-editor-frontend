@@ -3,7 +3,7 @@ import {
   ProgressResponse,
 } from "@/components/editor/version-7.0.0/types";
 import { executeApi } from "@/components/editor/version-7.0.0/cloudrun-helpers/api-response";
-import { renderProgressStore } from "../render/route";
+import { renderProgressStore } from "../render/progress-store";
 
 /**
  * API endpoint to check the progress of a Remotion video render on Cloud Run
