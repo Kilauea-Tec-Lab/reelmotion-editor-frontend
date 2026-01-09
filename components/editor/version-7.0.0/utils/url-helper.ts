@@ -61,10 +61,18 @@ export const toCdnUrl = (url: string): string => {
 
 /**
  * Check if a URL is a GCS URL that can be served directly (with CORS configured)
+ * Also includes CDN URLs which are served from GCS with CORS
  */
 export const isGcsUrl = (url: string): boolean => {
   // All reelmotion buckets have CORS configured
-  return url.includes("storage.googleapis.com/reelmotion-ai-");
+  if (url.includes("storage.googleapis.com/reelmotion-ai-")) {
+    return true;
+  }
+  // CDN URLs are also served from GCS with CORS
+  if (url.includes("cdn.reelmotion.ai")) {
+    return true;
+  }
+  return false;
 };
 
 /**
