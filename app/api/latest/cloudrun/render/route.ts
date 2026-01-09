@@ -28,11 +28,38 @@ const RENDER_CONFIG = {
 const validateGcpCredentials = () => {
   console.log("[Cloud Run] Validating GCP credentials...");
 
+  // 1. Check Standard Env Vars
   if (
     process.env.REMOTION_GCP_CLIENT_EMAIL &&
     process.env.REMOTION_GCP_PRIVATE_KEY &&
     process.env.REMOTION_GCP_PROJECT_ID
   ) {
+    return;
+  }
+
+  // 2. Check NEXT_PUBLIC_ prefixed Env Vars (User Compatibility)
+  // Sometimes users prefix everything with NEXT_PUBLIC_ in Netlify/Vercel
+  const prefixedClientEmail =
+    process.env.NEXT_PUBLIC_REMOTION_GCP_CLIENT_EMAIL ||
+    process.env.NEXT_PUBLIC_GCP_CLIENT_EMAIL;
+  const prefixedPrivateKey =
+    process.env.NEXT_PUBLIC_REMOTION_GCP_PRIVATE_KEY ||
+    process.env.NEXT_PUBLIC_GCP_PRIVATE_KEY;
+
+  if (prefixedClientEmail && prefixedPrivateKey) {
+    process.env.REMOTION_GCP_CLIENT_EMAIL = prefixedClientEmail;
+    process.env.REMOTION_GCP_PRIVATE_KEY = prefixedPrivateKey.replace(
+      /\\n/g,
+      "\n"
+    );
+    process.env.REMOTION_GCP_PROJECT_ID =
+      process.env.NEXT_PUBLIC_REMOTION_GCP_PROJECT_ID ||
+      process.env.NEXT_PUBLIC_GCP_PROJECT_ID ||
+      GCP_PROJECT_ID;
+
+    console.log(
+      `[Cloud Run] Credentials loaded from NEXT_PUBLIC_ prefixed variables.`
+    );
     return;
   }
 
@@ -55,7 +82,8 @@ const validateGcpCredentials = () => {
   const fromRepoPath = path.resolve(process.cwd(), "gcp-credentials.json");
 
   const creds =
-    (fromEnvPath ? tryReadJson(fromEnvPath) : null) ?? tryReadJson(fromRepoPath);
+    (fromEnvPath ? tryReadJson(fromEnvPath) : null) ??
+    tryReadJson(fromRepoPath);
 
   let projectId = GCP_PROJECT_ID || "reelmotion-ai";
   let clientEmail: string | undefined;
@@ -71,17 +99,32 @@ const validateGcpCredentials = () => {
     const fallbackClientEmail = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_EMAIL;
     const privateKeyBase64 = process.env.NEXT_PUBLIC_GOOGLE_PRIVATE_KEY_BASE64;
     if (!fallbackClientEmail || !privateKeyBase64) {
+      // Create a detailed error message about what was checked
+      const checkedVars = [
+        "REMOTION_GCP_CLIENT_EMAIL",
+        "NEXT_PUBLIC_REMOTION_GCP_CLIENT_EMAIL",
+        "NEXT_PUBLIC_GOOGLE_CLIENT_EMAIL",
+        "GOOGLE_APPLICATION_CREDENTIALS",
+      ];
+      console.error(
+        "[Cloud Run] Failed to find credentials. Checked:",
+        checkedVars
+      );
       throw new TypeError(
-        "Missing GCP credentials. Provide gcp-credentials.json / GOOGLE_APPLICATION_CREDENTIALS, or set NEXT_PUBLIC_GOOGLE_CLIENT_EMAIL and NEXT_PUBLIC_GOOGLE_PRIVATE_KEY_BASE64."
+        "Missing GCP credentials. Please check your environment variables."
       );
     }
     clientEmail = fallbackClientEmail;
     try {
       privateKey = Buffer.from(privateKeyBase64, "base64").toString("utf-8");
     } catch {
-      throw new TypeError("Failed to decode NEXT_PUBLIC_GOOGLE_PRIVATE_KEY_BASE64");
+      throw new TypeError(
+        "Failed to decode NEXT_PUBLIC_GOOGLE_PRIVATE_KEY_BASE64"
+      );
     }
-    const projectIdMatch = clientEmail.match(/@(.*)\.iam\.gserviceaccount\.com/);
+    const projectIdMatch = clientEmail.match(
+      /@(.*)\.iam\.gserviceaccount\.com/
+    );
     projectId = projectIdMatch?.[1] || projectId;
   }
 
