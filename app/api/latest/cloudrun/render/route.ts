@@ -169,13 +169,32 @@ const validateGcpCredentials = () => {
   }
 
   if (!process.env.REMOTION_GCP_SERVICE_NAME) {
-    console.warn("REMOTION_GCP_SERVICE_NAME missing, using default from .env");
+    // Try NEXT_PUBLIC_ version
+    const serviceName =
+      process.env.NEXT_PUBLIC_REMOTION_GCP_SERVICE_NAME ||
+      process.env.NEXT_PUBLIC_GCP_SERVICE_NAME;
+    if (serviceName) {
+      process.env.REMOTION_GCP_SERVICE_NAME = serviceName;
+    } else {
+      console.warn(
+        "REMOTION_GCP_SERVICE_NAME missing, using default from .env"
+      );
+    }
   }
 
   if (!process.env.REMOTION_GCP_SERVE_URL) {
-     throw new TypeError(
-      "The environment variable REMOTION_GCP_SERVE_URL is missing. Deploy a site first using 'npx remotion cloudrun sites create'."
-    );
+    // Try NEXT_PUBLIC_ version
+    const serveUrl =
+      process.env.NEXT_PUBLIC_REMOTION_GCP_SERVE_URL ||
+      process.env.NEXT_PUBLIC_GCP_SERVE_URL;
+    if (serveUrl) {
+      process.env.REMOTION_GCP_SERVE_URL = serveUrl;
+      console.log(`[Cloud Run] Using Serve URL: ${serveUrl}`);
+    } else {
+      throw new TypeError(
+        "The environment variable REMOTION_GCP_SERVE_URL is missing. Deploy a site first using 'npx remotion cloudrun sites create'. You can also set NEXT_PUBLIC_REMOTION_GCP_SERVE_URL in your environment."
+      );
+    }
   }
 };
 
