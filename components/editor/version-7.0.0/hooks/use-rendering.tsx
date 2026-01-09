@@ -132,7 +132,7 @@ export const useRendering = (
 
       setState({
         status: "rendering",
-        progress: 0,
+        progress: -1, // -1 indicates indeterminate progress (Cloud Run doesn't report progress)
         renderId,
         bucketName: typeof bucketName === "string" ? bucketName : undefined,
       });

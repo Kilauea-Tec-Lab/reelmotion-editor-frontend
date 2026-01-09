@@ -57,20 +57,19 @@ export const POST = executeApi<ProgressResponse, typeof ProgressRequest>(
         // File doesn't exist yet - still rendering
         console.log("[Cloud Run] File not found yet, still rendering...");
         
-        // We don't have actual progress info from Cloud Run,
-        // so we return a simulated progress that increases over time
-        // The client will keep polling until done
+        // We don't have actual progress info from Cloud Run
+        // Return -1 to indicate "in progress but unknown percentage"
         return {
           type: "progress",
-          progress: 0.1, // Indicate some progress is happening
+          progress: -1,
         };
       }
       
-      // Unexpected status
+      // Unexpected status - keep polling
       console.error("[Cloud Run] Unexpected response status:", response.status);
       return {
         type: "progress",
-        progress: 0.05,
+        progress: -1,
       };
       
     } catch (error) {
@@ -80,7 +79,7 @@ export const POST = executeApi<ProgressResponse, typeof ProgressRequest>(
       // Return progress to keep polling
       return {
         type: "progress",
-        progress: 0.05,
+        progress: -1,
       };
     }
   }

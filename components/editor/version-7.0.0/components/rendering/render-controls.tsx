@@ -294,7 +294,7 @@ const RenderControls: React.FC<RenderControlsProps> = ({
         ) : state.status === "rendering" ? (
           <>
             <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-            Rendering... {(state.progress * 100).toFixed(0)}%
+            {state.progress >= 0 ? `Rendering... ${(state.progress * 100).toFixed(0)}%` : "Rendering..."}
           </>
         ) : state.status === "invoking" ? (
           <>
