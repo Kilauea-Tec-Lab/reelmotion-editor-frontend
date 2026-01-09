@@ -198,3 +198,36 @@ export const resolveVideoUrl = (url: string, baseUrl?: string): string => {
   // Only proxy truly external URLs that need CORS handling
   return `${origin}/api/proxy-video?url=${encodeURIComponent(resolved)}`;
 };
+
+/**
+ * Prepare a media URL for server-side rendering (Cloud Run, Lambda, SSR)
+ * This function ensures URLs are absolute and DON'T use the local proxy
+ * because the proxy only exists on the Next.js server, not on Remotion servers.
+ * 
+ * @param url The URL to prepare
+ * @returns An absolute URL suitable for server-side rendering
+ */
+export const prepareUrlForRender = (url: string): string => {
+  // If it's a proxy URL, extract the original URL
+  if (url.includes('/api/proxy-video?url=')) {
+    const match = url.match(/[?&]url=([^&]+)/);
+    if (match && match[1]) {
+      const decodedUrl = decodeURIComponent(match[1]);
+      // Return the decoded URL (which should be absolute)
+      return decodedUrl;
+    }
+  }
+
+  // If it's already a CDN or GCS URL, use it directly
+  if (isGcsUrl(url)) {
+    return url;
+  }
+
+  // If it's a relative URL, make it absolute using the base URL
+  if (url.startsWith('/')) {
+    return `${getBaseUrl()}${url}`;
+  }
+
+  // Otherwise return as-is (already absolute)
+  return url;
+};

@@ -22,7 +22,10 @@ import { useEditorAuth } from "./hooks/use-editor-auth";
 import { useVideoPrefetch } from "./hooks/use-video-prefetch";
 
 // Types
-import { Overlay } from "./types";
+import { Overlay, OverlayType } from "./types";
+
+// Utils
+import { prepareUrlForRender } from "./utils/url-helper";
 import { useRendering } from "./hooks/use-rendering";
 import {
   AUTO_SAVE_INTERVAL,
@@ -152,8 +155,25 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
 
   const handleTimelineClick = useTimelineClick(playerRef, durationInFrames);
 
+  /**
+   * Prepare overlays for rendering by converting all media URLs to absolute URLs
+   * that don't use the local proxy (which only works on Next.js server)
+   */
+  const prepareOverlaysForRender = (overlays: Overlay[]): Overlay[] => {
+    return overlays.map((overlay) => {
+      // Handle overlays with src property (video, image, sound)
+      if ('src' in overlay && typeof overlay.src === 'string') {
+        return {
+          ...overlay,
+          src: prepareUrlForRender(overlay.src),
+        };
+      }
+      return overlay;
+    });
+  };
+
   const inputProps = {
-    overlays,
+    overlays: prepareOverlaysForRender(overlays),
     durationInFrames: contentDurationInFrames, // Use actual content duration for rendering
     fps: FPS,
     width: compositionWidth,
