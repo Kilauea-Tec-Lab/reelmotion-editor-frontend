@@ -27,10 +27,28 @@ export const DISABLE_MOBILE_LAYOUT = false;
  */
 export const DISABLE_VIDEO_KEYFRAMES = false;
 
-// AWS deployment configuration
+// AWS deployment configuration (Legacy - keeping for reference)
 export const SITE_NAME = "https://remotionlambda-useast1-1xn6aj83c1.s3.us-east-1.amazonaws.com/sites/reelmotion-editor/index.html";
 export const LAMBDA_FUNCTION_NAME = "remotion-render-4-0-272-mem2048mb-disk2048mb-120sec";
 export const REGION = "us-east-1";
+
+// Google Cloud Platform configuration
+export const GCP_PROJECT_ID = process.env.GCP_PROJECT_ID || "reelmotion-ai";
+export const GCP_REGION = "us-central1";
+export const GCS_RENDERED_VIDEOS_BUCKET = "reelmotion-rendered-videos";
+
+// Cloud Run configuration for video rendering
+export const CLOUDRUN_CONFIG = {
+  // Service URL - set in environment variable for flexibility
+  SERVICE_URL: process.env.CLOUDRUN_RENDER_SERVICE_URL || "",
+  // Rendering settings
+  CODEC: "h264" as const,
+  MAX_RETRIES: 2,
+  TIMEOUT_SECONDS: 900, // 15 minutes max
+  // Quality settings
+  CRF: 18, // Good quality/size balance (lower = better quality, larger file)
+  PRESET: "medium" as const, // x264 preset
+} as const;
 
 // Zoom control configuration
 export const ZOOM_CONSTRAINTS = {
@@ -55,7 +73,8 @@ export const ENABLE_PUSH_ON_DRAG = false; // Set to false to disable pushing ite
 
 // Render configuration
 // NOTE: TO CHANGE RENDER TYPE, UPDATE THE RENDER_TYPE CONSTANT
-export const RENDER_TYPE: "ssr" | "lambda" = "lambda";
+// Options: "ssr" (local server-side), "lambda" (AWS Lambda), "cloudrun" (Google Cloud Run)
+export const RENDER_TYPE: "ssr" | "lambda" | "cloudrun" = "cloudrun";
 
 // Autosave configuration
 export const AUTO_SAVE_INTERVAL = 10000; // Autosave every 10 seconds

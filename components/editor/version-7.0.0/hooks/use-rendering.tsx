@@ -9,6 +9,10 @@ import {
   getProgress as lambdaGetProgress,
   renderVideo as lambdaRenderVideo,
 } from "../lambda-helpers/api";
+import {
+  getProgress as cloudrunGetProgress,
+  renderVideo as cloudrunRenderVideo,
+} from "../cloudrun-helpers/api";
 
 // Define possible states for the rendering process
 export type State =
@@ -43,7 +47,7 @@ const wait = async (milliSeconds: number) => {
   });
 };
 
-type RenderType = "ssr" | "lambda";
+type RenderType = "ssr" | "lambda" | "cloudrun";
 
 const isRateLimitError = (err: unknown) => {
   const message = err instanceof Error ? err.message : String(err);
@@ -74,10 +78,19 @@ export const useRendering = (
       status: "invoking",
     });
     try {
+      // Select the appropriate API functions based on render type
       const renderVideo =
-        renderType === "ssr" ? ssrRenderVideo : lambdaRenderVideo;
+        renderType === "ssr"
+          ? ssrRenderVideo
+          : renderType === "lambda"
+          ? lambdaRenderVideo
+          : cloudrunRenderVideo;
       const getProgress =
-        renderType === "ssr" ? ssrGetProgress : lambdaGetProgress;
+        renderType === "ssr"
+          ? ssrGetProgress
+          : renderType === "lambda"
+          ? lambdaGetProgress
+          : cloudrunGetProgress;
 
       console.log("Calling renderVideo API with inputProps", inputProps);
       const response = await renderVideo({ id, inputProps });
@@ -99,8 +112,12 @@ export const useRendering = (
 
       let pending = true;
 
-      const basePollingIntervalMs = renderType === "lambda" ? 2500 : 1000;
-      const initialThrottleBackoffMs = renderType === "lambda" ? 4000 : 2000;
+      // Configure polling based on render type
+      // Cloud Run uses similar intervals to Lambda since it also uses GCS for progress
+      const basePollingIntervalMs =
+        renderType === "lambda" || renderType === "cloudrun" ? 2500 : 1000;
+      const initialThrottleBackoffMs =
+        renderType === "lambda" || renderType === "cloudrun" ? 4000 : 2000;
       let throttleBackoffMs = initialThrottleBackoffMs;
       const maxThrottleBackoffMs = 15000;
 

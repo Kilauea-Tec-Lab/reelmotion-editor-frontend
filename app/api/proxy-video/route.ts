@@ -9,43 +9,66 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Obtener los headers de range si existen (importante para video streaming)
+    // Forward the Range header. This is CRITICAL for video seeking and metadata loading.
     const range = request.headers.get('range');
     
-    const headers: HeadersInit = {};
+    const headers: HeadersInit = {
+      'Accept': '*/*',
+    };
+    
     if (range) {
       headers['Range'] = range;
     }
 
-    const response = await fetch(videoUrl, { headers });
+    // Fetch from source (Google Cloud Storage)
+    const response = await fetch(videoUrl, { 
+      headers,
+      // Disable internal Next.js caching for large binary files/ranges
+      cache: 'no-store', 
+    });
 
-    // Copiar los headers importantes de la respuesta
+    if (!response.ok && response.status !== 206) {
+      return NextResponse.json(
+        { error: `Failed to fetch video: ${response.status}` },
+        { status: response.status }
+      );
+    }
+
     const responseHeaders = new Headers();
-    responseHeaders.set('Content-Type', response.headers.get('Content-Type') || 'video/mp4');
     
-    if (response.headers.get('Content-Length')) {
-      responseHeaders.set('Content-Length', response.headers.get('Content-Length')!);
-    }
-    
-    if (response.headers.get('Content-Range')) {
-      responseHeaders.set('Content-Range', response.headers.get('Content-Range')!);
-    }
-    
-    if (response.headers.get('Accept-Ranges')) {
-      responseHeaders.set('Accept-Ranges', response.headers.get('Accept-Ranges')!);
+    // Copy essential headers for MP4 playback and streaming
+    const headersToPass = [
+        'Content-Type',
+        'Content-Length',
+        'Content-Range',
+        'Accept-Ranges',
+        'Last-Modified',
+        'ETag'
+    ];
+
+    headersToPass.forEach((header) => {
+        const value = response.headers.get(header);
+        if (value) {
+            responseHeaders.set(header, value);
+        }
+    });
+
+    // Fallback if content-type is missing
+    if (!responseHeaders.has('Content-Type')) {
+        responseHeaders.set('Content-Type', 'video/mp4');
     }
 
     // CORS headers
     responseHeaders.set('Access-Control-Allow-Origin', '*');
     responseHeaders.set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
-    responseHeaders.set('Access-Control-Expose-Headers', 'Content-Length, Content-Range');
-
-    const blob = await response.blob();
+    responseHeaders.set('Access-Control-Expose-Headers', 'Content-Length, Content-Range, Accept-Ranges');
     
-    return new NextResponse(blob, {
+    // STREAM proper: Pass the response body directly instead of buffering it
+    return new NextResponse(response.body, {
       status: response.status,
       headers: responseHeaders,
     });
+
   } catch (error) {
     console.error('Proxy video error:', error);
     return NextResponse.json({ error: 'Failed to fetch video' }, { status: 500 });

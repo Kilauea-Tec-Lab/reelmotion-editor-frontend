@@ -2,7 +2,7 @@ import React from "react";
 import { ImageOverlay, OverlayType, ClipOverlay } from "../types";
 import { DISABLE_VIDEO_KEYFRAMES, FPS } from "../constants";
 import { useKeyframeContext } from "../contexts/keyframe-context";
-import { toAbsoluteUrl } from "../utils/url-helper";
+import { toAbsoluteUrl, getOptimizedMediaUrl, isGcsUrl } from "../utils/url-helper";
 
 interface UseKeyframesProps {
   overlay: ClipOverlay | ImageOverlay;
@@ -196,10 +196,14 @@ export const useKeyframes = ({
       else if (overlayMeta.src.startsWith("/")) {
         processedVideoSrc = toAbsoluteUrl(overlayMeta.src);
       }
+      // OPTIMIZATION: Use direct GCS URL or CDN for faster loading
+      else if (isGcsUrl(overlayMeta.src)) {
+        processedVideoSrc = getOptimizedMediaUrl(overlayMeta.src);
+      }
 
       // Create a temporary video element to get dimensions
       const tempVideo = document.createElement("video");
-      // Only set crossOrigin if it's an external URL
+      // Only set crossOrigin for external URLs (GCS URLs have CORS configured)
       if (processedVideoSrc.startsWith('http') && !processedVideoSrc.includes(window.location.hostname)) {
         tempVideo.crossOrigin = "anonymous";
       }

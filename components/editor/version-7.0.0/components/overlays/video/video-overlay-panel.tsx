@@ -16,6 +16,7 @@ interface ReelmotionVideo {
   id: string;
   name: string | null;
   video_url: string;
+  thumbnail_url?: string | null;
 }
 
 /**
@@ -228,16 +229,30 @@ export const VideoOverlayPanel: React.FC = () => {
                           </div>
                         )}
                         
-                        {/* Video element */}
-                        <video
-                          src={video.video_url}
-                          className={`w-full h-full rounded-sm object-cover hover:opacity-60 transition-opacity duration-200 ${
-                            !loadedVideos.has(video.id) ? 'opacity-0' : 'opacity-100'
-                          }`}
-                          muted
-                          playsInline
-                          onLoadedData={() => handleVideoLoaded(video.id)}
-                        />
+                        {/* Use thumbnail if available, otherwise video element */}
+                        {video.thumbnail_url ? (
+                          <img
+                            src={video.thumbnail_url}
+                            alt={video.name || "Video thumbnail"}
+                            className={`w-full h-full rounded-sm object-cover hover:opacity-60 transition-opacity duration-200 ${
+                              !loadedVideos.has(video.id) ? 'opacity-0' : 'opacity-100'
+                            }`}
+                            loading="lazy"
+                            onLoad={() => handleVideoLoaded(video.id)}
+                            onError={() => handleVideoLoaded(video.id)}
+                          />
+                        ) : (
+                          <video
+                            src={video.video_url}
+                            className={`w-full h-full rounded-sm object-cover hover:opacity-60 transition-opacity duration-200 ${
+                              !loadedVideos.has(video.id) ? 'opacity-0' : 'opacity-100'
+                            }`}
+                            muted
+                            playsInline
+                            preload="metadata"
+                            onLoadedData={() => handleVideoLoaded(video.id)}
+                          />
+                        )}
                         
                         {/* Hover overlay */}
                         <div className="absolute inset-0 bg-black/20 opacity-0 hover:opacity-100 transition-opacity duration-200" />

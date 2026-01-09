@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import Cookies from "js-cookie";
-import { toAbsoluteUrl } from "../utils/url-helper";
+import { toAbsoluteUrl, getOptimizedMediaUrl } from "../utils/url-helper";
 
 // Interface defining the structure of video data from Reelmotion backend
 interface ReelmotionVideo {
   id: string;
   name: string | null;
   video_url: string;
+  thumbnail_url?: string | null;
 }
 
 // Interface for the API response
@@ -20,6 +21,7 @@ const ITEMS_PER_PAGE = 15;
 /**
  * Custom hook for fetching and managing videos from Reelmotion backend
  * Implements lazy loading (pagination) and search functionality
+ * Uses direct GCS URLs with CDN for faster loading
  */
 export function useReelmotionVideos() {
   const [allVideos, setAllVideos] = useState<ReelmotionVideo[]>([]);
@@ -65,8 +67,10 @@ export function useReelmotionVideos() {
             )
             .map((video) => ({
               ...video,
-              // Use proxy to avoid CORS issues
-              video_url: toAbsoluteUrl(`/api/proxy-video?url=${encodeURIComponent(video.video_url)}`),
+              // Use optimized URL (CDN if available, direct GCS otherwise)
+              // GCS has CORS configured, so no proxy needed
+              video_url: getOptimizedMediaUrl(video.video_url),
+              thumbnail_url: video.thumbnail_url ? getOptimizedMediaUrl(video.thumbnail_url) : null,
             }))
             .reverse(); // Reverse the order to show newest first
 

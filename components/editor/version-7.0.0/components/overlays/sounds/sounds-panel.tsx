@@ -1,6 +1,6 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Play, Pause } from "lucide-react";
+import { Play, Pause, Loader2 } from "lucide-react";
 import { LocalSound, OverlayType, SoundOverlay } from "../../../types";
 import { useState, useEffect, useRef } from "react";
 
@@ -9,6 +9,7 @@ import { useEditorContext } from "../../../contexts/editor-context";
 import { useTimeline } from "../../../contexts/timeline-context";
 import { SoundDetails } from "./sound-details";
 import { useEditorAuth } from "../../../hooks/use-editor-auth";
+import { getOptimizedMediaUrl } from "../../../utils/url-helper";
 
 /**
  * SoundsPanel Component
@@ -27,7 +28,9 @@ import { useEditorAuth } from "../../../hooks/use-editor-auth";
  */
 const SoundsPanel: React.FC = () => {
   const [playingTrack, setPlayingTrack] = useState<string | null>(null);
+  const [loadingTrack, setLoadingTrack] = useState<string | null>(null);
   const audioRefs = useRef<{ [key: string]: HTMLAudioElement }>({});
+  const audioDurationsRef = useRef<{ [key: string]: number }>({});
   const {
     addOverlay,
     overlays,
@@ -40,7 +43,7 @@ const SoundsPanel: React.FC = () => {
   const [localOverlay, setLocalOverlay] = useState<SoundOverlay | null>(null);
   const { editorData } = useEditorAuth();
 
-  // Convert project_voices to LocalSound format
+  // Convert project_voices to LocalSound format with optimized URLs
   const localSounds: LocalSound[] = React.useMemo(() => {
     if (!editorData?.project_voices) return [];
     
@@ -48,8 +51,9 @@ const SoundsPanel: React.FC = () => {
       id: voice.id,
       title: voice.name,
       artist: voice.description || "Project Voice",
-      duration: 15, // Default duration, can be updated if available
-      file: voice.audio_url,
+      duration: 0, // Will be extracted from audio file
+      // Use optimized URL (CDN if available, direct GCS otherwise)
+      file: getOptimizedMediaUrl(voice.audio_url),
     }));
   }, [editorData?.project_voices]);
 
@@ -82,7 +86,16 @@ const SoundsPanel: React.FC = () => {
    */
   useEffect(() => {
     localSounds.forEach((sound) => {
-      audioRefs.current[sound.id] = new Audio(sound.file);
+      const audio = new Audio(sound.file);
+      audio.preload = "metadata";
+      audioRefs.current[sound.id] = audio;
+      
+      // Extract duration when metadata is loaded
+      audio.addEventListener("loadedmetadata", () => {
+        if (audio.duration && !isNaN(audio.duration) && isFinite(audio.duration)) {
+          audioDurationsRef.current[sound.id] = audio.duration;
+        }
+      });
     });
 
     return () => {
@@ -92,6 +105,63 @@ const SoundsPanel: React.FC = () => {
       });
     };
   }, [localSounds]);
+
+  /**
+   * Get audio duration - extracts from audio element or returns cached value
+   */
+  const getAudioDuration = (soundId: string, audioUrl: string): Promise<number> => {
+    return new Promise((resolve) => {
+      // Check if we already have the duration cached
+      if (audioDurationsRef.current[soundId] && audioDurationsRef.current[soundId] > 0) {
+        resolve(audioDurationsRef.current[soundId]);
+        return;
+      }
+
+      // Check if audio element already has duration
+      const existingAudio = audioRefs.current[soundId];
+      if (existingAudio && existingAudio.duration && !isNaN(existingAudio.duration) && isFinite(existingAudio.duration)) {
+        audioDurationsRef.current[soundId] = existingAudio.duration;
+        resolve(existingAudio.duration);
+        return;
+      }
+
+      // Create new audio element to get duration
+      const audio = new Audio(audioUrl);
+      audio.preload = "metadata";
+
+      const handleLoadedMetadata = () => {
+        if (audio.duration && !isNaN(audio.duration) && isFinite(audio.duration)) {
+          audioDurationsRef.current[soundId] = audio.duration;
+          resolve(audio.duration);
+        } else {
+          resolve(5); // Default 5 seconds if can't determine
+        }
+        cleanup();
+      };
+
+      const handleError = () => {
+        console.warn("Failed to load audio duration, using default");
+        resolve(5); // Default 5 seconds
+        cleanup();
+      };
+
+      const cleanup = () => {
+        audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
+        audio.removeEventListener("error", handleError);
+      };
+
+      audio.addEventListener("loadedmetadata", handleLoadedMetadata);
+      audio.addEventListener("error", handleError);
+
+      // Timeout fallback
+      setTimeout(() => {
+        if (!audioDurationsRef.current[soundId]) {
+          resolve(5);
+          cleanup();
+        }
+      }, 5000);
+    });
+  };
 
   /**
    * Toggles play/pause state for a sound track
@@ -117,46 +187,62 @@ const SoundsPanel: React.FC = () => {
 
   /**
    * Adds a sound overlay to the timeline at the next available position
-   * Calculates duration based on the sound length (30fps)
+   * Extracts real duration from audio file
    *
    * @param {LocalSound} sound - The sound track to add to the timeline
    */
-  const handleAddToTimeline = (sound: LocalSound) => {
-    // Find the next available position on the timeline
-    const { from, row } = findNextAvailablePosition(
-      overlays,
-      visibleRows,
-      durationInFrames
-    );
+  const handleAddToTimeline = async (sound: LocalSound) => {
+    // Show loading state
+    setLoadingTrack(sound.id);
 
-    // Create the sound overlay configuration
-    const newSoundOverlay: SoundOverlay = {
-      id: Date.now(),
-      type: OverlayType.SOUND,
-      content: sound.title,
-      src: sound.file,
-      from,
-      row,
-      // Layout properties
-      left: 0,
-      top: 0,
-      width: 1920,
-      height: 100,
-      rotation: 0,
-      isDragging: false,
-      durationInFrames: sound.duration * 30, // 30fps
-      styles: {
-        opacity: 1,
-      },
-    };
+    try {
+      // Get real audio duration
+      const audioDuration = await getAudioDuration(sound.id, sound.file);
+      
+      // Find the next available position on the timeline
+      const { from, row } = findNextAvailablePosition(
+        overlays,
+        visibleRows,
+        durationInFrames
+      );
 
-    addOverlay(newSoundOverlay);
+      // Create the sound overlay configuration with real duration
+      const newSoundOverlay: SoundOverlay = {
+        id: Date.now(),
+        type: OverlayType.SOUND,
+        content: sound.title,
+        src: sound.file,
+        from,
+        row,
+        // Layout properties
+        left: 0,
+        top: 0,
+        width: 1920,
+        height: 100,
+        rotation: 0,
+        isDragging: false,
+        durationInFrames: Math.ceil(audioDuration * 30), // 30fps with real duration
+        styles: {
+          opacity: 1,
+        },
+      };
+
+      addOverlay(newSoundOverlay);
+    } catch (error) {
+      console.error("Error adding sound to timeline:", error);
+    } finally {
+      setLoadingTrack(null);
+    }
   };
 
   /**
    * Handle drag start for sound items
+   * Includes cached duration if available
    */
   const handleDragStart = (e: React.DragEvent, sound: LocalSound) => {
+    // Use cached duration if available, otherwise use a placeholder
+    const duration = audioDurationsRef.current[sound.id] || 5;
+    
     e.dataTransfer.effectAllowed = "copy";
     e.dataTransfer.setData(
       "application/reelmotion-sound",
@@ -164,7 +250,7 @@ const SoundsPanel: React.FC = () => {
         type: "sound",
         title: sound.title,
         file: sound.file,
-        duration: sound.duration,
+        duration: duration,
         artist: sound.artist,
         id: sound.id,
       })
@@ -179,42 +265,49 @@ const SoundsPanel: React.FC = () => {
    * @param {LocalSound} sound - The sound track data to render
    * @returns {JSX.Element} A sound card component
    */
-  const renderSoundCard = (sound: LocalSound) => (
-    <div
-      key={sound.id}
-      draggable
-      onDragStart={(e) => handleDragStart(e, sound)}
-      onClick={() => handleAddToTimeline(sound)}
-      className="group flex items-center gap-3 p-2.5 bg-white dark:bg-darkBox rounded-md 
-        border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900
-        transition-all duration-150 cursor-pointer"
-    >
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={(e) => {
-          e.stopPropagation();
-          togglePlay(sound.id);
-        }}
-        className="h-8 w-8 rounded-full bg-transparent hover:bg-gray-100 dark:hover:bg-gray-900 
-          text-gray-700 dark:text-gray-300"
+  const renderSoundCard = (sound: LocalSound) => {
+    const isLoading = loadingTrack === sound.id;
+    
+    return (
+      <div
+        key={sound.id}
+        draggable={!isLoading}
+        onDragStart={(e) => handleDragStart(e, sound)}
+        onClick={() => !isLoading && handleAddToTimeline(sound)}
+        className={`group flex items-center gap-3 p-2.5 bg-white dark:bg-darkBox rounded-md 
+          border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900
+          transition-all duration-150 ${isLoading ? 'opacity-70 cursor-wait' : 'cursor-pointer'}`}
       >
-        {playingTrack === sound.id ? (
-          <Pause className="h-4 w-4" />
-        ) : (
-          <Play className="h-4 w-4" />
-        )}
-      </Button>
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-          {sound.title}
-        </p>
-        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-          {sound.artist}
-        </p>
+        <Button
+          variant="ghost"
+          size="sm"
+          disabled={isLoading}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (!isLoading) togglePlay(sound.id);
+          }}
+          className="h-8 w-8 rounded-full bg-transparent hover:bg-gray-100 dark:hover:bg-gray-900 
+            text-gray-700 dark:text-gray-300"
+        >
+          {isLoading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : playingTrack === sound.id ? (
+            <Pause className="h-4 w-4" />
+          ) : (
+            <Play className="h-4 w-4" />
+          )}
+        </Button>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+            {sound.title}
+          </p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+            {isLoading ? "Adding to timeline..." : sound.artist}
+          </p>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="space-y-4 p-4 bg-gray-50 dark:bg-darkBox  h-full">

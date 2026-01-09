@@ -6,11 +6,83 @@
  */
 
 /**
+ * CDN Configuration for Google Cloud Storage
+ * The CDN provides faster delivery via Google's edge network
+ */
+const CDN_CONFIG = {
+  enabled: process.env.NEXT_PUBLIC_CDN_ENABLED === "true",
+  baseUrl: process.env.NEXT_PUBLIC_CDN_URL || "https://cdn.reelmotion.ai",
+  // Map GCS bucket URLs to CDN paths
+  bucketMappings: {
+    "storage.googleapis.com/reelmotion-ai-videos": "videos",
+    "storage.googleapis.com/reelmotion-ai-audio": "audio",
+    "storage.googleapis.com/reelmotion-ai-images": "images",
+  } as Record<string, string>,
+};
+
+/**
  * Get the base URL from environment variables or default to localhost:3000
  */
 export const getBaseUrl = (): string => {
   // Use environment variable if available, otherwise default to localhost:3000
   return process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+};
+
+/**
+ * Transform a GCS URL to use the CDN for faster delivery
+ * Falls back to original URL if CDN is not enabled or URL doesn't match
+ *
+ * @param url The original GCS URL
+ * @returns CDN URL if available, otherwise original URL
+ */
+export const toCdnUrl = (url: string): string => {
+  // If CDN is not enabled, return original URL
+  if (!CDN_CONFIG.enabled) {
+    return url;
+  }
+
+  // Check if URL matches any bucket mapping
+  for (const [bucketPattern, cdnPath] of Object.entries(CDN_CONFIG.bucketMappings)) {
+    if (url.includes(bucketPattern)) {
+      // Extract the file path from the GCS URL
+      const match = url.match(new RegExp(`${bucketPattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/(.+)`));
+      if (match && match[1]) {
+        return `${CDN_CONFIG.baseUrl}/${cdnPath}/${match[1]}`;
+      }
+    }
+  }
+
+  return url;
+};
+
+/**
+ * Check if a URL is a GCS URL that can be served directly (with CORS configured)
+ */
+export const isGcsUrl = (url: string): boolean => {
+  // All reelmotion buckets have CORS configured
+  return url.includes("storage.googleapis.com/reelmotion-ai-");
+};
+
+/**
+ * Get optimized URL for media content
+ * Uses CDN if available, otherwise returns original URL with CORS-friendly headers
+ *
+ * @param url The original media URL
+ * @returns Optimized URL for faster loading
+ */
+export const getOptimizedMediaUrl = (url: string): string => {
+  // Try CDN first
+  const cdnUrl = toCdnUrl(url);
+  if (cdnUrl !== url) {
+    return cdnUrl;
+  }
+
+  // For GCS URLs, we can use the URL directly if CORS is configured
+  if (isGcsUrl(url)) {
+    return url;
+  }
+
+  return url;
 };
 
 /**
@@ -74,6 +146,8 @@ export const resolveMediaUrl = (url: string, baseUrl?: string): string => {
 /**
  * Resolve a video URL and, when it is cross-origin, route it through the local proxy
  * to improve playback reliability (CORS/range headers) for Remotion's Player/OffthreadVideo.
+ * 
+ * OPTIMIZATION: GCS URLs with proper CORS config bypass the proxy for faster loading.
  */
 export const resolveVideoUrl = (url: string, baseUrl?: string): string => {
   const resolved = resolveMediaUrl(url, baseUrl);
@@ -86,6 +160,13 @@ export const resolveVideoUrl = (url: string, baseUrl?: string): string => {
   // Avoid double-proxying.
   if (resolved.includes("/api/proxy-video") || resolved.includes("/api/proxy-video?")) {
     return resolved;
+  }
+
+  // OPTIMIZATION: GCS URLs have CORS configured - use them directly for faster loading
+  // This bypasses the proxy completely for our own storage
+  if (isGcsUrl(resolved)) {
+    // Try CDN first if enabled, otherwise use direct GCS URL
+    return getOptimizedMediaUrl(resolved);
   }
 
   // Determine current origin for building same-origin proxy URL.
@@ -102,5 +183,6 @@ export const resolveVideoUrl = (url: string, baseUrl?: string): string => {
   // If already same-origin, no need to proxy.
   if (resolved.startsWith(origin)) return resolved;
 
+  // Only proxy truly external URLs that need CORS handling
   return `${origin}/api/proxy-video?url=${encodeURIComponent(resolved)}`;
 };
