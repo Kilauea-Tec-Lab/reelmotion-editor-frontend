@@ -162,11 +162,9 @@ export const useRendering = (
       let pending = true;
 
       // Configure polling based on render type
-      // Cloud Run uses similar intervals to Lambda since it also uses GCS for progress
-      const basePollingIntervalMs =
-        renderType === "lambda" || renderType === "cloudrun" ? 2500 : 1000;
-      const initialThrottleBackoffMs =
-        renderType === "lambda" || renderType === "cloudrun" ? 4000 : 2000;
+      // Lambda uses longer intervals since it polls GCS
+      const basePollingIntervalMs = renderType === "lambda" ? 2500 : 1000;
+      const initialThrottleBackoffMs = renderType === "lambda" ? 4000 : 2000;
       let throttleBackoffMs = initialThrottleBackoffMs;
       const maxThrottleBackoffMs = 15000;
 
