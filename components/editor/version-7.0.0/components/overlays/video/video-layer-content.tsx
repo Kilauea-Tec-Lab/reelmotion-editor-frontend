@@ -104,7 +104,6 @@ export const VideoLayerContent: React.FC<VideoLayerContentProps> = ({
         volume={overlay.styles.volume ?? 1}
         playbackRate={overlay.speed ?? 1}
         pauseWhenBuffering
-        // @ts-ignore
         crossOrigin="anonymous"
       />
     </div>
