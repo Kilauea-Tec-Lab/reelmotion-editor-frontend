@@ -193,9 +193,6 @@ export const LocalMediaProvider: React.FC<{
           } else {
             // Delete from local server (old uploads)
             await deleteMediaFile("", fileToRemove.id);
-
-            // Delete from IndexedDB
-            await deleteFromIndexDB(id);
           }
 
           // Update state
