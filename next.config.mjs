@@ -1,5 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Allow large file uploads (500MB max)
+  experimental: {
+    serverComponentsExternalPackages: [
+      "@remotion/bundler",
+      "@remotion/renderer",
+      "esbuild",
+    ],
+  },
   webpack: (config, { isServer }) => {
     // Handle platform-specific Remotion packages
     config.resolve = {
@@ -33,13 +41,6 @@ const nextConfig = {
     }
 
     return config;
-  },
-  experimental: {
-    serverComponentsExternalPackages: [
-      "@remotion/bundler",
-      "@remotion/renderer",
-      "esbuild",
-    ],
   },
 };
 

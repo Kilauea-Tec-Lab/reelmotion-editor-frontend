@@ -2,7 +2,7 @@ import React from "react";
 import { ImageOverlay, OverlayType, ClipOverlay } from "../types";
 import { DISABLE_VIDEO_KEYFRAMES, FPS } from "../constants";
 import { useKeyframeContext } from "../contexts/keyframe-context";
-import { toAbsoluteUrl, getOptimizedMediaUrl, isGcsUrl } from "../utils/url-helper";
+import { toAbsoluteUrl, getOptimizedMediaUrl, isGcsUrl, isBackendUrl, resolveVideoUrl } from "../utils/url-helper";
 
 interface UseKeyframesProps {
   overlay: ClipOverlay | ImageOverlay;
@@ -200,11 +200,17 @@ export const useKeyframes = ({
       else if (isGcsUrl(overlayMeta.src)) {
         processedVideoSrc = getOptimizedMediaUrl(overlayMeta.src);
       }
+      // Backend URLs need to go through proxy due to CORS
+      else if (isBackendUrl(overlayMeta.src)) {
+        processedVideoSrc = resolveVideoUrl(overlayMeta.src, baseUrl);
+      }
 
       // Create a temporary video element to get dimensions
       const tempVideo = document.createElement("video");
-      // Only set crossOrigin for external URLs (GCS URLs have CORS configured)
-      if (processedVideoSrc.startsWith('http') && !processedVideoSrc.includes(window.location.hostname)) {
+      // Only set crossOrigin for external URLs that are NOT proxied
+      if (processedVideoSrc.startsWith('http') && 
+          !processedVideoSrc.includes(window.location.hostname) && 
+          !processedVideoSrc.includes('/api/proxy-video')) {
         tempVideo.crossOrigin = "anonymous";
       }
       tempVideo.muted = true;

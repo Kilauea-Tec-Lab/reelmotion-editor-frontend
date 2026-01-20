@@ -3,9 +3,19 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useLocalMedia } from "../../contexts/local-media-context";
 import { formatBytes, formatDuration } from "../../utils/format-utils";
+import { resolveVideoUrl } from "../../utils/url-helper";
 import { Button } from "../../../../ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../../ui/tabs";
-import { Loader2, Upload, Trash2, Image, Video, Music } from "lucide-react";
+import { Loader2, Upload, Trash2, Image, Video, Music, Pencil, Check } from "lucide-react";
+import { Input } from "../../../../ui/input";
+import Cookies from "js-cookie";
+import { toast } from "@/hooks/use-toast";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Dialog,
   DialogContent,
@@ -29,7 +39,7 @@ export function LocalMediaGallery({
 }: {
   onSelectMedia?: (mediaFile: any) => void;
 }) {
-  const { localMediaFiles, addMediaFile, removeMediaFile, isLoading } =
+  const { localMediaFiles, addMediaFile, removeMediaFile, isLoading, updateMediaFileName, uploadProgress } =
     useLocalMedia();
   const [activeTab, setActiveTab] = useState("all");
   const [selectedFile, setSelectedFile] = useState<any>(null);
@@ -40,6 +50,11 @@ export function LocalMediaGallery({
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dragCounterRef = useRef(0);
+  
+  // Rename state
+  const [fileToRename, setFileToRename] = useState<any>(null);
+  const [newName, setNewName] = useState("");
+  const [isRenaming, setIsRenaming] = useState(false);
 
   const resetDragState = () => {
     dragCounterRef.current = 0;
@@ -104,13 +119,12 @@ export function LocalMediaGallery({
     }
   };
 
-  // Filter media files based on active tab and reverse to show newest first
+  // Filter media files based on active tab (already sorted newest first in context)
   const filteredMedia = localMediaFiles
     .filter((file) => {
       if (activeTab === "all") return true;
       return file.type === activeTab;
-    })
-    .reverse();
+    });
 
   // Handle file upload (unified for both button and drag&drop)
   const uploadFile = async (file: File) => {
@@ -145,6 +159,53 @@ export function LocalMediaGallery({
       await uploadFile(file);
       // Reset the input value to allow uploading the same file again
       event.target.value = "";
+    }
+  };
+
+  const handleRename = async () => {
+    if (!fileToRename || !newName.trim()) return;
+    
+    setIsRenaming(true);
+    try {
+      const token = Cookies.get("token");
+      const backendUrl =
+          process.env.NEXT_PUBLIC_BACKEND_URL || "https://backend.reelmotion.ai";
+      
+      const formData = new FormData();
+      formData.append("id", fileToRename.id);
+      formData.append("file_name", newName);
+
+      const response = await fetch(`${backendUrl}/editor/edit-upload-name`, {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer " + token,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update name");
+      }
+
+      // Update local state
+      updateMediaFileName(fileToRename.id, newName);
+      
+      setFileToRename(null);
+      setNewName("");
+      
+      toast({
+        title: "Success",
+        description: "File name updated successfully",
+      });
+    } catch (error) {
+      console.error("Error updating file name:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update file name",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRenaming(false);
     }
   };
 
@@ -261,7 +322,8 @@ export function LocalMediaGallery({
         return (
           <div className="relative bg-gray-50 dark:bg-darkBox  rounded-lg p-2">
             <video
-              src={selectedFile.path}
+              src={resolveVideoUrl(selectedFile.path)}
+              crossOrigin="anonymous"
               controls
               className={commonClasses}
               controlsList="nodownload"
@@ -303,95 +365,157 @@ export function LocalMediaGallery({
     return (
       <div
         key={file.id}
-        className="relative group/item border dark:border-gray-700 border-gray-200 rounded-md overflow-hidden cursor-pointer 
-          hover:border-blue-500 dark:hover:border-blue-400 transition-all 
-          bg-white dark:bg-darkBoxSub /80 shadow-sm hover:shadow-md"
+        className="relative group/item rounded-sm overflow-hidden cursor-pointer"
         onClick={() => !isDeleting && handleMediaSelect(file)}
       >
-        {/* Deleting Overlay */}
-        {isDeleting && (
-          <div className="absolute inset-0 bg-black/60 dark:bg-black/80 z-10 flex items-center justify-center">
-            <div className="flex flex-col items-center space-y-2">
-              <Loader2 className="w-8 h-8 text-white animate-spin" />
-              <p className="text-white text-xs font-medium">Deleting...</p>
+        <div className="relative aspect-video bg-gray-200 dark:bg-darkBoxSub">
+          {/* Deleting Overlay */}
+          {isDeleting && (
+            <div className="absolute inset-0 bg-black/60 dark:bg-black/80 z-20 flex items-center justify-center">
+              <div className="flex flex-col items-center space-y-2">
+                <Loader2 className="w-8 h-8 text-white animate-spin" />
+                <p className="text-white text-xs font-medium">Deleting...</p>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Thumbnail */}
-        <div className="aspect-video relative">
+          {/* Media Content */}
           {file.type === "image" && (
             <img
               src={file.thumbnail || file.path}
               alt={file.name}
-              className="w-full h-full object-cover bg-gray-50 dark:bg-gray-900"
+              className="w-full h-full object-cover"
             />
           )}
           {file.type === "video" && (
             <>
-              <img
-                src={file.thumbnail}
-                alt={file.name}
-                className="w-full h-full object-cover bg-gray-50 dark:bg-gray-900"
+              {/* Use video element as thumbnail - proxy GCS URLs to avoid CORS */}
+              <video
+                src={resolveVideoUrl(file.path || file.thumbnail || "")}
+                crossOrigin="anonymous"
+                muted
+                playsInline
+                preload="metadata"
+                className="w-full h-full object-cover"
+                onLoadedMetadata={(e) => {
+                  // Seek to first frame for thumbnail
+                  const video = e.currentTarget;
+                  video.currentTime = 0.1;
+                }}
               />
-              <div className="absolute bottom-1.5 right-1.5 bg-black/75 dark:bg-black/90 text-white text-xs px-1.5 py-0.5 rounded-md">
-                {formatDuration(file.duration)}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center">
+                  <Video className="w-4 h-4 text-white" />
+                </div>
               </div>
+              {file.duration > 0 && (
+                <div className="absolute top-1 right-1 px-1.5 py-0.5 rounded bg-black/60 text-[10px] text-white font-medium">
+                   {formatDuration(file.duration)}
+                </div>
+              )}
             </>
           )}
           {file.type === "audio" && (
-            <div className="w-full h-full flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-              <Music className="w-10 h-10 text-gray-400 dark:text-gray-500" />
+            <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-800">
+              <Music className="w-8 h-8 text-gray-400" />
             </div>
           )}
-        </div>
 
-        {/* Media info */}
-        <div className="p-2.5">
-          <p className="text-sm font-medium truncate text-gray-900 dark:text-gray-100">
-            {file.name}
-          </p>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-            {formatBytes(file.size)}
-          </p>
-        </div>
+          {/* Hover overlay */}
+          <div className="absolute inset-0 bg-black/20 opacity-0 group-hover/item:opacity-100 transition-opacity duration-200 z-10" />
 
-        {/* Delete button */}
-        {!isDeleting && (
-          <button
-            className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 
-              text-white p-1.5 rounded-full opacity-0 group-hover/item:opacity-100 transition-all duration-200 
-              shadow-sm hover:shadow-md transform hover:scale-105"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleDeleteMedia(file.id);
-            }}
-            title="Delete media"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
-        )}
+          {/* Media Name & Options */}
+          <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/70 to-transparent flex items-center justify-between gap-1 z-20">
+            <p className="text-white text-xs font-medium truncate flex-1 text-left">
+              {file.name || "Untitled"}
+            </p>
+            
+            <div className="flex items-center gap-1 opacity-100 md:opacity-0 group-hover/item:opacity-100 transition-all" onClick={(e) => e.stopPropagation()}>
+              <DropdownMenu onOpenChange={(isOpen) => {
+                if (isOpen) {
+                  setFileToRename(file);
+                  setNewName(file.name || "");
+                }
+              }}>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-6 w-6 shrink-0 bg-black/60 backdrop-blur-sm hover:bg-black/80 text-pink-400 rounded-full"
+                  >
+                    <Pencil className="h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-60 p-2">
+                  <div className="flex items-center gap-2" onKeyDown={(e) => e.stopPropagation()}>
+                    <Input
+                      value={newName}
+                      onChange={(e) => setNewName(e.target.value)}
+                      className="h-8 text-xs"
+                      placeholder="Rename file..."
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleRename();
+                        e.stopPropagation(); // Prevent timeline actions
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <Button 
+                      size="icon" 
+                      className="h-8 w-8 shrink-0 bg-pink-500 hover:bg-pink-600 text-white"
+                      onClick={handleRename}
+                      disabled={isRenaming}
+                    >
+                      {isRenaming ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Check className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-6 w-6 shrink-0 bg-black/60 backdrop-blur-sm hover:bg-black/80 text-red-400 rounded-full"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeleteMedia(file.id);
+                }}
+              >
+                <Trash2 className="h-3 w-3" />
+              </Button>
+            </div>
+          </div>
+        </div>
       </div>
     );
   };
 
-  // Render uploading skeleton
+  // Render uploading skeleton with progress bar
   const renderUploadingSkeleton = () => {
+    const percentage = uploadProgress?.percentage || 0;
+    
     return (
       <div
         key="uploading-skeleton"
-        className="relative border dark:border-gray-700 border-gray-200 rounded-md overflow-hidden 
-          bg-white dark:bg-darkBoxSub/80 shadow-sm animate-pulse"
+        className="relative rounded-sm overflow-hidden bg-gray-200 dark:bg-darkBoxSub"
       >
-        {/* Thumbnail skeleton */}
-        <div className="aspect-video relative bg-gray-200 dark:bg-gray-800 flex items-center justify-center">
-          <Loader2 className="w-8 h-8 text-gray-400 dark:text-gray-500 animate-spin" />
-        </div>
-
-        {/* Media info skeleton */}
-        <div className="p-2.5 space-y-2">
-          <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-3/4"></div>
-          <div className="h-3 bg-gray-200 dark:bg-gray-800 rounded w-1/2"></div>
+        {/* Thumbnail skeleton with progress */}
+        <div className="aspect-video relative bg-gray-200 dark:bg-gray-800 flex flex-col items-center justify-center">
+          <Loader2 className="w-8 h-8 text-pink-500 animate-spin mb-2" />
+          <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">
+            Uploading... {percentage}%
+          </p>
+          
+          {/* Progress bar */}
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-300 dark:bg-gray-700">
+            <div 
+              className="h-full bg-pink-500 transition-all duration-300 ease-out"
+              style={{ width: `${percentage}%` }}
+            />
+          </div>
         </div>
       </div>
     );

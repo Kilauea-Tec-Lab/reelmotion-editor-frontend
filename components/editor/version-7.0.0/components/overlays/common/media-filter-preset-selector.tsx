@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { ChevronDown, Check } from "lucide-react";
 import { MEDIA_FILTER_PRESETS } from "../../../templates/common/media-filter-presets";
 import { ClipOverlay, ImageOverlay } from "../../../types";
+import { resolveVideoUrl } from "../../../utils/url-helper";
 
 interface MediaFilterPresetSelectorProps {
   localOverlay: ClipOverlay | ImageOverlay;
@@ -89,7 +90,7 @@ export const MediaFilterPresetSelector: React.FC<
   // Get the content to display in the preview (either video src or image src)
   const getMediaContent = () => {
     if (localOverlay.type === "video") {
-      return (localOverlay as ClipOverlay).content;
+      return resolveVideoUrl((localOverlay as ClipOverlay).content);
     } else {
       return (localOverlay as ImageOverlay).src;
     }

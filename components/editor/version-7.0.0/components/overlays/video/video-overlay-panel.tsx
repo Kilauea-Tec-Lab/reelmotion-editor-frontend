@@ -1,7 +1,16 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Search, Loader2 } from "lucide-react";
+import { Search, Loader2, Pencil, Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import Cookies from "js-cookie";
+import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 import { useEditorContext } from "../../../contexts/editor-context";
 import { useTimelinePositioning } from "../../../hooks/use-timeline-positioning";
@@ -46,6 +55,7 @@ export const VideoOverlayPanel: React.FC = () => {
     loadMore,
     searchQuery,
     setSearchQuery,
+    updateVideoName,
   } = useReelmotionVideos();
   
   const {
@@ -60,6 +70,11 @@ export const VideoOverlayPanel: React.FC = () => {
   const { visibleRows } = useTimeline();
   const [localOverlay, setLocalOverlay] = useState<Overlay | null>(null);
   const [loadedVideos, setLoadedVideos] = useState<Set<string>>(new Set());
+  
+  // Rename state
+  const [videoToRename, setVideoToRename] = useState<ReelmotionVideo | null>(null);
+  const [newName, setNewName] = useState("");
+  const [isRenaming, setIsRenaming] = useState(false);
   
   // Ref for infinite scroll
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -102,6 +117,53 @@ export const VideoOverlayPanel: React.FC = () => {
       }
     };
   }, [hasMore, isLoadingMore, loadMore]);
+
+  const handleRename = async () => {
+    if (!videoToRename || !newName.trim()) return;
+    
+    setIsRenaming(true);
+    try {
+      const token = Cookies.get("token");
+      const backendUrl =
+          process.env.NEXT_PUBLIC_BACKEND_URL || "https://backend.reelmotion.ai";
+      
+      const formData = new FormData();
+      formData.append("attachment_id", videoToRename.id);
+      formData.append("name", newName);
+
+      const response = await fetch(`${backendUrl}/chat/update-attachment-name`, {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer " + token,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update name");
+      }
+
+      // Update local state
+      updateVideoName(videoToRename.id, newName);
+      
+      setVideoToRename(null);
+      setNewName("");
+      
+      toast({
+        title: "Success",
+        description: "Video name updated successfully",
+      });
+    } catch (error) {
+      console.error("Error updating video name:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update video name",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRenaming(false);
+    }
+  };
 
   const handleAddClip = async (video: ReelmotionVideo) => {
     const { width, height } = getAspectRatioDimensions();
@@ -257,11 +319,55 @@ export const VideoOverlayPanel: React.FC = () => {
                         {/* Hover overlay */}
                         <div className="absolute inset-0 bg-black/20 opacity-0 hover:opacity-100 transition-opacity duration-200" />
                         
-                        {/* Video name */}
-                        <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/70 to-transparent">
-                          <p className="text-white text-xs font-medium truncate">
+                        {/* Video name & Options */}
+                        <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/70 to-transparent flex items-center justify-between gap-1 group">
+                          <p className="text-white text-xs font-medium truncate flex-1 text-left">
                             {video.name || "Untitled"}
                           </p>
+                          
+                          <div onClick={(e) => e.stopPropagation()}>
+                            <DropdownMenu onOpenChange={(isOpen) => {
+                              if (isOpen) {
+                                setVideoToRename(video);
+                                setNewName(video.name || "");
+                              }
+                            }}>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100 transition-all bg-black/60 backdrop-blur-sm hover:bg-black/80 text-pink-400 rounded-full"
+                                >
+                                  <Pencil className="h-3 w-3" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-60 p-2">
+                                <div className="flex items-center gap-2" onKeyDown={(e) => e.stopPropagation()}>
+                                  <Input
+                                    value={newName}
+                                    onChange={(e) => setNewName(e.target.value)}
+                                    className="h-8 text-xs"
+                                    placeholder="Rename video..."
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') handleRename();
+                                    }}
+                                  />
+                                  <Button 
+                                    size="icon" 
+                                    className="h-8 w-8 shrink-0 bg-pink-500 hover:bg-pink-600 text-white"
+                                    onClick={handleRename}
+                                    disabled={isRenaming}
+                                  >
+                                    {isRenaming ? (
+                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                      <Check className="h-4 w-4" />
+                                    )}
+                                  </Button>
+                                </div>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
                         </div>
                       </div>
                     </button>

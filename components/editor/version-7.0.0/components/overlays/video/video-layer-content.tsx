@@ -42,29 +42,13 @@ export const VideoLayerContent: React.FC<VideoLayerContentProps> = ({
 
   const videoSrc = resolveVideoUrl(overlay.src, baseUrl);
 
-  // Prefetch video to prevent black flash during transitions
+  // DEBUGGING: Check what URL is being used
   useEffect(() => {
-    setIsReady(false);
-    
-    const { free, waitUntilDone } = prefetch(videoSrc, {
-      method: "blob-url",
-      contentType: "video/mp4",
-    });
-
-    waitUntilDone()
-      .then(() => {
-        setIsReady(true);
-      })
-      .catch((err) => {
-        console.warn(`Failed to prefetch video ${overlay.src}:`, err);
-        // Still show the video even if prefetch fails
-        setIsReady(true);
-      });
-
-    return () => {
-      free();
-    };
-  }, [videoSrc, overlay.src]);
+    console.log("[VideoLayerContent] Overlay ID:", overlay.id);
+    console.log("[VideoLayerContent] Original Src:", overlay.src);
+    console.log("[VideoLayerContent] BaseUrl:", baseUrl);
+    console.log("[VideoLayerContent] Resolved Video Src:", videoSrc);
+  }, [overlay.id, overlay.src, baseUrl, videoSrc]);
 
   // Calculate if we're in the exit phase (last 30 frames)
   const isExitPhase = frame >= overlay.durationInFrames - 30;
@@ -111,11 +95,6 @@ export const VideoLayerContent: React.FC<VideoLayerContentProps> = ({
     justifyContent: "center",
   };
 
-  // Show transparent container while loading to prevent black flash
-  if (!isReady) {
-    return <div style={containerStyle} />;
-  }
-
   return (
     <div style={containerStyle}>
       <OffthreadVideo
@@ -125,6 +104,8 @@ export const VideoLayerContent: React.FC<VideoLayerContentProps> = ({
         volume={overlay.styles.volume ?? 1}
         playbackRate={overlay.speed ?? 1}
         pauseWhenBuffering
+        // @ts-ignore
+        crossOrigin="anonymous"
       />
     </div>
   );

@@ -1,10 +1,10 @@
 /**
- * Media Upload Utility
+ * Media Upload Utility - OPTIMIZED FOR SPEED
  *
  * This utility provides functions for:
- * - Uploading media files directly to Google Cloud Storage
- * - Generating thumbnails
- * - Getting media duration
+ * - Uploading media files directly to Google Cloud Storage (FAST)
+ * - Cached access tokens (no regeneration on each upload)
+ * - XMLHttpRequest for better performance
  */
 
 import { getUserId } from "./user-id";
@@ -12,10 +12,28 @@ import { UserMediaItem, addMediaItem } from "./indexdb";
 import Cookies from "js-cookie";
 import { SignJWT, importPKCS8 } from "jose";
 
+// ============================================
+// TOKEN CACHE - Avoid regenerating JWT every time
+// ============================================
+let cachedAccessToken: string | null = null;
+let tokenExpiresAt: number = 0;
+
+// ============================================
+// PROGRESS CALLBACK TYPE
+// ============================================
+export type UploadProgressCallback = (progress: {
+  loaded: number;
+  total: number;
+  percentage: number;
+}) => void;
+
 /**
- * Uploads a file to the server and stores the reference in IndexedDB
+ * FAST UPLOAD - Uploads a file to GCS with progress tracking
  */
-export const uploadMediaFile = async (file: File): Promise<UserMediaItem> => {
+export const uploadMediaFile = async (
+  file: File,
+  onProgress?: UploadProgressCallback
+): Promise<UserMediaItem> => {
   try {
     // Determine file type
     let fileType: "video" | "image" | "audio";
@@ -39,88 +57,36 @@ export const uploadMediaFile = async (file: File): Promise<UserMediaItem> => {
     const token = Cookies.get("token");
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "https://backend.reelmotion.ai";
 
-    // Extract metadata based on file type
-    let thumbnailUrl = "";
-    let duration: number | undefined;
-    let width = 0;
-    let height = 0;
+    // FAST UPLOAD: Skip metadata extraction for speed
+    // Backend only needs: user_id (from token), type, file_name, file_url
+    const thumbnailUrl = "";
+    const duration: number | undefined = undefined;
+    const width = 0;
+    const height = 0;
 
-    if (fileType === "video") {
-      // Get video metadata (non-blocking)
-      try {
-        console.log("Extracting video metadata...");
-        const metadata = await getVideoMetadata(file);
-        duration = metadata.duration;
-        width = metadata.width;
-        height = metadata.height;
-        console.log("Video metadata extracted:", { duration, width, height });
-      } catch (error) {
-        console.warn("Failed to extract video metadata, continuing without it:", error);
-        // Continue without metadata - upload will still work
-      }
-
-      // Extract thumbnail (non-blocking)
-      try {
-        console.log("Extracting video thumbnail...");
-        thumbnailUrl = await extractAndUploadVideoThumbnail(file, token || "");
-        console.log("Video thumbnail extracted and uploaded:", thumbnailUrl);
-      } catch (error) {
-        console.warn("Failed to extract video thumbnail, continuing without it:", error);
-        // Continue without thumbnail
-      }
-    } else if (fileType === "image") {
-      // Get image dimensions
-      const metadata = await getImageMetadata(file);
-      width = metadata.width;
-      height = metadata.height;
-    } else if (fileType === "audio") {
-      // Get audio duration
-      try {
-        const audioDuration = await getAudioDuration(file);
-        duration = audioDuration;
-        console.log("Audio duration extracted:", duration, "seconds");
-        if (!duration || isNaN(duration)) {
-          console.warn("Invalid audio duration:", duration);
-          duration = undefined;
-        }
-      } catch (error) {
-        console.warn("Failed to extract audio duration:", error);
-        duration = undefined;
-      }
-    }
+    console.log("⚡ FAST UPLOAD: Starting...", { fileName: file.name, size: file.size });
 
     // Upload file directly to Google Cloud Storage
     let uploadData;
     let serverPath: string;
     
     try {
-      // Upload directly to GCS
-      const gcsUrl = await uploadDirectlyToGCS(file, typeNumber);
+      // Upload directly to GCS with progress tracking
+      const gcsUrl = await uploadDirectlyToGCS(file, typeNumber, onProgress);
       serverPath = gcsUrl;
       
-      // Debug: log metadata before sending
-      console.log("Sending metadata to backend:", {
-        type: typeNumber,
-        fileName: file.name,
-        fileUrl: gcsUrl,
-        width,
-        height,
-        duration,
-        thumbnailUrl,
-      });
+      console.log("⚡ GCS upload complete, registering with backend...");
       
-      // Send metadata to backend
+      // Send minimal data to backend (fast upload - no metadata)
       uploadData = await sendMetadataToBackend({
         type: typeNumber,
         fileName: file.name,
         fileUrl: gcsUrl,
-        width,
-        height,
-        duration: duration !== undefined ? duration : null,
-        thumbnailUrl: thumbnailUrl || null,
         token: token || "",
         backendUrl,
       });
+      
+      console.log("⚡ FAST UPLOAD: Complete!");
       
     } catch (error) {
       console.warn("GCS upload failed, using local storage as fallback:", error);
@@ -173,74 +139,91 @@ export const uploadMediaFile = async (file: File): Promise<UserMediaItem> => {
 };
 
 /**
- * Upload file directly to Google Cloud Storage using service account credentials
+ * FAST Upload via Next.js API Proxy (NO CORS ISSUES!)
+ * - Uploads through /api/upload-to-gcs which handles GCS server-side
+ * - No CORS problems because it's same-origin
+ * - Progress tracking via XMLHttpRequest
  */
-const uploadDirectlyToGCS = async (file: File, type: number): Promise<string> => {
+const uploadDirectlyToGCS = async (
+  file: File, 
+  type: number,
+  onProgress?: UploadProgressCallback
+): Promise<string> => {
   try {
-    // Get bucket name based on type
-    let bucketName: string;
-    if (type === 1) {
-      bucketName = process.env.NEXT_PUBLIC_GCS_BUCKET_NAME_IMAGE || process.env.GCS_BUCKET_NAME_IMAGE || "reelmotion-ai-images";
-    } else if (type === 2) {
-      bucketName = process.env.NEXT_PUBLIC_GCS_BUCKET_NAME_VIDEO || process.env.GCS_BUCKET_NAME_VIDEO || "reelmotion-ai-videos";
-    } else if (type === 3) {
-      bucketName = process.env.NEXT_PUBLIC_GCS_BUCKET_NAME_AUDIO || process.env.GCS_BUCKET_NAME_AUDIO || "reelmotion-ai-audio";
-    } else {
-      throw new Error("Invalid file type");
-    }
-
-    // Generate unique filename
     const userId = getUserId();
-    const timestamp = Date.now();
-    const randomStr = Math.random().toString(36).substring(2, 15);
-    const extension = file.name.split('.').pop();
-    const fileName = `${userId}/${timestamp}-${randomStr}.${extension}`;
-
-    console.log("Uploading to GCS:", { bucketName, fileName });
-
-    // Get access token
-    const accessToken = await getGoogleCloudAccessToken();
-
-    // Upload to GCS
-    const uploadUrl = `https://storage.googleapis.com/upload/storage/v1/b/${bucketName}/o?uploadType=media&name=${encodeURIComponent(fileName)}`;
     
-    const uploadResponse = await fetch(uploadUrl, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${accessToken}`,
-        "Content-Type": file.type,
-      },
-      body: file,
+    console.log("⚡ Starting upload via API proxy:", { type, size: file.size });
+
+    // Create FormData
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('type', type.toString());
+    formData.append('userId', userId);
+
+    // Upload via Next.js API route (same origin = no CORS)
+    const result = await new Promise<{ url: string }>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      
+      xhr.upload.addEventListener('progress', (event) => {
+        if (event.lengthComputable && onProgress) {
+          const percentage = Math.round((event.loaded / event.total) * 100);
+          console.log(`Upload progress: ${percentage}%`);
+          onProgress({
+            loaded: event.loaded,
+            total: event.total,
+            percentage: percentage,
+          });
+        }
+      });
+
+      xhr.addEventListener('load', () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            const response = JSON.parse(xhr.responseText);
+            if (response.success && response.url) {
+              console.log("⚡ Upload Complete!", response.url);
+              resolve({ url: response.url });
+            } else {
+              reject(new Error(response.error || 'Upload failed'));
+            }
+          } catch {
+            reject(new Error('Invalid response from server'));
+          }
+        } else {
+          reject(new Error(`Upload failed: ${xhr.status}`));
+        }
+      });
+
+      xhr.addEventListener('error', () => reject(new Error('Network error')));
+      xhr.addEventListener('abort', () => reject(new Error('Upload aborted')));
+
+      // POST to our API route (same origin!)
+      xhr.open('POST', '/api/upload-to-gcs');
+      xhr.send(formData);
     });
 
-    if (!uploadResponse.ok) {
-      const errorText = await uploadResponse.text();
-      console.error("GCS upload error:", errorText);
-      throw new Error(`Failed to upload to GCS: ${uploadResponse.status}`);
-    }
-
-    console.log("File uploaded successfully to GCS");
-
-    // NOTE: Do not call the object ACL endpoint here.
-    // Many buckets are configured with "uniform bucket-level access" which disables object ACLs,
-    // causing noisy 400 errors in the browser even though the upload succeeded.
-    // Public access (if desired) should be managed via bucket IAM/policies.
-
-    // Return public URL
-    const publicUrl = `https://storage.googleapis.com/${bucketName}/${fileName}`;
-    console.log("Public URL:", publicUrl);
-    return publicUrl;
+    return result.url;
     
   } catch (error) {
-    console.error("Error uploading to GCS:", error);
+    console.error("Error uploading:", error);
     throw error;
   }
 };
 
 /**
  * Get Google Cloud access token using service account credentials
+ * OPTIMIZED: Uses cache to avoid regenerating JWT on each upload
  */
 const getGoogleCloudAccessToken = async (): Promise<string> => {
+  // Check cache first - return immediately if valid
+  const now = Date.now();
+  if (cachedAccessToken && tokenExpiresAt > now + 60000) { // 1 min buffer
+    console.log("⚡ Using cached access token");
+    return cachedAccessToken;
+  }
+
+  console.log("⚡ Generating new access token...");
+  
   try {
     const clientEmail = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_EMAIL;
     const privateKeyBase64 = process.env.NEXT_PUBLIC_GOOGLE_PRIVATE_KEY_BASE64;
@@ -252,34 +235,21 @@ const getGoogleCloudAccessToken = async (): Promise<string> => {
 
     if (!privateKeyBase64) {
       console.error('❌ Missing Google Cloud private key (Base64)');
-      console.error('Environment check:', {
-        hasClientEmail: !!clientEmail,
-        hasPrivateKeyBase64: !!privateKeyBase64,
-        nodeEnv: process.env.NODE_ENV,
-      });
       throw new Error("Missing Google Cloud private key");
     }
 
     // Decode from Base64
-    console.log("✅ Using Base64 encoded private key");
     let privateKey: string;
-    try {
-      const sanitizedBase64 = privateKeyBase64.trim().replace(/^['"]|['"]$/g, "");
-      privateKey = Buffer.from(sanitizedBase64, 'base64').toString('utf-8');
-    } catch (decodeError) {
-      console.error('❌ Error decoding Base64 private key:', decodeError);
-      throw new Error('Failed to decode private key from Base64');
-    }
+    const sanitizedBase64 = privateKeyBase64.trim().replace(/^['"]|['"]$/g, "");
+    privateKey = Buffer.from(sanitizedBase64, 'base64').toString('utf-8');
 
-    // Normalize + reconstruct PEM to avoid cases where the END marker is not on its own line
-    // (jose will throw "unexpected '-' after base64 padding" if the footer is glued to the base64 body)
+    // Normalize + reconstruct PEM
     privateKey = privateKey
       .replace(/\r\n/g, "\n")
       .replace(/\\n/g, "\n")
       .trim();
 
     if (privateKey.includes('-----BEGIN RSA PRIVATE KEY-----')) {
-      console.error('❌ Private key is PKCS#1 (BEGIN RSA PRIVATE KEY). It must be PKCS#8 (BEGIN PRIVATE KEY).');
       throw new Error('Invalid private key format: expected PKCS#8');
     }
 
@@ -355,7 +325,12 @@ const getGoogleCloudAccessToken = async (): Promise<string> => {
     }
 
     const data = await response.json();
-    console.log("Access token obtained successfully");
+    
+    // CACHE the token for future uploads (expires in ~1 hour)
+    cachedAccessToken = data.access_token;
+    tokenExpiresAt = Date.now() + (data.expires_in * 1000) - 60000; // 1 min buffer
+    
+    console.log("⚡ Access token obtained and cached");
     return data.access_token;
     
   } catch (error) {
@@ -365,17 +340,15 @@ const getGoogleCloudAccessToken = async (): Promise<string> => {
 };
 
 /**
- * Send metadata to backend (no file, just URLs and metadata)
+ * Send minimal data to backend (fast upload - only required fields)
+ * Backend only receives: type, file_name, file_url
+ * user_id is extracted from the auth token on the backend
  */
 const sendMetadataToBackend = async (
   options: {
     type: number;
     fileName: string;
     fileUrl: string;
-    width: number;
-    height: number;
-    duration: number | null;
-    thumbnailUrl: string | null;
     token: string;
     backendUrl: string;
   }
@@ -390,10 +363,6 @@ const sendMetadataToBackend = async (
       type: options.type,
       file_name: options.fileName,
       file_url: options.fileUrl,
-      width: options.width,
-      height: options.height,
-      duration: options.duration,
-      thumbnail_url: options.thumbnailUrl,
     }),
   });
 
@@ -403,9 +372,7 @@ const sendMetadataToBackend = async (
   }
 
   const responseData = await response.json();
-  
-  // Debug: log response
-  console.log("Backend metadata response:", responseData);
+
   
   if (!responseData.upload) {
     console.error("Invalid response structure. Expected 'upload' field but got:", responseData);
@@ -507,9 +474,7 @@ const confirmUploadToBackend = async (
   }
 
   const responseData = await response.json();
-  
-  // Debug: log response
-  console.log("Backend confirm response:", responseData);
+
   
   if (!responseData.upload) {
     console.error("Invalid response structure. Expected 'upload' field but got:", responseData);
@@ -564,9 +529,7 @@ const uploadToGCS = async (
   }
 
   const responseData = await response.json();
-  
-  // Debug: log response
-  console.log("Backend response:", responseData);
+
   
   if (!responseData.upload) {
     console.error("Invalid response structure. Expected 'upload' field but got:", responseData);

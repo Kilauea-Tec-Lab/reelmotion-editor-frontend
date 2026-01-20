@@ -62,7 +62,17 @@ import { Button } from "@/components/ui/button";
  */
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { activePanel, setActivePanel, setIsOpen } = useSidebar();
-  const { setSelectedOverlayId, selectedOverlayId } = useEditorContext();
+  const { setSelectedOverlayId, selectedOverlayId, overlays } = useEditorContext();
+
+  React.useEffect(() => {
+    if (selectedOverlayId !== null) {
+      const selectedOverlay = overlays.find((o) => o.id === selectedOverlayId);
+      if (selectedOverlay && selectedOverlay.type !== activePanel) {
+        setActivePanel(selectedOverlay.type);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedOverlayId]);
 
   const getPanelTitle = (type: OverlayType): string => {
     switch (type) {
@@ -203,7 +213,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton size="lg" asChild className="md:h-8 md:py-4">
-                <a href="#">
+                <a href="https://reelmotion.ai">
                   <div className="flex aspect-square size-9 items-center justify-center rounded-lg">
                     <Image
                       src="/icons/icon_reelmotion_ai.png"

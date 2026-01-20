@@ -76,6 +76,14 @@ export const isGcsUrl = (url: string): boolean => {
 };
 
 /**
+ * Check if a URL is from the backend that doesn't have CORS configured
+ * These URLs need to go through the proxy
+ */
+export const isBackendUrl = (url: string): boolean => {
+  return url.includes("backend.reelmotion.ai/storage");
+};
+
+/**
  * Get optimized URL for media content
  * Uses CDN if available, otherwise returns original URL with CORS-friendly headers
  *
@@ -162,6 +170,9 @@ export const resolveMediaUrl = (url: string, baseUrl?: string): string => {
  * OPTIMIZATION: GCS URLs with proper CORS config bypass the proxy for faster loading.
  */
 export const resolveVideoUrl = (url: string, baseUrl?: string): string => {
+  // DEBUG log
+  // console.log("[resolveVideoUrl] Resolving:", url);
+
   const resolved = resolveMediaUrl(url, baseUrl);
 
   // Only proxy absolute http(s) URLs.
@@ -174,11 +185,10 @@ export const resolveVideoUrl = (url: string, baseUrl?: string): string => {
     return resolved;
   }
 
-  // OPTIMIZATION: GCS URLs have CORS configured - use them directly for faster loading
-  // This bypasses the proxy completely for our own storage
-  if (isGcsUrl(resolved)) {
-    // Try CDN first if enabled, otherwise use direct GCS URL
-    return getOptimizedMediaUrl(resolved);
+  // NOTE: GCS URLs now have proper CORS configured (via cors.json), so we can use them directly!
+  // This improves performance significantly by avoiding the proxy.
+  if (resolved.includes("storage.googleapis.com")) {
+    return resolved;
   }
 
   // Determine current origin for building same-origin proxy URL.

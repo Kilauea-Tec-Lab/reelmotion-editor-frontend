@@ -38,7 +38,6 @@ const IMAGE_CATEGORIES = [
 ];
 
 const VIDEO_CATEGORIES = [
-  { label: "Popular", query: "popular" },
   { label: "Nature", query: "nature" },
   { label: "People", query: "people" },
   { label: "Technology", query: "technology" },
@@ -53,7 +52,7 @@ const VIDEO_CATEGORIES = [
 export const LibraryPanel: React.FC = () => {
   const [activeTab, setActiveTab] = useState<"images" | "videos">("images");
   const [selectedImageCategory, setSelectedImageCategory] = useState("curated");
-  const [selectedVideoCategory, setSelectedVideoCategory] = useState("popular");
+  const [selectedVideoCategory, setSelectedVideoCategory] = useState("nature");
 
   const { images, isLoading: imagesLoading, fetchImages, page: imagePage, hasMore: hasMoreImages } = usePexelsImages();
   const { videos, isLoading: videosLoading, fetchVideos, page: videoPage, hasMore: hasMoreVideos } = usePexelsVideos();
@@ -195,7 +194,7 @@ export const LibraryPanel: React.FC = () => {
       row,
       isDragging: false,
       type: OverlayType.VIDEO,
-      content: video.image || "",
+      content: videoFile.link,
       src: videoFile.link,
       videoStartTime: 0,
       styles: {

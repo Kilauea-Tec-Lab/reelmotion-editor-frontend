@@ -188,13 +188,6 @@ const TimelineGrid: React.FC<TimelineGridProps> = ({
           );
           const gaps = findGapsInRow(rowItems);
 
-          // Debug log for first row gaps
-          if (rowIndex === 0) {
-            console.log("First row items:", rowItems);
-            console.log("First row gaps:", gaps);
-            console.log("isDragging state:", isDragging);
-          }
-
           return (
             <div
               key={rowIndex}

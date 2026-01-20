@@ -53,7 +53,7 @@ export const LocalMediaPanel: React.FC = () => {
         row,
         isDragging: false,
         type: OverlayType.VIDEO,
-        content: file.thumbnail || "",
+        content: file.path,
         src: file.path,
         videoStartTime: 0,
         styles: {

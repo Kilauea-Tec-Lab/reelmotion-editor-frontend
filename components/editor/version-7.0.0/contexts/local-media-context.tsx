@@ -8,22 +8,24 @@ import React, {
   useCallback,
 } from "react";
 import { LocalMediaFile } from "../types";
-import { getUserId } from "../utils/user-id";
-import {
-  getUserMediaItems,
-  deleteMediaItem as deleteFromIndexDB,
-  clearUserMedia,
-} from "../utils/indexdb";
-import { uploadMediaFile, deleteMediaFile } from "../utils/media-upload";
+import { uploadMediaFile, deleteMediaFile, UploadProgressCallback } from "../utils/media-upload";
 import { BackendUpload } from "../hooks/use-editor-auth";
 import Cookies from "js-cookie";
 
+interface UploadProgress {
+  loaded: number;
+  total: number;
+  percentage: number;
+}
+
 interface LocalMediaContextType {
   localMediaFiles: LocalMediaFile[];
-  addMediaFile: (file: File) => Promise<LocalMediaFile | void>;
+  addMediaFile: (file: File, onProgress?: UploadProgressCallback) => Promise<LocalMediaFile | void>;
   removeMediaFile: (id: string) => Promise<void>;
+  updateMediaFileName: (id: string, newName: string) => void;
   clearMediaFiles: () => Promise<void>;
   isLoading: boolean;
+  uploadProgress: UploadProgress | null;
 }
 
 const LocalMediaContext = createContext<LocalMediaContextType | undefined>(
@@ -38,6 +40,7 @@ const LocalMediaContext = createContext<LocalMediaContextType | undefined>(
  * - Storing and retrieving local media files from IndexedDB and server
  * - Adding new media files
  * - Removing media files
+ * - Update media files names
  * - Persisting media files between sessions
  * - Loading backend uploads from the API
  */
@@ -50,36 +53,23 @@ export const LocalMediaProvider: React.FC<{
 }) => {
   const [localMediaFiles, setLocalMediaFiles] = useState<LocalMediaFile[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [userId] = useState(() => getUserId());
+  const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null);
+  
+  const updateMediaFileName = useCallback((id: string, newName: string) => {
+    setLocalMediaFiles(prev => 
+      prev.map(file => 
+        file.id === id ? { ...file, name: newName } : file
+      )
+    );
+  }, []);
 
-  // Load saved media files from IndexedDB and merge with backend uploads
+  // Load media files ONLY from backend - no IndexedDB cache
   useEffect(() => {
     const loadMediaFiles = async () => {
       try {
         setIsLoading(true);
-        let indexDBFiles: LocalMediaFile[] = [];
-        
-        // Try to load from IndexedDB, but don't fail if it's not available
-        try {
-          const mediaItems = await getUserMediaItems(userId);
-          
-          // Convert IndexedDB items to LocalMediaFile format
-          indexDBFiles = mediaItems.map((item) => ({
-            id: item.id,
-            name: item.name,
-            type: item.type,
-            path: item.serverPath,
-            size: item.size,
-            lastModified: item.lastModified,
-            thumbnail: item.thumbnail,
-            duration: item.duration,
-          }));
-        } catch (indexDBError) {
-          console.warn("IndexedDB not available, loading only backend uploads:", indexDBError);
-          // Continue without IndexedDB files
-        }
 
-        // Convert backend uploads to LocalMediaFile format
+        // Convert backend uploads to LocalMediaFile format (SINGLE SOURCE OF TRUTH)
         const backendFiles: LocalMediaFile[] = backendUploads.map((upload) => {
           // Determine type string from type number
           let typeString: "image" | "video" | "audio" = "image";
@@ -98,58 +88,36 @@ export const LocalMediaProvider: React.FC<{
           };
         });
 
-        // Merge files, preferring IndexedDB files if there's a duplicate ID
-        const mergedFiles = [...indexDBFiles];
-        backendFiles.forEach((backendFile) => {
-          const exists = mergedFiles.some((file) => file.id === backendFile.id);
-          if (!exists) {
-            mergedFiles.push(backendFile);
-          }
-        });
+        // Sort by lastModified: newest first
+        backendFiles.sort((a, b) => b.lastModified - a.lastModified);
 
-        setLocalMediaFiles(mergedFiles);
+        setLocalMediaFiles(backendFiles);
       } catch (error) {
         console.error("Error loading media files:", error);
-        // Even if everything fails, at least show backend uploads
-        try {
-          const backendFiles: LocalMediaFile[] = backendUploads.map((upload) => {
-            let typeString: "image" | "video" | "audio" = "image";
-            if (upload.type === 2) typeString = "video";
-            else if (upload.type === 3) typeString = "audio";
-
-            return {
-              id: upload.id,
-              name: upload.file_name,
-              type: typeString,
-              path: upload.file_url,
-              size: 0,
-              lastModified: new Date(upload.created_at).getTime(),
-              thumbnail: upload.thumbnail_url || "",
-              duration: upload.duration ? parseFloat(upload.duration) : undefined,
-            };
-          });
-          setLocalMediaFiles(backendFiles);
-        } catch {
-          // Last resort: empty array
-          setLocalMediaFiles([]);
-        }
+        setLocalMediaFiles([]);
       } finally {
         setIsLoading(false);
       }
     };
 
     loadMediaFiles();
-  }, [userId, backendUploads]);
+  }, [backendUploads]);
 
   /**
    * Add a new media file to the collection
+   * OPTIMIZED: Now with progress tracking
    */
   const addMediaFile = useCallback(
-    async (file: File): Promise<LocalMediaFile | void> => {
+    async (file: File, onProgress?: UploadProgressCallback): Promise<LocalMediaFile | void> => {
       setIsLoading(true);
+      setUploadProgress({ loaded: 0, total: file.size, percentage: 0 });
+      
       try {
-        // Upload file to server and store in IndexedDB
-        const mediaItem = await uploadMediaFile(file);
+        // Upload file to server with progress tracking
+        const mediaItem = await uploadMediaFile(file, (progress) => {
+          setUploadProgress(progress);
+          if (onProgress) onProgress(progress);
+        });
 
         // Convert to LocalMediaFile format
         const newMediaFile: LocalMediaFile = {
@@ -163,7 +131,7 @@ export const LocalMediaProvider: React.FC<{
           duration: mediaItem.duration,
         };
 
-        // Update state with the new media file
+        // Update state with the new media file (add at the beginning - newest first)
         setLocalMediaFiles((prev) => {
           // Check if file with same ID already exists
           const exists = prev.some((item) => item.id === newMediaFile.id);
@@ -173,8 +141,8 @@ export const LocalMediaProvider: React.FC<{
               item.id === newMediaFile.id ? newMediaFile : item
             );
           }
-          // Add new file
-          return [...prev, newMediaFile];
+          // Add new file at the beginning (newest first)
+          return [newMediaFile, ...prev];
         });
 
         return newMediaFile;
@@ -183,6 +151,7 @@ export const LocalMediaProvider: React.FC<{
         throw error;
       } finally {
         setIsLoading(false);
+        setUploadProgress(null);
       }
     },
     []
@@ -237,7 +206,7 @@ export const LocalMediaProvider: React.FC<{
         throw error;
       }
     },
-    [localMediaFiles, userId, backendUploads]
+    [localMediaFiles, backendUploads]
   );
 
   /**
@@ -246,10 +215,9 @@ export const LocalMediaProvider: React.FC<{
   const clearMediaFiles = useCallback(async (): Promise<void> => {
     try {
       const token = Cookies.get("token");
-
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "https://backend.reelmotion.ai";
 
-      // Delete all files
+      // Delete all backend files
       for (const file of localMediaFiles) {
         const isBackendUpload = backendUploads.some((upload) => upload.id === file.id);
 
@@ -266,25 +234,18 @@ export const LocalMediaProvider: React.FC<{
 
           const data = await response.json();
           
-          // Check if the backend returned success (code: 200)
           if (data.code !== 200) {
             console.error("Failed to delete upload:", data.message);
           }
-        } else {
-          // Delete from local server
-          await deleteMediaFile(userId, file.id);
         }
       }
-
-      // Clear IndexedDB
-      await clearUserMedia(userId);
 
       // Update state
       setLocalMediaFiles([]);
     } catch (error) {
       console.error("Error clearing media files:", error);
     }
-  }, [localMediaFiles, userId, backendUploads]);
+  }, [localMediaFiles, backendUploads]);
 
   const value = {
     localMediaFiles,
@@ -292,6 +253,8 @@ export const LocalMediaProvider: React.FC<{
     removeMediaFile,
     clearMediaFiles,
     isLoading,
+    uploadProgress,
+    updateMediaFileName
   };
 
   return (

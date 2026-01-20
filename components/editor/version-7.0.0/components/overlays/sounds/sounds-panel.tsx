@@ -1,8 +1,18 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Play, Pause, Loader2 } from "lucide-react";
+import { Play, Pause, Loader2, Pencil, Check } from "lucide-react";
 import { LocalSound, OverlayType, SoundOverlay } from "../../../types";
 import { useState, useEffect, useRef } from "react";
+import { Input } from "@/components/ui/input";
+import Cookies from "js-cookie";
+import { toast } from "@/hooks/use-toast";
+
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 import { useTimelinePositioning } from "../../../hooks/use-timeline-positioning";
 import { useEditorContext } from "../../../contexts/editor-context";
@@ -41,7 +51,12 @@ const SoundsPanel: React.FC = () => {
   const { findNextAvailablePosition } = useTimelinePositioning();
   const { visibleRows } = useTimeline();
   const [localOverlay, setLocalOverlay] = useState<SoundOverlay | null>(null);
-  const { editorData } = useEditorAuth();
+  const { editorData, updateAudioName } = useEditorAuth();
+  
+  // Rename state
+  const [soundToRename, setSoundToRename] = useState<LocalSound | null>(null);
+  const [newName, setNewName] = useState("");
+  const [isRenaming, setIsRenaming] = useState(false);
 
   // Convert project_voices to LocalSound format with optimized URLs
   const localSounds: LocalSound[] = React.useMemo(() => {
@@ -79,6 +94,53 @@ const SoundsPanel: React.FC = () => {
   const handleUpdateOverlay = (updatedOverlay: SoundOverlay) => {
     setLocalOverlay(updatedOverlay);
     changeOverlay(updatedOverlay.id, updatedOverlay);
+  };
+
+  const handleRename = async () => {
+    if (!soundToRename || !newName.trim()) return;
+    
+    setIsRenaming(true);
+    try {
+      const token = Cookies.get("token");
+      const backendUrl =
+          process.env.NEXT_PUBLIC_BACKEND_URL || "https://backend.reelmotion.ai";
+      
+      const formData = new FormData();
+      formData.append("attachment_id", soundToRename.id);
+      formData.append("name", newName);
+
+      const response = await fetch(`${backendUrl}/chat/update-attachment-name`, {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer " + token,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update name");
+      }
+
+      // Update local state
+      updateAudioName(soundToRename.id, newName);
+      
+      setSoundToRename(null);
+      setNewName("");
+      
+      toast({
+        title: "Success",
+        description: "Audio name updated successfully",
+      });
+    } catch (error) {
+      console.error("Error updating audio name:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update audio name",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRenaming(false);
+    }
   };
 
   /**
@@ -274,9 +336,9 @@ const SoundsPanel: React.FC = () => {
         draggable={!isLoading}
         onDragStart={(e) => handleDragStart(e, sound)}
         onClick={() => !isLoading && handleAddToTimeline(sound)}
-        className={`group flex items-center gap-3 p-2.5 bg-white dark:bg-darkBox rounded-md 
+        className={`group flex items-center gap-3 w-4/5 p-2.5 bg-white dark:bg-darkBox rounded-md 
           border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900
-          transition-all duration-150 ${isLoading ? 'opacity-70 cursor-wait' : 'cursor-pointer'}`}
+          transition-all duration-150 relative ${isLoading ? 'opacity-70 cursor-wait' : 'cursor-pointer'}`}
       >
         <Button
           variant="ghost"
@@ -304,6 +366,50 @@ const SoundsPanel: React.FC = () => {
           <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
             {isLoading ? "Adding to timeline..." : sound.artist}
           </p>
+        </div>
+
+        <div onClick={(e) => e.stopPropagation()} className="opacity-0 group-hover:opacity-100 transition-opacity">
+          <DropdownMenu onOpenChange={(isOpen) => {
+            if (isOpen) {
+              setSoundToRename(sound);
+              setNewName(sound.title || "");
+            }
+          }}>
+            <DropdownMenuTrigger asChild>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-6 w-6 shrink-0 bg-black/60 backdrop-blur-sm hover:bg-black/80 text-pink-400 rounded-full"
+              >
+                <Pencil className="h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-60 p-2">
+              <div className="flex items-center gap-2" onKeyDown={(e) => e.stopPropagation()}>
+                <Input
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  className="h-8 text-xs"
+                  placeholder="Rename audio..."
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleRename();
+                  }}
+                />
+                <Button 
+                  size="icon" 
+                  className="h-8 w-8 shrink-0 bg-pink-500 hover:bg-pink-600 text-white"
+                  onClick={handleRename}
+                  disabled={isRenaming}
+                >
+                  {isRenaming ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Check className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     );

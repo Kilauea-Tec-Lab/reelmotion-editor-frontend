@@ -40,6 +40,7 @@ interface UseEditorAuthResult {
   isAuthorized: boolean;
   editorData: EditorData | null;
   error: string | null;
+  updateAudioName: (id: string, newName: string) => void;
 }
 
 /**
@@ -52,6 +53,21 @@ export const useEditorAuth = (): UseEditorAuthResult => {
   const [editorData, setEditorData] = useState<EditorData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+
+  const updateAudioName = (id: string, newName: string) => {
+    if (!editorData?.project_voices) return;
+
+    setEditorData(prev => {
+      if (!prev || !prev.project_voices) return prev;
+      
+      return {
+        ...prev,
+        project_voices: prev.project_voices.map(voice => 
+          voice.id === id ? { ...voice, name: newName } : voice
+        )
+      };
+    });
+  };
 
   useEffect(() => {
     const validateAccess = async () => {
@@ -147,5 +163,6 @@ export const useEditorAuth = (): UseEditorAuthResult => {
     isAuthorized,
     editorData,
     error,
+    updateAudioName
   };
 };

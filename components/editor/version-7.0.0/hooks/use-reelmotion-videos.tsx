@@ -135,6 +135,15 @@ export function useReelmotionVideos() {
     }, 500);
   };
 
+  const updateVideoName = (id: string, newName: string) => {
+    const updateVideo = (video: ReelmotionVideo) => 
+      video.id === id ? { ...video, name: newName } : video;
+
+    setAllVideos(prev => prev.map(updateVideo));
+    setFilteredVideos(prev => prev.map(updateVideo));
+    setDisplayedVideos(prev => prev.map(updateVideo));
+  };
+
   return {
     videos: displayedVideos,
     isLoading,
@@ -144,5 +153,6 @@ export function useReelmotionVideos() {
     searchQuery,
     setSearchQuery,
     totalVideos: filteredVideos.length,
+    updateVideoName,
   };
 }
