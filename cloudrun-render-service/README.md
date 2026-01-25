@@ -123,8 +123,45 @@ El Service Account usado debe tener los siguientes roles:
 
 ### El renderizado es muy lento
 
-- Aumenta la memoria del servicio: `npx remotion cloudrun services deploy --memory=4096`
-- Aumenta las CPUs: `npx remotion cloudrun services deploy --cpu=4`
+#### Solución 1: Redesplegar con más recursos (RECOMENDADO)
+
+```bash
+# Desplegar con máximo rendimiento (4 vCPUs, 8GB RAM)
+npx remotion cloudrun services deploy --memory=8192 --cpu=4 --timeout=900
+
+# O para balance costo/velocidad (2 vCPUs, 4GB RAM)
+npx remotion cloudrun services deploy --memory=4096 --cpu=2 --timeout=900
+```
+
+**Tabla de rendimiento estimado:**
+
+| Configuración | Tiempo ~30s video | Costo estimado |
+| ------------- | ----------------- | -------------- |
+| 2 vCPU, 2GB   | 60-90 segundos    | ~$0.02         |
+| 2 vCPU, 4GB   | 40-60 segundos    | ~$0.03         |
+| 4 vCPU, 8GB   | 20-35 segundos    | ~$0.05         |
+
+#### Solución 2: Ajustar configuración de encoding
+
+En `app/api/latest/cloudrun/render/route.ts`, modifica `RENDER_CONFIG`:
+
+```typescript
+const RENDER_CONFIG = {
+  CODEC: "h264" as const,
+  CRF: 28, // Mayor = más rápido, menor calidad (rango: 18-28)
+  X264_PRESET: "veryfast" as const, // Opciones: ultrafast, superfast, veryfast, faster, fast
+  FRAMES_CONCURRENCY: 8, // Más frames en paralelo (requiere más CPU/RAM)
+} as const;
+```
+
+#### Solución 3: Usar región más cercana
+
+Cambia `GCP_REGION` en `.env.local` a la región más cercana a tus usuarios:
+
+- `us-central1` - Centro de USA
+- `us-east1` - Este de USA
+- `europe-west1` - Europa
+- `southamerica-east1` - São Paulo
 
 ### Timeout en renderizados largos
 

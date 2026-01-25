@@ -1,6 +1,10 @@
 import { RenderRequest } from "@/components/editor/version-7.0.0/types";
 import { executeApi } from "@/components/editor/version-7.0.0/ssr-helpers/api-response";
-import { startRendering } from "@/components/editor/version-7.0.0/ssr-helpers/custom-renderer";
+import { startRendering, warmupBundle } from "@/components/editor/version-7.0.0/ssr-helpers/custom-renderer";
+
+// ⚡ Pre-warm the bundle cache on module load
+// This happens when the server starts, so first render is fast
+warmupBundle().catch(console.error);
 
 /**
  * POST endpoint handler for rendering media using Remotion SSR

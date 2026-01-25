@@ -13,11 +13,19 @@ import * as path from "path";
 
 /**
  * Configuration for the Cloud Run render function
+ * ⚡ MAXIMUM SPEED OPTIMIZATIONS:
+ * - preset "ultrafast": fastest possible encoding
+ * - CRF 28: acceptable quality, smaller file, faster encode
+ * - concurrency: 16 (max utilization of 4 vCPUs + 8GB RAM)
+ * - JPEG at 80%: faster frame generation than PNG
  */
 const RENDER_CONFIG = {
   CODEC: "h264" as const,
-  CRF: 18,
-  X264_PRESET: "medium" as const,
+  CRF: 28, // Higher = faster & smaller file. Range 18-28. 
+  X264_PRESET: "ultrafast" as const, // Fastest possible!
+  FRAMES_CONCURRENCY: 16, // Ultra aggressive parallel rendering
+  IMAGE_FORMAT: "jpeg" as const,
+  JPEG_QUALITY: 80,
 } as const;
 
 /**
@@ -231,6 +239,12 @@ export const POST = executeApi(RenderRequest, async (req, body) => {
   // Start render WITHOUT awaiting - this is the key for Netlify compatibility
   // The promise will be abandoned when the function returns, but Cloud Run
   // will continue processing the request independently
+  // 
+  // ⚡ MAXIMUM SPEED OPTIMIZATIONS:
+  // - concurrency: 16 frames in parallel
+  // - x264Preset "ultrafast": fastest encoding
+  // - JPEG frames: faster than PNG
+  // - CRF 28: fast encoding with acceptable quality
   const renderPromise = renderMediaOnCloudrun({
     region: GCP_REGION as any,
     serviceName: process.env.REMOTION_GCP_SERVICE_NAME!,
@@ -247,6 +261,17 @@ export const POST = executeApi(RenderRequest, async (req, body) => {
     },
     forceBucketName: bucketName,
     renderIdOverride: renderId,
+    // ⚡ SPEED SETTINGS
+    concurrency: RENDER_CONFIG.FRAMES_CONCURRENCY,
+    imageFormat: RENDER_CONFIG.IMAGE_FORMAT, 
+    jpegQuality: RENDER_CONFIG.JPEG_QUALITY,
+    // Cache video frames in memory for faster rendering
+    offthreadVideoCacheSizeInBytes: 2000000000, // 2GB cache
+    // Allow parallel encoding for faster overall time
+    disallowParallelEncoding: false,
+    // Increase timeout for large videos
+    timeoutInMilliseconds: 600000, // 10 minutes max
+    delayRenderTimeoutInMilliseconds: 30000, // 30 seconds for asset loading
   });
 
   // Log result when it completes (if the function is still running)

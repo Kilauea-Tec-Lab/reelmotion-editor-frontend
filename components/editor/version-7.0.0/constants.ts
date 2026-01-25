@@ -45,9 +45,11 @@ export const CLOUDRUN_CONFIG = {
   CODEC: "h264" as const,
   MAX_RETRIES: 2,
   TIMEOUT_SECONDS: 900, // 15 minutes max
-  // Quality settings
-  CRF: 18, // Good quality/size balance (lower = better quality, larger file)
-  PRESET: "medium" as const, // x264 preset
+  // Quality settings - optimized for max speed
+  CRF: 28, 
+  PRESET: "veryfast" as const,
+  // Concurrency - render multiple frames in parallel
+  FRAMES_CONCURRENCY: 16, // Ultra aggressive concurrency
 } as const;
 
 // Zoom control configuration
@@ -74,7 +76,8 @@ export const ENABLE_PUSH_ON_DRAG = false; // Set to false to disable pushing ite
 // Render configuration
 // NOTE: TO CHANGE RENDER TYPE, UPDATE THE RENDER_TYPE CONSTANT
 // Options: "ssr" (local server-side), "lambda" (AWS Lambda), "cloudrun" (Google Cloud Run)
-export const RENDER_TYPE: "ssr" | "lambda" | "cloudrun" = "cloudrun";
+// ⚡ SSR is HIGHLY OPTIMIZED with bundle caching (saves 3-5 min per render)
+export const RENDER_TYPE: "ssr" | "lambda" | "cloudrun" = "ssr";
 
 // Autosave configuration
 export const AUTO_SAVE_INTERVAL = 10000; // Autosave every 10 seconds

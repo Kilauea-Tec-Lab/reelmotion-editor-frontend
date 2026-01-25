@@ -11,12 +11,22 @@ import {
 
 /**
  * Configuration for the Lambda render function
+ * ⚡ MAXIMUM SPEED OPTIMIZATIONS:
+ * - x264Preset "ultrafast": Fastest possible encoding
+ * - CRF 28: Fast encoding with acceptable quality
+ * - imageFormat "jpeg": Faster frame capture than PNG
+ * - jpegQuality 80: Good enough quality
  */
 const LAMBDA_CONFIG = {
   FUNCTION_NAME: LAMBDA_FUNCTION_NAME,
   FRAMES_PER_LAMBDA: 100,
   MAX_RETRIES: 2,
   CODEC: "h264" as const,
+  // ⚡ MAXIMUM speed settings
+  CRF: 28, // Fast (18-28 range, 28 is fastest)
+  X264_PRESET: "ultrafast" as const, // Fastest possible
+  IMAGE_FORMAT: "jpeg" as const, // Faster than PNG
+  JPEG_QUALITY: 80, // Good enough
 } as const;
 
 /**
@@ -74,6 +84,11 @@ export const POST = executeApi<RenderMediaOnLambdaOutput, typeof RenderRequest>(
         },
         maxRetries: LAMBDA_CONFIG.MAX_RETRIES,
         everyNthFrame: 1,
+        // ⚡ SPEED OPTIMIZATIONS
+        crf: LAMBDA_CONFIG.CRF,
+        x264Preset: LAMBDA_CONFIG.X264_PRESET,
+        imageFormat: LAMBDA_CONFIG.IMAGE_FORMAT,
+        jpegQuality: LAMBDA_CONFIG.JPEG_QUALITY,
       });
 
       console.log("Render result:", JSON.stringify(result, null, 2));

@@ -128,6 +128,9 @@ export const useRendering = (
       if (renderType === "ssr") {
         // Add a small delay for SSR rendering to ensure initialization
         await wait(3000);
+      } else if (renderType === "cloudrun") {
+        // Cloud Run starts faster, only wait 1 second before first poll
+        await wait(1000);
       }
 
       setState({
@@ -140,11 +143,17 @@ export const useRendering = (
       let pending = true;
 
       // Configure polling based on render type
-      // Lambda and Cloud Run use longer intervals since rendering takes time
-      const basePollingIntervalMs = renderType === "ssr" ? 1000 : 2500;
-      const initialThrottleBackoffMs = renderType === "ssr" ? 2000 : 4000;
+      // OPTIMIZED: Cloud Run uses faster polling since renders are now quicker
+      // SSR: 1s interval (local, very fast)
+      // Lambda: 2.5s interval (AWS, moderate)
+      // CloudRun: 2s interval (GCP, optimized for speed)
+      const basePollingIntervalMs = 
+        renderType === "ssr" ? 1000 : 
+        renderType === "cloudrun" ? 2000 : 
+        2500;
+      const initialThrottleBackoffMs = renderType === "ssr" ? 2000 : 3000;
       let throttleBackoffMs = initialThrottleBackoffMs;
-      const maxThrottleBackoffMs = 15000;
+      const maxThrottleBackoffMs = 10000; // Reduced from 15s for faster recovery
 
       while (pending) {
         console.log(`Checking progress for renderId=${renderId}`);

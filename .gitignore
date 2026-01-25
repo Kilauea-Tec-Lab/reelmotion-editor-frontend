@@ -19,6 +19,9 @@
 # Render state
 /tmp/render-state
 
+# Asset cache for rendering
+/.cache/render-assets/
+
 # misc
 .DS_Store
 *.pem
