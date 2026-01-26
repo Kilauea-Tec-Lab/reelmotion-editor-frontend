@@ -267,9 +267,6 @@ export const POST = executeApi(RenderRequest, async (req, body) => {
     jpegQuality: RENDER_CONFIG.JPEG_QUALITY,
     // Cache video frames in memory for faster rendering
     offthreadVideoCacheSizeInBytes: 2000000000, // 2GB cache
-    // Increase timeout for large videos
-    timeoutInMilliseconds: 600000, // 10 minutes max
-    delayRenderTimeoutInMilliseconds: 30000, // 30 seconds for asset loading
   });
 
   // Log result when it completes (if the function is still running)
