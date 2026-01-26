@@ -76,8 +76,12 @@ export const ENABLE_PUSH_ON_DRAG = false; // Set to false to disable pushing ite
 // Render configuration
 // NOTE: TO CHANGE RENDER TYPE, UPDATE THE RENDER_TYPE CONSTANT
 // Options: "ssr" (local server-side), "lambda" (AWS Lambda), "cloudrun" (Google Cloud Run)
-// ⚡ SSR is HIGHLY OPTIMIZED with bundle caching (saves 3-5 min per render)
-export const RENDER_TYPE: "ssr" | "lambda" | "cloudrun" = "ssr";
+// ⚡ SSR is HIGHLY OPTIMIZED with bundle caching (saves 3-5 min per render) - ONLY for local dev
+// ⚡ Cloud Run is required for production (Netlify doesn't support FFmpeg)
+export const RENDER_TYPE: "ssr" | "lambda" | "cloudrun" = 
+  typeof window !== "undefined" && window.location.hostname === "localhost" 
+    ? "ssr" 
+    : "cloudrun";
 
 // Autosave configuration
 export const AUTO_SAVE_INTERVAL = 10000; // Autosave every 10 seconds
