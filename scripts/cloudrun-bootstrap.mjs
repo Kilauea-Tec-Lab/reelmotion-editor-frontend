@@ -137,11 +137,11 @@ const main = async () => {
   const service = await deployService({
     projectID,
     region,
-    memoryLimit: "8Gi",
-    cpuLimit: "4.0",
-    timeoutSeconds: 900,
+    memoryLimit: "8Gi", // Máximo que permite tu quota con 2 instancias
+    cpuLimit: "4.0", // Máximo que permite tu quota con 2 instancias
+    timeoutSeconds: 1200, // 20 minutos
     minInstances: 0,
-    maxInstances: 4,
+    maxInstances: 2, // Máximo permitido por tu quota (20 vCPUs / 4 = 5, pero con 8GB solo permite 2)
   });
   console.log("[cloudrun-bootstrap] Service:", service.shortName);
   console.log("[cloudrun-bootstrap] URL:", service.uri);

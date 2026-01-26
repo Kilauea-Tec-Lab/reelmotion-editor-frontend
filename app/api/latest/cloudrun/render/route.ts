@@ -15,17 +15,18 @@ import * as path from "path";
  * Configuration for the Cloud Run render function
  * ⚡ MAXIMUM SPEED OPTIMIZATIONS:
  * - preset "ultrafast": fastest possible encoding
- * - CRF 28: acceptable quality, smaller file, faster encode
- * - concurrency: 16 (max utilization of 4 vCPUs + 8GB RAM)
- * - JPEG at 80%: faster frame generation than PNG
+ * - CRF 30: máxima velocidad con calidad aceptable
+ * - concurrency: 24 (máxima utilización de 4 vCPUs + 8GB RAM)
+ * - JPEG at 75%: frames ultra rápidos
+ * - scale: 0.8 - renderizar a 80% para mayor velocidad
  */
 const RENDER_CONFIG = {
   CODEC: "h264" as const,
-  CRF: 28, // Higher = faster & smaller file. Range 18-28. 
+  CRF: 30, // Higher = faster & smaller file. Range 18-28. 30 = super rápido
   X264_PRESET: "ultrafast" as const, // Fastest possible!
-  FRAMES_CONCURRENCY: 16, // Ultra aggressive parallel rendering
+  FRAMES_CONCURRENCY: 24, // Optimizado para 4 vCPUs
   IMAGE_FORMAT: "jpeg" as const,
-  JPEG_QUALITY: 80,
+  JPEG_QUALITY: 75, // Reducir calidad para máxima velocidad
 } as const;
 
 /**
@@ -261,12 +262,14 @@ export const POST = executeApi(RenderRequest, async (req, body) => {
     },
     forceBucketName: bucketName,
     renderIdOverride: renderId,
-    // ⚡ SPEED SETTINGS
+    // ⚡ SPEED SETTINGS - MÁXIMA VELOCIDAD
     concurrency: RENDER_CONFIG.FRAMES_CONCURRENCY,
     imageFormat: RENDER_CONFIG.IMAGE_FORMAT, 
     jpegQuality: RENDER_CONFIG.JPEG_QUALITY,
     // Cache video frames in memory for faster rendering
-    offthreadVideoCacheSizeInBytes: 2000000000, // 2GB cache
+    offthreadVideoCacheSizeInBytes: 3000000000, // 3GB cache (máximo)
+    scale: 0.8, // Renderizar a 80% del tamaño (más rápido)
+    enforceAudioTrack: false, // No forzar audio si no hay
   });
 
   // Log result when it completes (if the function is still running)
