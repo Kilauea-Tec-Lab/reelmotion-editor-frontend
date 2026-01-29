@@ -30,6 +30,12 @@ if (Test-Path "gcp-credentials.json") {
     gcloud compute scp gcp-credentials.json ${GCE_INSTANCE}:~/ --zone=$ZONE
 }
 
+# Copy local .env file
+if (Test-Path ".env") {
+    Write-Host " Copying local .env file..."
+    gcloud compute scp .env ${GCE_INSTANCE}:~/env_temp --zone=$ZONE
+}
+
 # 3. Remote Execution
 Write-Host " Executing remote build on $GCE_INSTANCE..."
 
@@ -54,9 +60,14 @@ fi
 # Restore secrets
 mv ~/gcp-credentials.json . 2>/dev/null || true
 
+# Restore .env
+if [ -f ~/env_temp ]; then
+    echo "Restoring .env..."
+    mv ~/env_temp .env
+fi
+
 # Configuration
 echo 'NEXT_PUBLIC_IS_LOCAL_RENDER=true' > .env.local
-echo 'NEXT_PUBLIC_BACKEND_URL=http://localhost:3000' >> .env.local
 
 # Install & Build
 echo 'Installing dependencies...'
