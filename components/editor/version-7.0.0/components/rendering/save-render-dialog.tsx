@@ -127,9 +127,32 @@ export const SaveRenderDialog: React.FC<SaveRenderDialogProps> = ({
       const token = Cookies.get("token");
       const backendUrl =
         process.env.NEXT_PUBLIC_BACKEND_URL || "https://backend.reelmotion.ai";
+      
+      // 1. Upload to GCS and delete from local
+      // We call our own Next.js API route for this
+      const gcsUploadResponse = await fetch("/api/latest/save-render-to-gcs", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          videoUrl: videoUrl,
+          userId: selectedProject || "anonymous" // Organization folder
+        }),
+      });
 
+      if (!gcsUploadResponse.ok) {
+        const errorData = await gcsUploadResponse.json();
+        throw new Error(errorData.error || "Failed to upload to cloud storage");
+      }
+
+      const { gcsUrl } = await gcsUploadResponse.json();
+      console.log("Video uploaded to GCS:", gcsUrl);
+
+
+      // 2. Save metadata to backend using the new GCS URL
       const payload: { url: string; name?: string; id?: string } = {
-        url: videoUrl,
+        url: gcsUrl, // Use the GCS URL!
       };
 
       if (saveMode === "name") {
