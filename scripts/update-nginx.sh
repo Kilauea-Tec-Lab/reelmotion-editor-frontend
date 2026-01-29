@@ -7,9 +7,12 @@ echo "🔧 Updating Nginx configuration for asset serving..."
 
 # Define the cache directory path
 CACHE_DIR="/home/Victor/reelmotion-editor-frontend/.cache/render-assets/"
+# Define the rendered videos directory path
+VIDEOS_DIR="/home/Victor/reelmotion-editor-frontend/public/rendered-videos/"
 
 # Create the directory if it doesn't exist yet (to avoid Nginx errors)
 mkdir -p $CACHE_DIR
+mkdir -p $VIDEOS_DIR
 
 sudo tee /etc/nginx/sites-available/$DOMAIN > /dev/null <<EOF
 server {
@@ -20,6 +23,15 @@ server {
         alias $CACHE_DIR;
         autoindex off;
         expires 1h;
+        add_header Access-Control-Allow-Origin *;
+        add_header Cache-Control "public, no-transform";
+    }
+
+    # Serve rendered videos directly
+    location /rendered-videos/ {
+        alias $VIDEOS_DIR;
+        autoindex off;
+        expires 1y;
         add_header Access-Control-Allow-Origin *;
         add_header Cache-Control "public, no-transform";
     }

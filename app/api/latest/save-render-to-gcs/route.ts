@@ -85,7 +85,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Prepare for upload
-    const bucketName = process.env.NEXT_PUBLIC_GCS_RENDERED_VIDEOS_BUCKET || "remotioncloudrun-buaw10zfzk";
+    // Use the same video bucket as the standard upload feature
+    const bucketName = process.env.NEXT_PUBLIC_GCS_BUCKET_NAME_VIDEO || 'reelmotion-ai-videos';
     // Organize by userId or date
     const gcsPath = `exported-videos/${userId}/${filename}`;
     
