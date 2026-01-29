@@ -78,10 +78,8 @@ export const ENABLE_PUSH_ON_DRAG = false; // Set to false to disable pushing ite
 // Options: "ssr" (local server-side), "lambda" (AWS Lambda), "cloudrun" (Google Cloud Run)
 // ⚡ SSR is HIGHLY OPTIMIZED with bundle caching (saves 3-5 min per render) - ONLY for local dev
 // ⚡ Cloud Run is required for production (Netlify doesn't support FFmpeg)
-export const RENDER_TYPE: "ssr" | "lambda" | "cloudrun" = 
-  typeof window !== "undefined" && window.location.hostname === "localhost" 
-    ? "ssr" 
-    : "cloudrun";
+// UDPATE: Using SSR on GCE Production server (n2-standard-8) for better performance
+export const RENDER_TYPE: "ssr" | "lambda" | "cloudrun" = "ssr";
 
 // Autosave configuration
 export const AUTO_SAVE_INTERVAL = 10000; // Autosave every 10 seconds
