@@ -223,6 +223,8 @@ export async function preloadAssets(
   return assetMap;
 }
 
+import { getBaseUrl } from "../utils/url-helper";
+
 /**
  * Replaces remote URLs in overlays with local file paths
  * 
@@ -234,27 +236,45 @@ export function replaceUrlsWithLocalPaths(
   overlays: MediaOverlay[],
   assetMap: AssetMap
 ): MediaOverlay[] {
+  // Public URL path where Nginx servers the cache directory
+  // Corresponds to ASSETS_CACHE_DIR on the filesystem
+  const ASSETS_PUBLIC_PATH = "/_render_assets";
+  const baseUrl = "https://editor.reelmotion.ai"; // Production URL
+
+  const toPublicUrl = (localPath: string): string => {
+    // Get path relative to cache dir (e.g. "session-id/asset.mp4")
+    const relativePath = path.relative(ASSETS_CACHE_DIR, localPath);
+    // Ensure forward slashes for URL
+    const normalizedPath = relativePath.split(path.sep).join('/');
+    // Construct full URL
+    return `${baseUrl}${ASSETS_PUBLIC_PATH}/${normalizedPath}`;
+  };
+
   return overlays.map((overlay) => {
     const newOverlay = { ...overlay };
 
     // Replace video src
     if (overlay.type === "video" && overlay.src && assetMap.has(overlay.src)) {
-      newOverlay.src = assetMap.get(overlay.src);
-      console.log(`[AssetPreloader] Replaced video URL with local: ${newOverlay.src}`);
+      const localPath = assetMap.get(overlay.src)!;
+      newOverlay.src = toPublicUrl(localPath);
+      console.log(`[AssetPreloader] Replaced video URL with public URL: ${newOverlay.src}`);
     }
 
     // Replace sound src
     if (overlay.type === "sound" && overlay.src && assetMap.has(overlay.src)) {
-      newOverlay.src = assetMap.get(overlay.src);
-      console.log(`[AssetPreloader] Replaced audio URL with local: ${newOverlay.src}`);
+      const localPath = assetMap.get(overlay.src)!;
+      newOverlay.src = toPublicUrl(localPath);
+      console.log(`[AssetPreloader] Replaced audio URL with public URL: ${newOverlay.src}`);
     }
 
     // Replace image src/content
     if (overlay.type === "image") {
       if (overlay.src && assetMap.has(overlay.src)) {
-        newOverlay.src = assetMap.get(overlay.src);
+        const localPath = assetMap.get(overlay.src)!;
+        newOverlay.src = toPublicUrl(localPath);
       } else if (overlay.content && assetMap.has(overlay.content)) {
-        newOverlay.content = assetMap.get(overlay.content);
+        const localPath = assetMap.get(overlay.content)!;
+        newOverlay.content = toPublicUrl(localPath);
       }
     }
 
