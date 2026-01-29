@@ -43,20 +43,20 @@ const ensureRemotionEnvFromCredentials = () => {
   const creds = loadServiceAccountJson();
   if (!creds) {
     throw new Error(
-      "Could not load service account JSON. Set GOOGLE_APPLICATION_CREDENTIALS or add gcp-credentials.json in the repo root."
+      "Could not load service account JSON. Set GOOGLE_APPLICATION_CREDENTIALS or add gcp-credentials.json in the repo root.",
     );
   }
 
   if (!creds.client_email || !creds.private_key) {
     throw new Error(
-      "Service account JSON is missing client_email/private_key. Ensure it is a service account key (type: service_account)."
+      "Service account JSON is missing client_email/private_key. Ensure it is a service account key (type: service_account).",
     );
   }
 
   process.env.REMOTION_GCP_CLIENT_EMAIL = String(creds.client_email);
   process.env.REMOTION_GCP_PRIVATE_KEY = String(creds.private_key).replace(
     /\\n/g,
-    "\n"
+    "\n",
   );
   process.env.REMOTION_GCP_PROJECT_ID =
     process.env.REMOTION_GCP_PROJECT_ID ??
@@ -64,12 +64,12 @@ const ensureRemotionEnvFromCredentials = () => {
       creds.project_id ??
         process.env.GCP_PROJECT_ID ??
         process.env.GOOGLE_CLOUD_PROJECT ??
-        ""
+        "",
     );
 
   if (!process.env.REMOTION_GCP_PROJECT_ID) {
     throw new Error(
-      "Could not determine project ID (REMOTION_GCP_PROJECT_ID)."
+      "Could not determine project ID (REMOTION_GCP_PROJECT_ID).",
     );
   }
 };
@@ -83,7 +83,7 @@ const region =
 
 const entryPoint = path.resolve(
   process.cwd(),
-  "components/editor/version-7.0.0/remotion/index.ts"
+  "components/editor/version-7.0.0/remotion/index.ts",
 );
 
 const siteName = process.env.REMOTION_SITE_NAME ?? "reelmotion-editor";
@@ -97,7 +97,7 @@ const main = async () => {
 
   if (skipPermissionsTest) {
     console.log(
-      "[cloudrun-bootstrap] ⚠️  Skipping permissions test (--skip-permissions)"
+      "[cloudrun-bootstrap] ⚠️  Skipping permissions test (--skip-permissions)",
     );
   } else {
     console.log("[cloudrun-bootstrap] Testing permissions...");
@@ -112,7 +112,7 @@ const main = async () => {
       const missing = results.filter((r) => !r.decision);
       if (missing.length) {
         console.warn(
-          `[cloudrun-bootstrap] ⚠️  Missing ${missing.length} permissions. Proceeding anyway...`
+          `[cloudrun-bootstrap] ⚠️  Missing ${missing.length} permissions. Proceeding anyway...`,
         );
       } else {
         console.log("[cloudrun-bootstrap] ✅ Permissions OK");
@@ -120,7 +120,7 @@ const main = async () => {
     } catch (err) {
       console.warn(
         "[cloudrun-bootstrap] ⚠️  Permissions test failed:",
-        err.message
+        err.message,
       );
       console.warn("[cloudrun-bootstrap] Proceeding anyway...");
     }
