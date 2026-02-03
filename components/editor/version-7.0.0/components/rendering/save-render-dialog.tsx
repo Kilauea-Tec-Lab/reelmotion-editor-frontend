@@ -54,6 +54,7 @@ export const SaveRenderDialog: React.FC<SaveRenderDialogProps> = ({
   const [projects, setProjects] = useState<ProjectInfo[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isPublic, setIsPublic] = useState<"public" | "private">("private");
 
   // Fetch projects when dialog opens
   useEffect(() => {
@@ -63,6 +64,7 @@ export const SaveRenderDialog: React.FC<SaveRenderDialogProps> = ({
       setVideoName("");
       setSelectedProject("");
       setSaveMode("name");
+      setIsPublic("private");
     }
   }, [open]);
 
@@ -151,8 +153,9 @@ export const SaveRenderDialog: React.FC<SaveRenderDialogProps> = ({
 
 
       // 2. Save metadata to backend using the new GCS URL
-      const payload: { url: string; name?: string; id?: string } = {
+      const payload: { url: string; name?: string; id?: string; isPublic?: boolean } = {
         url: gcsUrl, // Use the GCS URL!
+        isPublic: isPublic === "public",
       };
 
       if (saveMode === "name") {
@@ -220,6 +223,23 @@ export const SaveRenderDialog: React.FC<SaveRenderDialogProps> = ({
             Choose how you want to save or download your rendered video.
           </DialogDescription>
         </DialogHeader>
+        
+        <div className="space-y-4 py-2">
+            <div className="space-y-2">
+                <Label>Visibility</Label>
+                <Select
+                  value={isPublic}
+                  onValueChange={(val) => setIsPublic(val as "public" | "private")}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select visibility" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="private">Private (Only you)</SelectItem>
+                    <SelectItem value="public">Public (Show in Discover)</SelectItem>
+                  </SelectContent>
+                </Select>
+            </div>
 
             <div className="space-y-2">
               <Label htmlFor="video-name">Video Name</Label>
@@ -231,6 +251,7 @@ export const SaveRenderDialog: React.FC<SaveRenderDialogProps> = ({
                 disabled={isSaving}
               />
             </div>
+        </div>
 
         <DialogFooter className="gap-2 sm:gap-0">
           <Button

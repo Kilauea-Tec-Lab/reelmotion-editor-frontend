@@ -72,7 +72,7 @@ export const useRendering = (
   });
 
   // Main function to handle the rendering process
-  const renderMedia = useCallback(async () => {
+  const renderMedia = useCallback(async (resolutionOverride?: {width: number, height: number}) => {
     console.log(`Starting renderMedia process using ${renderType}`);
     setState({
       status: "invoking",
@@ -92,10 +92,15 @@ export const useRendering = (
           ? lambdaGetProgress
           : cloudrunGetProgress;
 
-      console.log("Calling renderVideo API with inputProps", inputProps);
+      // Apply resolution override if provided
+      const activeInputProps = resolutionOverride 
+      ? { ...inputProps, ...resolutionOverride } 
+      : inputProps;
+
+      console.log("Calling renderVideo API with inputProps", activeInputProps);
       
       // Start the render (all render types now return a renderId for polling)
-      const response = await renderVideo({ id, inputProps });
+      const response = await renderVideo({ id, inputProps: activeInputProps });
       console.log("Render response:", response);
       
       // Check if immediate error
