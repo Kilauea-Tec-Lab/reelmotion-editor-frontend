@@ -18,6 +18,7 @@ import { formatDistanceToNow } from "date-fns";
 import { SaveEditDialog } from "./save-edit-dialog";
 import { LoadEditDialog } from "./load-edit-dialog";
 import { SaveRenderDialog } from "./save-render-dialog";
+import { useEditorContext } from "../../contexts/editor-context";
 
 /**
  * Interface representing a single video render attempt
