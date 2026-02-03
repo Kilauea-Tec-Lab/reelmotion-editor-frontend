@@ -93,7 +93,8 @@ pm2 save
 
 # Write script to temp file locally
 $tempScriptPath = "deploy-remote.sh"
-Set-Content -Path $tempScriptPath -Value $remoteScript -Encoding UTF8
+# Use ASCII to avoid BOM issues on Linux
+Set-Content -Path $tempScriptPath -Value $remoteScript -Encoding Ascii
 
 try {
     Write-Host " Uploading deployment script..."

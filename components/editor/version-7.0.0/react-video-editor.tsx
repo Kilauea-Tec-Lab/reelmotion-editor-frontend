@@ -220,8 +220,8 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
         row: 0,
         src: prepareUrlForRender(WATERMARK_VIDEO_SRC),
         content: "Watermark",
-        height: 100, // Should be adjusted based on aspect ratio? ClipOverlay styles handle fit
-        width: 100,
+        height: compositionHeight, 
+        width: compositionWidth,
         left: 0,
         top: 0,
         isDragging: false,
