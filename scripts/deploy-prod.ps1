@@ -26,20 +26,22 @@ git push origin main
 # 2. Copy Configuration Files
 Write-Host " Syncing secrets and config..."
 if (Test-Path "gcp-credentials.json") {
-    # Copy to home directory first to ensure destination exists
-    gcloud compute scp gcp-credentials.json ${GCE_INSTANCE}:~/ --zone=$ZONE
+    # Copy to home directory
+    gcloud compute scp gcp-credentials.json ${GCE_INSTANCE}: --zone=$ZONE
 }
 
 # Copy local .env file
 if (Test-Path ".env") {
     Write-Host " Copying local .env file..."
-    gcloud compute scp .env ${GCE_INSTANCE}:~/env_temp --zone=$ZONE
+    # Copy as a temp file in home dir
+    gcloud compute scp .env ${GCE_INSTANCE}:env_temp --zone=$ZONE
 }
 
 # 3. Remote Execution
-Write-Host " Executing remote build on $GCE_INSTANCE..."
+Write-Host " Preparing remote build on $GCE_INSTANCE..."
 
 $remoteScript = @"
+#!/bin/bash
 set -e
 # Ensure SSH config is OK for GitHub
 if ! grep -q "github.com" ~/.ssh/known_hosts 2>/dev/null; then
@@ -58,7 +60,9 @@ else
 fi
 
 # Restore secrets
-mv ~/gcp-credentials.json . 2>/dev/null || true
+if [ -f ~/gcp-credentials.json ]; then
+    mv ~/gcp-credentials.json .
+fi
 
 # Restore .env
 if [ -f ~/env_temp ]; then
@@ -87,7 +91,24 @@ fi
 pm2 save
 "@
 
-gcloud compute ssh $GCE_INSTANCE --zone=$ZONE --command="$remoteScript"
+# Write script to temp file locally
+$tempScriptPath = "deploy-remote.sh"
+Set-Content -Path $tempScriptPath -Value $remoteScript -Encoding UTF8
+
+try {
+    Write-Host " Uploading deployment script..."
+    gcloud compute scp $tempScriptPath ${GCE_INSTANCE}: --zone=$ZONE
+
+    Write-Host " Executing remote build..."
+    # Make executable and run, then remove
+    gcloud compute ssh $GCE_INSTANCE --zone=$ZONE --command="chmod +x deploy-remote.sh && ./deploy-remote.sh && rm deploy-remote.sh"
+}
+finally {
+    # Cleanup local temp file
+    if (Test-Path $tempScriptPath) {
+        Remove-Item $tempScriptPath
+    }
+}
 
 Write-Host " Deployment successful!"
 Write-Host " App available at: http://104.197.115.149:3000"
