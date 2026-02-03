@@ -27,6 +27,10 @@ export const DISABLE_MOBILE_LAYOUT = false;
  */
 export const DISABLE_VIDEO_KEYFRAMES = false;
 
+// Watermark/Outro video configuration
+export const WATERMARK_VIDEO_SRC = "/wathermark/wathermark.mp4";
+export const WATERMARK_DURATION_FRAMES = 150; // Approximated 5 seconds at 30fps
+
 // AWS deployment configuration (Legacy - keeping for reference)
 export const SITE_NAME = "https://remotionlambda-useast1-1xn6aj83c1.s3.us-east-1.amazonaws.com/sites/reelmotion-editor/index.html";
 export const LAMBDA_FUNCTION_NAME = "remotion-render-4-0-272-mem2048mb-disk2048mb-120sec";

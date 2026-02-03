@@ -16,6 +16,7 @@ import {
   ArrowDownLeft,
   ArrowLeft,
   Library,
+  Crown,
 } from "lucide-react";
 import Image from "next/image";
 import {
@@ -48,6 +49,7 @@ import { StickersPanel } from "../overlays/stickers/stickers-panel";
 import { TemplateOverlayPanel } from "../overlays/templates/template-overlay-panel";
 import { useEditorContext } from "../../contexts/editor-context";
 import { Button } from "@/components/ui/button";
+import { SubscriptionModal } from "../shared/subscription-modal";
 
 /**
  * AppSidebar Component
@@ -62,7 +64,8 @@ import { Button } from "@/components/ui/button";
  */
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { activePanel, setActivePanel, setIsOpen } = useSidebar();
-  const { setSelectedOverlayId, selectedOverlayId, overlays } = useEditorContext();
+  const { setSelectedOverlayId, selectedOverlayId, overlays, isPro } = useEditorContext();
+  const [showSubscriptionModal, setShowSubscriptionModal] = React.useState(false);
 
   React.useEffect(() => {
     if (selectedOverlayId !== null) {
@@ -229,41 +232,56 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarHeader>
         <SidebarContent>
           <SidebarGroup>
-            {navigationItems.map((item) => (
-              <TooltipProvider key={item.title} delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <SidebarMenuButton
-                      onClick={() => {
-                        setActivePanel(item.panel);
-                        setIsOpen(true);
-                      }}
-                      size="lg"
-                      className={`flex flex-col items-center gap-2 px-1.5 py-2 ${
-                        activePanel === item.panel
-                          ? "bg-primary/10 text-primary hover:bg-primary/10"
-                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                      }`}
+            {navigationItems.map((item) => {
+              const isLocked = item.panel === OverlayType.CAPTION && !isPro;
+              return (
+                <TooltipProvider key={item.title} delayDuration={0}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <SidebarMenuButton
+                        onClick={() => {
+                          if (isLocked) {
+                            setShowSubscriptionModal(true);
+                            return;
+                          }
+                          setActivePanel(item.panel);
+                          setIsOpen(true);
+                        }}
+                        size="lg"
+                        className={`flex flex-col items-center gap-2 px-1.5 py-2 ${
+                          activePanel === item.panel
+                            ? "bg-primary/10 text-primary hover:bg-primary/10"
+                            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                        }`}
+                      >
+                        <div className="relative">
+                          <item.icon
+                            className="h-4 w-4 text-gray-700 dark:text-white font-light"
+                            strokeWidth={1.25}
+                          />
+                          {isLocked && (
+                            <div className="absolute -top-3 -right-3 bg-darkBox rounded-full p-0.5 border border-border">
+                              <Crown className="h-3 w-3 text-yellow-500 fill-yellow-500" />
+                            </div>
+                          )}
+                        </div>
+                        <span className="text-[8px] font-medium leading-none">
+                          {item.title}
+                        </span>
+                      </SidebarMenuButton>
+                    </TooltipTrigger>
+                    <TooltipContent
+                      side="right"
+                      className="border dark:bg-darkBox  text-foreground"
                     >
-                      <item.icon
-                        className="h-4 w-4 text-gray-700 dark:text-white font-light"
-                        strokeWidth={1.25}
-                      />
-                      <span className="text-[8px] font-medium leading-none">
-                        {item.title}
-                      </span>
-                    </SidebarMenuButton>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="border dark:bg-darkBox  text-foreground"
-                  >
-                    {item.title}
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            ))}
+                      {item.title} {isLocked && "(Pro)"}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              );
+            })}
           </SidebarGroup>
+          <SubscriptionModal open={showSubscriptionModal} onOpenChange={setShowSubscriptionModal} />
         </SidebarContent>
         <SidebarFooter className="border-t">
           <SidebarGroup>

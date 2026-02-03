@@ -33,6 +33,12 @@ interface EditorData {
   videos: any[];
   uploads?: BackendUpload[];
   project_voices?: ProjectVoice[];
+  suscription?: {
+    id: string;
+    user_id: string;
+    suscription: string | null;
+    payment_recurrency: string;
+  } | null;
 }
 
 interface UseEditorAuthResult {

@@ -42,6 +42,7 @@ interface EditorContextProps {
 
   // Video Properties
   durationInFrames: number; // Total number of frames
+  contentDurationInFrames: number; // Actual content duration in frames
   durationInSeconds: number; // Total duration in seconds
   renderMedia: () => void; // Trigger media rendering
   state: any; // General state object with proper typing
@@ -80,6 +81,10 @@ interface EditorContextProps {
 
   // Load edit functionality
   loadEdit?: (editionData: any) => void;
+
+  // Subscription info
+  subscriptionPlan: string;
+  isPro: boolean;
 }
 
 // Create the context with undefined as default value

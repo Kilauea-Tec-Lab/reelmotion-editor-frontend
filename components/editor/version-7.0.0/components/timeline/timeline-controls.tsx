@@ -14,6 +14,7 @@ import {
   SquareSquare,
   Scissors,
   SkipBack,
+  Crown,
 } from "lucide-react";
 import { useEditorContext } from "../../contexts/editor-context";
 import { useTimeline } from "../../contexts/timeline-context";
@@ -43,6 +44,7 @@ import { useTimelineShortcuts } from "../../hooks/use-timeline-shortcuts";
 import { useAssetLoading } from "../../contexts/asset-loading-context";
 import { useKeyframeContext } from "../../contexts/keyframe-context";
 import { Separator } from "@/components/ui/separator";
+import { SubscriptionModal } from "../shared/subscription-modal";
 
 // Types
 type AspectRatioOption = "16:9" | "9:16" | "1:1" | "4:5" | "4:3" | "2:1" | "3:4";
@@ -109,7 +111,11 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
     selectedOverlayId,
     overlays,
     playerRef,
+    isPro,
+    contentDurationInFrames, // Get content duration from context
   } = useEditorContext();
+
+  const [showSubscriptionModal, setShowSubscriptionModal] = React.useState(false);
 
   const { visibleRows, addRow, removeRow, zoomScale, setZoomScale } =
     useTimeline();
@@ -143,14 +149,17 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
   useEffect(() => {
     // Only run the check if we're actually playing
     if (isPlayingRef.current) {
-      // Detect when frame suddenly drops to 0 from near the end
-      if (prevFrameRef.current > totalDuration - 2 && currentFrame === 0) {
+      // Detect when frame drops to 0 or exceeds content (stop at end of content)
+      if (
+        (prevFrameRef.current > totalDuration - 2 && currentFrame === 0) ||
+        currentFrame >= contentDurationInFrames
+      ) {
         togglePlayPause();
       }
     }
 
     prevFrameRef.current = currentFrame;
-  }, [currentFrame, totalDuration, togglePlayPause]); // Removed isPlaying from dependencies
+  }, [currentFrame, totalDuration, togglePlayPause, contentDurationInFrames]); // Added contentDurationInFrames to dependencies
 
   // Handlers
   const handlePlayPause = () => {
@@ -593,21 +602,36 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
                 Aspect Ratio
               </Label>
               <div className="grid grid-cols-2 gap-1 pt-1">
-                {["16:9", "9:16", "1:1", "4:5", "4:3", "2:1", "3:4"].map((ratio) => (
-                  <Button
-                    key={ratio}
-                    onClick={() => handleAspectRatioChange(ratio)}
-                    size="sm"
-                    variant={aspectRatio === ratio ? "default" : "outline"}
-                    className={`h-8 transition-colors ${
-                      aspectRatio === ratio
-                        ? "bg-primarioLogo hover:bg-primarioLogo text-white border-0"
-                        : "bg-gray-100 dark:bg-darkBox  border-gray-200 dark:border-gray-700 hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-700 dark:text-zinc-300"
-                    }`}
-                  >
-                    {ratio}
-                  </Button>
-                ))}
+                {["16:9", "9:16", "1:1", "4:5", "4:3", "2:1", "3:4"].map((ratio) => {
+                  const isLocked = !isPro && ratio !== "16:9" && ratio !== "9:16";
+                  return (
+                    <Button
+                      key={ratio}
+                      onClick={() => {
+                        if (isLocked) {
+                          setDropdownOpen(false);
+                          setShowSubscriptionModal(true);
+                          return;
+                        }
+                        handleAspectRatioChange(ratio);
+                      }}
+                      size="sm"
+                      variant={aspectRatio === ratio ? "default" : "outline"}
+                      className={`h-8 transition-colors relative ${
+                        aspectRatio === ratio
+                          ? "bg-primarioLogo hover:bg-primarioLogo text-white border-0"
+                          : "bg-gray-100 dark:bg-darkBox  border-gray-200 dark:border-gray-700 hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-700 dark:text-zinc-300"
+                      }`}
+                    >
+                      {ratio}
+                      {isLocked && (
+                        <div className="absolute top-0 right-0 p-0.5">
+                          <Crown className="w-2.5 h-2.5 text-yellow-500 fill-yellow-500" />
+                        </div>
+                      )}
+                    </Button>
+                  );
+                })}
               </div>
             </div>
 
@@ -629,6 +653,7 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+      <SubscriptionModal open={showSubscriptionModal} onOpenChange={setShowSubscriptionModal} />
     </div>
   );
 };

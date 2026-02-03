@@ -32,6 +32,8 @@ import {
   DEFAULT_OVERLAYS,
   FPS,
   RENDER_TYPE,
+  WATERMARK_VIDEO_SRC,
+  WATERMARK_DURATION_FRAMES,
 } from "./constants";
 import { TimelineProvider } from "./contexts/timeline-context";
 
@@ -94,6 +96,9 @@ function ZoomKeyboardShortcuts() {
 export default function ReactVideoEditor({ projectId }: { projectId: string }) {
   // Authentication check
   const { isLoading, isAuthorized, editorData } = useEditorAuth();
+  
+  const subscriptionPlan = editorData?.suscription?.suscription || "free";
+  const isPro = subscriptionPlan !== "free";
 
   // Autosave state
   const [showRecoveryDialog, setShowRecoveryDialog] = useState(false);
@@ -153,14 +158,41 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
   const { width: compositionWidth, height: compositionHeight } =
     getAspectRatioDimensions();
 
+  // Calculate render dimensions based on subscription plan
+  let renderWidth = compositionWidth;
+  let renderHeight = compositionHeight;
+
+  if (!isPro) {
+    const MAX_RES = 720;
+    if (compositionWidth > compositionHeight) {
+      // Landscape
+      if (compositionHeight > MAX_RES) {
+        const ratio = compositionWidth / compositionHeight;
+        renderHeight = MAX_RES;
+        renderWidth = Math.round(renderHeight * ratio);
+      }
+    } else {
+      // Portrait or Square
+      if (compositionWidth > MAX_RES) {
+        const ratio = compositionHeight / compositionWidth;
+        renderWidth = MAX_RES;
+        renderHeight = Math.round(renderWidth * ratio);
+      }
+    }
+    // Ensure even dimensions
+    renderWidth = Math.round(renderWidth / 2) * 2;
+    renderHeight = Math.round(renderHeight / 2) * 2;
+  }
+
   const handleTimelineClick = useTimelineClick(playerRef, durationInFrames);
 
   /**
    * Prepare overlays for rendering by converting all media URLs to absolute URLs
    * that don't use the local proxy (which only works on Next.js server)
+   * And adding watermark if needed relative to render context
    */
   const prepareOverlaysForRender = (overlays: Overlay[]): Overlay[] => {
-    return overlays.map((overlay) => {
+    const processedOverlays = overlays.map((overlay) => {
       // Handle overlays with src property (video, image, sound)
       if ('src' in overlay && typeof overlay.src === 'string') {
         return {
@@ -170,14 +202,49 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
       }
       return overlay;
     });
+
+    // Add watermark for free users
+    if (!isPro) {
+      // Calculate the end time of the composition
+      const maxDuration =
+        processedOverlays.length > 0
+          ? Math.max(...processedOverlays.map((o) => o.from + o.durationInFrames))
+          : 0;
+      
+      // Create new video overlay
+      const watermarkOverlay = {
+        id: -999, // Special ID for watermark
+        type: OverlayType.VIDEO,
+        from: maxDuration,
+        durationInFrames: WATERMARK_DURATION_FRAMES,
+        row: 0,
+        src: prepareUrlForRender(WATERMARK_VIDEO_SRC),
+        content: "Watermark",
+        height: 100, // Should be adjusted based on aspect ratio? ClipOverlay styles handle fit
+        width: 100,
+        left: 0,
+        top: 0,
+        isDragging: false,
+        rotation: 0,
+        styles: {
+          objectFit: "contain",
+          opacity: 1,
+          zIndex: 9999, // Ensure it's on top if overlapping
+        },
+      } as unknown as Overlay;
+
+      processedOverlays.push(watermarkOverlay);
+    }
+
+    return processedOverlays;
   };
 
   const inputProps = {
     overlays: prepareOverlaysForRender(overlays),
-    durationInFrames: contentDurationInFrames, // Use actual content duration for rendering
+    durationInFrames: contentDurationInFrames + (!isPro ? WATERMARK_DURATION_FRAMES : 0), // Add watermark duration for free users
     fps: FPS,
-    width: compositionWidth,
-    height: compositionHeight,
+    width: renderWidth, // Use calculated render dimensions
+    height: renderHeight,
     src: "",
   };
 
@@ -395,6 +462,7 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
     updatePlayerDimensions,
     getAspectRatioDimensions,
     durationInFrames,
+    contentDurationInFrames, // Added contentDurationInFrames
     durationInSeconds,
 
     // Add renderType to the context
@@ -421,6 +489,10 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
 
     // Load edit functionality
     loadEdit: handleLoadEdit,
+
+    // Subscription info
+    subscriptionPlan,
+    isPro,
   };
 
   // Show loading state while authenticating
