@@ -19,6 +19,7 @@ import { SaveEditDialog } from "./save-edit-dialog";
 import { LoadEditDialog } from "./load-edit-dialog";
 import { SaveRenderDialog } from "./save-render-dialog";
 import { useEditorContext } from "../../contexts/editor-context";
+import { SubscriptionModal } from "../shared/subscription-modal";
 
 /**
  * Interface representing a single video render attempt
@@ -93,6 +94,8 @@ const RenderControls: React.FC<RenderControlsProps> = ({
   const [isSaveRenderDialogOpen, setIsSaveRenderDialogOpen] = React.useState(false);
   // Track selected video URL for saving
   const [selectedVideoUrl, setSelectedVideoUrl] = React.useState<string>("");
+  // Track subscription modal state
+  const [showSubscriptionModal, setShowSubscriptionModal] = React.useState(false);
 
   // Check if rendering is disabled via environment variable
   const isRenderDisabled = process.env.NEXT_PUBLIC_DISABLE_RENDER === "true";
@@ -289,6 +292,12 @@ const RenderControls: React.FC<RenderControlsProps> = ({
         videoUrl={selectedVideoUrl}
       />
 
+      {/* Subscription Modal */}
+      <SubscriptionModal 
+        open={showSubscriptionModal} 
+        onOpenChange={setShowSubscriptionModal} 
+      />
+
       <Button
         variant="ghost"
         size="sm"
@@ -430,9 +439,8 @@ const RenderControls: React.FC<RenderControlsProps> = ({
 
              {/* 1080p - Pro+ */}
              <DropdownMenuItem 
-               disabled={!can1080p} 
-               onClick={can1080p ? () => handleExport('1080p') : undefined}
-               className={`cursor-pointer ${!can1080p ? "opacity-70 bg-gray-50 dark:bg-gray-900" : ""}`}
+               onClick={() => can1080p ? handleExport('1080p') : setShowSubscriptionModal(true)}
+               className={`cursor-pointer ${!can1080p ? "bg-gray-50 dark:bg-gray-900" : ""}`}
              >
                  <div className="flex items-center justify-between w-full">
                    <div className="flex flex-col text-left">
@@ -445,16 +453,15 @@ const RenderControls: React.FC<RenderControlsProps> = ({
 
              {/* 4K - Elite Only */}
              <DropdownMenuItem 
-               disabled={!can4k} 
-               onClick={can4k ? () => handleExport('4k') : undefined}
-               className={`cursor-pointer ${!can4k ? "opacity-70 bg-gray-50 dark:bg-gray-900" : ""}`}
+               onClick={() => can4k ? handleExport('4k') : setShowSubscriptionModal(true)}
+               className={`cursor-pointer ${!can4k ? "bg-gray-50 dark:bg-gray-900" : ""}`}
              >
                  <div className="flex items-center justify-between w-full">
                    <div className="flex flex-col text-left">
                      <span className="font-medium">Ultra HD (4K)</span>
                      <span className="text-xs text-muted-foreground">Elite Quality</span>
                    </div>
-                   {!can4k && <Lock className="w-3.5 h-3.5 text-zinc-400 ml-2" />}
+                   {!can4k && <Crown className="w-4 h-4 text-purple-500 ml-2" />}
                  </div>
              </DropdownMenuItem>
 
