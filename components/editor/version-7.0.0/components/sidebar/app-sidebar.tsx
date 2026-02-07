@@ -233,7 +233,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarContent>
           <SidebarGroup>
             {navigationItems.map((item) => {
-              const isLocked = item.panel === OverlayType.CAPTION && !isPro;
+              const isLocked =
+                (item.panel === OverlayType.CAPTION ||
+                  item.panel === OverlayType.TEXT ||
+                  item.panel === OverlayType.LIBRARY) &&
+                !isPro;
               return (
                 <TooltipProvider key={item.title} delayDuration={0}>
                   <Tooltip>

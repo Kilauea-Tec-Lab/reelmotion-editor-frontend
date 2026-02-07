@@ -1,3 +1,7 @@
+param(
+    [string]$CommitMessage
+)
+
 $ErrorActionPreference = "Stop"
 
 # Configuration
@@ -7,7 +11,12 @@ $REPO_URL = "git@github.com:DarkusGamer/reelmotion-editor-frontend.git"
 
 # 1. Local Git Operations
 Write-Host " Preparing deployment..."
-$commitMsg = Read-Host "Enter commit message (default: 'chore: deploy to production')"
+
+$commitMsg = $CommitMessage
+if ([string]::IsNullOrWhiteSpace($commitMsg)) {
+    $commitMsg = Read-Host "Enter commit message (default: 'chore: deploy to production')"
+}
+
 if ([string]::IsNullOrWhiteSpace($commitMsg)) {
     $commitMsg = "chore: deploy to production"
 }
