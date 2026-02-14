@@ -310,6 +310,7 @@ export const CompositionProps = z.object({
 export const RenderRequest = z.object({
   id: z.string(),
   inputProps: CompositionProps,
+  renderScale: z.number().optional(),
 });
 
 export const ProgressRequest = z.object({

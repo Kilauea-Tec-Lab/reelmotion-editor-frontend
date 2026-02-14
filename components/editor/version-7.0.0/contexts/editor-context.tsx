@@ -85,6 +85,9 @@ interface EditorContextProps {
   // Subscription info
   subscriptionPlan: string;
   isPro: boolean;
+
+  // Export limit for free users
+  exportNumber: number;
 }
 
 // Create the context with undefined as default value

@@ -25,7 +25,7 @@ export function SubscriptionModal({ open, onOpenChange }: SubscriptionModalProps
             Upgrade to Pro
           </AlertDialogTitle>
           <AlertDialogDescription>
-            You need a Pro subscription to access this feature. Unlock premium features like Captions, higher resolution rendering, and more aspect ratios.
+            You need a Pro subscription to access this feature. Unlock premium features like higher resolution rendering and more.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

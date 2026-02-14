@@ -14,7 +14,6 @@ import {
   SquareSquare,
   Scissors,
   SkipBack,
-  Crown,
 } from "lucide-react";
 import { useEditorContext } from "../../contexts/editor-context";
 import { useTimeline } from "../../contexts/timeline-context";
@@ -44,7 +43,6 @@ import { useTimelineShortcuts } from "../../hooks/use-timeline-shortcuts";
 import { useAssetLoading } from "../../contexts/asset-loading-context";
 import { useKeyframeContext } from "../../contexts/keyframe-context";
 import { Separator } from "@/components/ui/separator";
-import { SubscriptionModal } from "../shared/subscription-modal";
 
 // Types
 type AspectRatioOption = "16:9" | "9:16" | "1:1" | "4:5" | "4:3" | "2:1" | "3:4";
@@ -111,11 +109,8 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
     selectedOverlayId,
     overlays,
     playerRef,
-    isPro,
     contentDurationInFrames, // Get content duration from context
   } = useEditorContext();
-
-  const [showSubscriptionModal, setShowSubscriptionModal] = React.useState(false);
 
   const { visibleRows, addRow, removeRow, zoomScale, setZoomScale } =
     useTimeline();
@@ -603,16 +598,10 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
               </Label>
               <div className="grid grid-cols-2 gap-1 pt-1">
                 {["16:9", "9:16", "1:1", "4:5", "4:3", "2:1", "3:4"].map((ratio) => {
-                  const isLocked = !isPro && ratio !== "16:9" && ratio !== "9:16";
                   return (
                     <Button
                       key={ratio}
                       onClick={() => {
-                        if (isLocked) {
-                          setDropdownOpen(false);
-                          setShowSubscriptionModal(true);
-                          return;
-                        }
                         handleAspectRatioChange(ratio);
                       }}
                       size="sm"
@@ -624,11 +613,6 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
                       }`}
                     >
                       {ratio}
-                      {isLocked && (
-                        <div className="absolute top-0 right-0 p-0.5">
-                          <Crown className="w-2.5 h-2.5 text-yellow-500 fill-yellow-500" />
-                        </div>
-                      )}
                     </Button>
                   );
                 })}
@@ -653,7 +637,6 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      <SubscriptionModal open={showSubscriptionModal} onOpenChange={setShowSubscriptionModal} />
     </div>
   );
 };

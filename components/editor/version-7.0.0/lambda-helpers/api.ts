@@ -43,14 +43,17 @@ const makeRequest = async <Res>(
 export const renderVideo = async ({
   id,
   inputProps,
+  renderScale,
 }: {
   id: string;
   inputProps: z.infer<typeof CompositionProps>;
+  renderScale?: number;
 }) => {
-  console.log("Rendering video", { id, inputProps });
+  console.log("Rendering video", { id, inputProps, renderScale });
   const body: z.infer<typeof RenderRequest> = {
     id,
     inputProps,
+    renderScale,
   };
 
   const response = await makeRequest<RenderMediaOnLambdaOutput>(

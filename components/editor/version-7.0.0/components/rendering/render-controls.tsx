@@ -1,4 +1,5 @@
 import React from "react";
+import Cookies from "js-cookie";
 import { Download, Loader2, Bell, Save, FolderOpen, ChevronDown, Lock, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -83,8 +84,14 @@ const RenderControls: React.FC<RenderControlsProps> = ({
   // Track if there are new renders
   const [hasNewRender, setHasNewRender] = React.useState(false);
   
-  // Use EditorContext to get subscription info and dimensions
-  const { subscriptionPlan, isPro, getAspectRatioDimensions } = useEditorContext();
+  // Use EditorContext to get subscription info, dimensions, overlays and export count
+  const { subscriptionPlan, isPro, getAspectRatioDimensions, overlays, exportNumber } = useEditorContext();
+
+  // Check if timeline has elements
+  const isTimelineEmpty = !overlays || overlays.length === 0;
+
+  // Check if free user has exhausted export limit (3 or more)
+  const isFreeExportBlocked = (subscriptionPlan || 'free').toLowerCase() === 'free' && exportNumber >= 3;
 
   // Track save dialog state
   const [isSaveDialogOpen, setIsSaveDialogOpen] = React.useState(false);
@@ -102,76 +109,44 @@ const RenderControls: React.FC<RenderControlsProps> = ({
 
   const handleExport = (resolution: '720p' | '1080p' | '4k') => {
     const { width: compositionWidth, height: compositionHeight } = getAspectRatioDimensions();
-    
-    // Calculate aspect ratio
-    const ratio = compositionWidth / compositionHeight;
-    
-    let targetHeight = 720; // Default 720p
-    
-    if (resolution === '1080p') targetHeight = 1080;
-    if (resolution === '4k') targetHeight = 2160;
 
-    let renderWidth = 0;
-    let renderHeight = 0;
+    // Target long side based on resolution
+    // 720p = 1280, 1080p = 1920, 4K = 3840
+    const targetLongSide = resolution === '4k' ? 3840 : resolution === '1080p' ? 1920 : 1280;
 
-    // Use logic similar to ReactVideoEditor initialization but adapted for target resolution
-    // If landscape (width > height)
-    if (compositionWidth >= compositionHeight) {
-       renderHeight = targetHeight;
-       renderWidth = Math.round(renderHeight * ratio);
-    } else {
-       // Portrait or Square
-       // For portrait, the logic is usually inverted (width is the constraint)
-       // But 720p usually means 720px on the smallest side or 1280x720.
-       // Let's stick to the targetHeight being the vertical resolution for landscape,
-       // and for portrait, let's say targetWidth is the resolution class?
-       // Remotion logic in ReactVideoEditor was:
-       /*
-        if (compositionWidth > MAX_RES) {
-            const ratio = compositionHeight / compositionWidth;
-            renderWidth = MAX_RES;
-            renderHeight = Math.round(renderWidth * ratio);
-        }
-       */
-       
-       if (resolution === '720p') {
-          // Max side 1280, min side 720 usually
-          // Let's simplified: 
-          // 720p -> Shortest side is 720 (or Longest is 1280?)
-          // Usually 720p means 1280x720.
-          // Let's scale based on height for now as per `targetHeight`
-          // But if portrait, 720p usually implies width=720.
-          if (compositionWidth < compositionHeight) {
-             renderWidth = targetHeight; // 720, 1080, 2160
-             renderHeight = Math.round(renderWidth / ratio);
-          } else {
-             renderHeight = targetHeight;
-             renderWidth = Math.round(renderHeight * ratio);
-          }
+    // Calculate scale factor based on the composition's longest side
+    // Remotion's scale parameter uniformly upscales the entire render output
+    // This guarantees all overlays, positions, and content scale perfectly
+    const currentLongSide = Math.max(compositionWidth, compositionHeight);
+    const renderScale = targetLongSide / currentLongSide;
+
+    // Call render with scale factor — Remotion handles the uniform upscaling
+    (handleRender as any)({ scale: renderScale });
+
+    // Notify backend if subscription is free
+    if ((subscriptionPlan || 'free').toLowerCase() === 'free') {
+      notifyFreeRender();
     }
-     // Actually let's be more precise:
-     // 720p = 1280x720
-     // 1080p = 1920x1080
-     // 4K = 3840x2160
-     
-     const targetLongSide = resolution === '4k' ? 3840 : resolution === '1080p' ? 1920 : 1280;
-     
-     if (compositionWidth >= compositionHeight) {
-         renderWidth = targetLongSide;
-         renderHeight = Math.round(renderWidth / ratio);
-     } else {
-         renderHeight = targetLongSide;
-         renderWidth = Math.round(renderHeight * ratio);
-     }
+  };
+
+  /**
+   * Sends a POST to editor/free-render-sum to track free user renders
+   */
+  const notifyFreeRender = async () => {
+    try {
+      const token = Cookies.get("token");
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "https://backend.reelmotion.ai";
+      await fetch(`${backendUrl}/editor/free-render-sum`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + token,
+        },
+        body: JSON.stringify({ subscription: "free" }),
+      });
+    } catch (error) {
+      console.error("Error notifying free render:", error);
     }
-
-    // Ensure even dimensions
-    renderWidth = Math.round(renderWidth / 2) * 2;
-    renderHeight = Math.round(renderHeight / 2) * 2;
-
-    // Call render with overridden resolution
-    // We need to cast handleRender because we modified useRendering but RenderControlsProps was not updated in this file yet (it's updated below in this edit)
-    (handleRender as any)({ width: renderWidth, height: renderHeight });
   };
   
   // Determine access levels
@@ -417,11 +392,12 @@ const RenderControls: React.FC<RenderControlsProps> = ({
           <DropdownMenuTrigger asChild>
              <Button
                 variant="default"
-                disabled={isRenderDisabled}
+                disabled={isRenderDisabled || isTimelineEmpty || isFreeExportBlocked}
                 size="sm"
                 className="bg-primarioLogo hover:bg-primarioLogo/90 text-white"
+                title={isTimelineEmpty ? "Add elements to the timeline before exporting" : isFreeExportBlocked ? "You have reached the free export limit. Upgrade your plan to continue exporting." : isRenderDisabled ? "Rendering is currently disabled" : undefined}
               >
-                {isRenderDisabled ? "Disabled" : "Export Video"}
+                {isRenderDisabled ? "Disabled" : isTimelineEmpty ? "Export Video" : isFreeExportBlocked ? "Export Limit Reached" : "Export Video"}
                 <ChevronDown className="w-3.5 h-3.5 ml-2" />
               </Button>
           </DropdownMenuTrigger>

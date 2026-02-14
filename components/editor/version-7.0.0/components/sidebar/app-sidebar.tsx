@@ -16,7 +16,6 @@ import {
   ArrowDownLeft,
   ArrowLeft,
   Library,
-  Crown,
 } from "lucide-react";
 import Image from "next/image";
 import {
@@ -49,7 +48,6 @@ import { StickersPanel } from "../overlays/stickers/stickers-panel";
 import { TemplateOverlayPanel } from "../overlays/templates/template-overlay-panel";
 import { useEditorContext } from "../../contexts/editor-context";
 import { Button } from "@/components/ui/button";
-import { SubscriptionModal } from "../shared/subscription-modal";
 
 /**
  * AppSidebar Component
@@ -64,8 +62,7 @@ import { SubscriptionModal } from "../shared/subscription-modal";
  */
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { activePanel, setActivePanel, setIsOpen } = useSidebar();
-  const { setSelectedOverlayId, selectedOverlayId, overlays, isPro } = useEditorContext();
-  const [showSubscriptionModal, setShowSubscriptionModal] = React.useState(false);
+  const { setSelectedOverlayId, selectedOverlayId, overlays } = useEditorContext();
 
   React.useEffect(() => {
     if (selectedOverlayId !== null) {
@@ -233,21 +230,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarContent>
           <SidebarGroup>
             {navigationItems.map((item) => {
-              const isLocked =
-                (item.panel === OverlayType.CAPTION ||
-                  item.panel === OverlayType.TEXT ||
-                  item.panel === OverlayType.LIBRARY) &&
-                !isPro;
               return (
                 <TooltipProvider key={item.title} delayDuration={0}>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <SidebarMenuButton
                         onClick={() => {
-                          if (isLocked) {
-                            setShowSubscriptionModal(true);
-                            return;
-                          }
                           setActivePanel(item.panel);
                           setIsOpen(true);
                         }}
@@ -263,11 +251,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                             className="h-4 w-4 text-gray-700 dark:text-white font-light"
                             strokeWidth={1.25}
                           />
-                          {isLocked && (
-                            <div className="absolute -top-3 -right-3 bg-darkBox rounded-full p-0.5 border border-border">
-                              <Crown className="h-3 w-3 text-yellow-500 fill-yellow-500" />
-                            </div>
-                          )}
                         </div>
                         <span className="text-[8px] font-medium leading-none">
                           {item.title}
@@ -278,14 +261,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                       side="right"
                       className="border dark:bg-darkBox  text-foreground"
                     >
-                      {item.title} {isLocked && "(Pro)"}
+                      {item.title}
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
               );
             })}
           </SidebarGroup>
-          <SubscriptionModal open={showSubscriptionModal} onOpenChange={setShowSubscriptionModal} />
         </SidebarContent>
         <SidebarFooter className="border-t">
           <SidebarGroup>

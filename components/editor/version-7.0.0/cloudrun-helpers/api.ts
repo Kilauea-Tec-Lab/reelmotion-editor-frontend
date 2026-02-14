@@ -74,14 +74,17 @@ export type CloudRunRenderResponse =
 export const renderVideo = async ({
   id,
   inputProps,
+  renderScale,
 }: {
   id: string;
   inputProps: z.infer<typeof CompositionProps>;
+  renderScale?: number;
 }) => {
-  console.log("[Cloud Run] Rendering video", { id, inputProps });
+  console.log("[Cloud Run] Rendering video", { id, inputProps, renderScale });
   const body: z.infer<typeof RenderRequest> = {
     id,
     inputProps,
+    renderScale,
   };
 
   const response = await makeRequest<CloudRunRenderResponse>(

@@ -33,6 +33,18 @@ const Root: React.FC = () => {
         fps={FPS}
         width={VIDEO_WIDTH}
         height={VIDEO_HEIGHT}
+        /**
+         * Dynamically calculates video metadata from inputProps.
+         * This allows the export resolution to be overridden
+         * (e.g., 1080p, 4K) instead of being stuck at the default 1280x720.
+         */
+        calculateMetadata={async ({ props }) => {
+          return {
+            durationInFrames: props.durationInFrames,
+            width: props.width,
+            height: props.height,
+          };
+        }}
         defaultProps={defaultProps}
       />
     </>

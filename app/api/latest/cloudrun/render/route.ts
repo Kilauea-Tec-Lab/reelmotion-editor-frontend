@@ -246,6 +246,11 @@ export const POST = executeApi(RenderRequest, async (req, body) => {
   // - x264Preset "ultrafast": fastest encoding
   // - JPEG frames: faster than PNG
   // - CRF 28: fast encoding with acceptable quality
+  // Use Remotion's scale parameter for resolution upscaling
+  // scale=1 (default) = original resolution, scale=1.5 = 1080p, scale=3 = 4K
+  const renderScale = body.renderScale && body.renderScale > 0 ? body.renderScale : undefined;
+  console.log("[Cloud Run] Render scale:", renderScale || "1 (default)");
+
   const renderPromise = renderMediaOnCloudrun({
     region: GCP_REGION as any,
     serviceName: process.env.REMOTION_GCP_SERVICE_NAME!,
@@ -268,8 +273,9 @@ export const POST = executeApi(RenderRequest, async (req, body) => {
     jpegQuality: RENDER_CONFIG.JPEG_QUALITY,
     // Cache video frames in memory for faster rendering
     offthreadVideoCacheSizeInBytes: 3000000000, // 3GB cache (máximo)
-    scale: 0.8, // Renderizar a 80% del tamaño (más rápido)
     enforceAudioTrack: false, // No forzar audio si no hay
+    // Resolution upscaling via Remotion's built-in scale
+    ...(renderScale ? { scale: renderScale } : {}),
   });
 
   // Log result when it completes (if the function is still running)

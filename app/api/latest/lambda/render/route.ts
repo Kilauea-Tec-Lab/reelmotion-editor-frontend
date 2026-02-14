@@ -70,6 +70,9 @@ export const POST = executeApi<RenderMediaOnLambdaOutput, typeof RenderRequest>(
 
     try {
       console.log("Rendering media on Lambda....");
+      // Use Remotion's scale parameter for resolution upscaling
+      const renderScale = body.renderScale && body.renderScale > 0 ? body.renderScale : undefined;
+
       const result = await renderMediaOnLambda({
         codec: LAMBDA_CONFIG.CODEC,
         functionName: LAMBDA_CONFIG.FUNCTION_NAME,
@@ -89,6 +92,8 @@ export const POST = executeApi<RenderMediaOnLambdaOutput, typeof RenderRequest>(
         x264Preset: LAMBDA_CONFIG.X264_PRESET,
         imageFormat: LAMBDA_CONFIG.IMAGE_FORMAT,
         jpegQuality: LAMBDA_CONFIG.JPEG_QUALITY,
+        // Resolution upscaling via Remotion's built-in scale
+        ...(renderScale ? { scale: renderScale } : {}),
       });
 
       console.log("Render result:", JSON.stringify(result, null, 2));

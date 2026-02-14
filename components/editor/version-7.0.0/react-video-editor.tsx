@@ -99,6 +99,7 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
   
   const subscriptionPlan = editorData?.suscription?.suscription || "free";
   const isPro = subscriptionPlan !== "free";
+  const exportNumber = editorData?.export_number ?? 0;
 
   // Autosave state
   const [showRecoveryDialog, setShowRecoveryDialog] = useState(false);
@@ -493,6 +494,9 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
     // Subscription info
     subscriptionPlan,
     isPro,
+
+    // Export limit
+    exportNumber,
   };
 
   // Show loading state while authenticating

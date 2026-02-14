@@ -157,7 +157,8 @@ function hasRemoteAssets(overlays: any[]): boolean {
  */
 export async function startRendering(
   compositionId: string,
-  inputProps: Record<string, unknown>
+  inputProps: Record<string, unknown>,
+  renderScale?: number
 ) {
   const renderId = uuidv4();
   const startTime = Date.now();
@@ -226,6 +227,12 @@ export async function startRendering(
 
       const outputPath = path.join(VIDEOS_DIR, `${renderId}.mp4`);
 
+      // Use Remotion's scale parameter for resolution upscaling
+      const effectiveScale = renderScale && renderScale > 0 ? renderScale : undefined;
+      if (effectiveScale) {
+        console.log(`[Render ${renderId}] Rendering with scale: ${effectiveScale}x`);
+      }
+
       await renderMedia({
         codec: RENDER_CONFIG.CODEC,
         composition: {
@@ -242,6 +249,9 @@ export async function startRendering(
         imageFormat: RENDER_CONFIG.IMAGE_FORMAT,
         jpegQuality: RENDER_CONFIG.JPEG_QUALITY,
         concurrency: RENDER_CONFIG.CONCURRENCY,
+
+        // Resolution upscaling via Remotion's built-in scale
+        ...(effectiveScale ? { scale: effectiveScale } : {}),
         
         // Chromium settings
         chromiumOptions: {
