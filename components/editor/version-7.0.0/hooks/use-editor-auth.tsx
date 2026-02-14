@@ -39,6 +39,7 @@ interface EditorData {
     suscription: string | null;
     payment_recurrency: string;
   } | null;
+  export_number?: number;
 }
 
 interface UseEditorAuthResult {
