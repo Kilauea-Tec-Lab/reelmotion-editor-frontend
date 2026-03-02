@@ -7,19 +7,97 @@
 
 /**
  * CDN Configuration for Google Cloud Storage
- * The CDN provides faster delivery via Google's edge network
- * Note: CDN routes are configured by actual file paths (chat_attachments, sounds, etc.)
- * NOT by bucket type prefixes (images, videos, audio)
+ * 
+ * IMPORTANT: cdn.reelmotion.ai is a CNAME pointing to the GCS bucket
+ * `reelmotion-ai-videos` ONLY. Files in other buckets (reelmotion-ai-images,
+ * reelmotion-ai-audio) are NOT available via cdn.reelmotion.ai.
+ * 
+ * For files in other buckets, we use direct GCS URLs instead.
  */
 const CDN_CONFIG = {
   enabled: process.env.NEXT_PUBLIC_CDN_ENABLED === "true",
   baseUrl: process.env.NEXT_PUBLIC_CDN_URL || "https://cdn.reelmotion.ai",
-  // Map GCS bucket URLs - paths are served directly without type prefix
-  bucketPatterns: [
+  // ONLY the videos bucket is served via CDN domain
+  cdnBucketPattern: "storage.googleapis.com/reelmotion-ai-videos",
+  // All bucket patterns for GCS URL detection
+  allBucketPatterns: [
     "storage.googleapis.com/reelmotion-ai-videos",
     "storage.googleapis.com/reelmotion-ai-audio",
     "storage.googleapis.com/reelmotion-ai-images",
   ],
+};
+
+/**
+ * Paths that live in the reelmotion-ai-images bucket (NOT in reelmotion-ai-videos).
+ * The CDN domain (cdn.reelmotion.ai) only serves reelmotion-ai-videos,
+ * so any CDN URL with these path prefixes will 404.
+ */
+const IMAGES_BUCKET_PATHS = [
+  "attachments/",
+  "chat_attachments/",
+  "video-thumbnails/",
+  "editor-images/",
+  "editor-uploads/",
+  "generated-images/",
+  "image-references/",
+  "characters/",
+  "conversation-media/",
+  "scenes/",
+  "spots/",
+  "user-profiles/",
+  "video-prompts/",
+  "project-frames/",
+];
+
+/**
+ * Paths that live in the reelmotion-ai-audio bucket.
+ */
+const AUDIO_BUCKET_PATHS = [
+  "editor-music/",
+  "editor-voices/",
+  "generated-voices/",
+];
+
+/**
+ * Fix a CDN URL that incorrectly points to cdn.reelmotion.ai when the file
+ * actually lives in a different GCS bucket. Redirects to the correct direct
+ * GCS URL for the right bucket.
+ *
+ * The backend sometimes generates CDN URLs for ALL files, but cdn.reelmotion.ai
+ * only serves files from the reelmotion-ai-videos bucket.
+ *
+ * @param url The potentially incorrect CDN URL
+ * @returns Corrected GCS URL or the original URL if it's valid
+ */
+export const fixCdnUrl = (url: string): string => {
+  if (!url.includes("cdn.reelmotion.ai")) {
+    return url;
+  }
+
+  // Extract the path after the CDN domain
+  const cdnBase = CDN_CONFIG.baseUrl;
+  if (!url.startsWith(cdnBase)) {
+    return url;
+  }
+
+  const path = url.substring(cdnBase.length + 1); // +1 for the trailing slash
+
+  // Check if this path belongs to the images bucket
+  for (const prefix of IMAGES_BUCKET_PATHS) {
+    if (path.startsWith(prefix)) {
+      return `https://storage.googleapis.com/reelmotion-ai-images/${path}`;
+    }
+  }
+
+  // Check if this path belongs to the audio bucket
+  for (const prefix of AUDIO_BUCKET_PATHS) {
+    if (path.startsWith(prefix)) {
+      return `https://storage.googleapis.com/reelmotion-ai-audio/${path}`;
+    }
+  }
+
+  // Path likely belongs to reelmotion-ai-videos (CDN is correct)
+  return url;
 };
 
 /**
@@ -31,11 +109,15 @@ export const getBaseUrl = (): string => {
 };
 
 /**
- * Transform a GCS URL to use the CDN for faster delivery
- * Falls back to original URL if CDN is not enabled or URL doesn't match
+ * Transform a GCS URL to use the CDN for faster delivery.
+ * ONLY transforms URLs from reelmotion-ai-videos bucket, since cdn.reelmotion.ai
+ * is a CNAME that only points to that specific bucket.
+ * 
+ * URLs from reelmotion-ai-images and reelmotion-ai-audio are returned as-is
+ * (they work directly via GCS with CORS configured).
  *
  * @param url The original GCS URL
- * @returns CDN URL if available, otherwise original URL
+ * @returns CDN URL if applicable, otherwise original URL
  */
 export const toCdnUrl = (url: string): string => {
   // If CDN is not enabled, return original URL
@@ -43,16 +125,13 @@ export const toCdnUrl = (url: string): string => {
     return url;
   }
 
-  // Check if URL matches any bucket pattern
-  for (const bucketPattern of CDN_CONFIG.bucketPatterns) {
-    if (url.includes(bucketPattern)) {
-      // Extract the file path from the GCS URL (without the bucket name)
-      const escapedPattern = bucketPattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const match = url.match(new RegExp(`${escapedPattern}/(.+)`));
-      if (match && match[1]) {
-        // Return CDN URL with just the file path (no type prefix)
-        return `${CDN_CONFIG.baseUrl}/${match[1]}`;
-      }
+  // Only transform URLs from the videos bucket (the one CDN actually serves)
+  const bucketPattern = CDN_CONFIG.cdnBucketPattern;
+  if (url.includes(bucketPattern)) {
+    const escapedPattern = bucketPattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const match = url.match(new RegExp(`${escapedPattern}/(.+)`));
+    if (match && match[1]) {
+      return `${CDN_CONFIG.baseUrl}/${match[1]}`;
     }
   }
 
@@ -85,24 +164,28 @@ export const isBackendUrl = (url: string): boolean => {
 
 /**
  * Get optimized URL for media content
- * Uses CDN if available, otherwise returns original URL with CORS-friendly headers
+ * Uses CDN if available, fixes broken CDN URLs, and returns direct GCS URLs
+ * for buckets not served by CDN.
  *
  * @param url The original media URL
  * @returns Optimized URL for faster loading
  */
 export const getOptimizedMediaUrl = (url: string): string => {
-  // Try CDN first
-  const cdnUrl = toCdnUrl(url);
-  if (cdnUrl !== url) {
+  // First, fix any CDN URLs that point to the wrong bucket
+  const fixedUrl = fixCdnUrl(url);
+
+  // Try CDN transform (only for videos bucket)
+  const cdnUrl = toCdnUrl(fixedUrl);
+  if (cdnUrl !== fixedUrl) {
     return cdnUrl;
   }
 
   // For GCS URLs, we can use the URL directly if CORS is configured
-  if (isGcsUrl(url)) {
-    return url;
+  if (isGcsUrl(fixedUrl)) {
+    return fixedUrl;
   }
 
-  return url;
+  return fixedUrl;
 };
 
 /**
@@ -175,26 +258,29 @@ export const resolveVideoUrl = (url: string, baseUrl?: string): string => {
 
   const resolved = resolveMediaUrl(url, baseUrl);
 
+  // Fix CDN URLs that point to the wrong bucket before any other checks
+  const fixed = fixCdnUrl(resolved);
+
   // Only proxy absolute http(s) URLs.
-  if (!resolved.startsWith("http://") && !resolved.startsWith("https://")) {
-    return resolved;
+  if (!fixed.startsWith("http://") && !fixed.startsWith("https://")) {
+    return fixed;
   }
 
   // Avoid double-proxying.
-  if (resolved.includes("/api/proxy-video") || resolved.includes("/api/proxy-video?")) {
-    return resolved;
+  if (fixed.includes("/api/proxy-video") || fixed.includes("/api/proxy-video?")) {
+    return fixed;
   }
 
   // NOTE: GCS URLs now have proper CORS configured (via cors.json), so we can use them directly!
   // This improves performance significantly by avoiding the proxy.
-  if (resolved.includes("storage.googleapis.com")) {
-    return resolved;
+  if (fixed.includes("storage.googleapis.com")) {
+    return fixed;
   }
 
   // CDN URLs (cdn.reelmotion.ai) are served from GCS with CORS configured.
-  // Bypass the proxy to avoid unnecessary latency and potential timeouts.
-  if (resolved.includes("cdn.reelmotion.ai")) {
-    return resolved;
+  // After fixCdnUrl, only VALID CDN URLs remain (ones that point to reelmotion-ai-videos).
+  if (fixed.includes("cdn.reelmotion.ai")) {
+    return fixed;
   }
 
   // Determine current origin for building same-origin proxy URL.
@@ -209,10 +295,10 @@ export const resolveVideoUrl = (url: string, baseUrl?: string): string => {
   })();
 
   // If already same-origin, no need to proxy.
-  if (resolved.startsWith(origin)) return resolved;
+  if (fixed.startsWith(origin)) return fixed;
 
   // Only proxy truly external URLs that need CORS handling
-  return `${origin}/api/proxy-video?url=${encodeURIComponent(resolved)}`;
+  return `${origin}/api/proxy-video?url=${encodeURIComponent(fixed)}`;
 };
 
 /**
@@ -229,21 +315,24 @@ export const prepareUrlForRender = (url: string): string => {
     const match = url.match(/[?&]url=([^&]+)/);
     if (match && match[1]) {
       const decodedUrl = decodeURIComponent(match[1]);
-      // Return the decoded URL (which should be absolute)
-      return decodedUrl;
+      // Fix CDN URL if needed, then return
+      return fixCdnUrl(decodedUrl);
     }
   }
 
+  // Fix CDN URLs that point to the wrong bucket
+  const fixed = fixCdnUrl(url);
+
   // If it's already a CDN or GCS URL, use it directly
-  if (isGcsUrl(url)) {
-    return url;
+  if (isGcsUrl(fixed)) {
+    return fixed;
   }
 
   // If it's a relative URL, make it absolute using the base URL
-  if (url.startsWith('/')) {
-    return `${getBaseUrl()}${url}`;
+  if (fixed.startsWith('/')) {
+    return `${getBaseUrl()}${fixed}`;
   }
 
   // Otherwise return as-is (already absolute)
-  return url;
+  return fixed;
 };

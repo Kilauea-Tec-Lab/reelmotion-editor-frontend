@@ -4,24 +4,24 @@ const nextConfig = {
   images: {
     remotePatterns: [
       {
-        protocol: 'https',
-        hostname: 'cdn.reelmotion.ai',
+        protocol: "https",
+        hostname: "cdn.reelmotion.ai",
       },
       {
-        protocol: 'https',
-        hostname: 'storage.googleapis.com',
+        protocol: "https",
+        hostname: "storage.googleapis.com",
       },
       {
-        protocol: 'https',
-        hostname: 'images.pexels.com',
+        protocol: "https",
+        hostname: "images.pexels.com",
       },
       {
-        protocol: 'https',
-        hostname: 'www.pexels.com',
+        protocol: "https",
+        hostname: "www.pexels.com",
       },
       {
-        protocol: 'https',
-        hostname: 'backend.reelmotion.ai',
+        protocol: "https",
+        hostname: "backend.reelmotion.ai",
       },
     ],
     // Increase timeout for image optimization in production
