@@ -191,6 +191,12 @@ export const resolveVideoUrl = (url: string, baseUrl?: string): string => {
     return resolved;
   }
 
+  // CDN URLs (cdn.reelmotion.ai) are served from GCS with CORS configured.
+  // Bypass the proxy to avoid unnecessary latency and potential timeouts.
+  if (resolved.includes("cdn.reelmotion.ai")) {
+    return resolved;
+  }
+
   // Determine current origin for building same-origin proxy URL.
   const origin = (() => {
     try {

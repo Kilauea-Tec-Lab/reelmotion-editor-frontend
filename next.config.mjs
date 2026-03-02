@@ -1,5 +1,32 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Image optimization configuration
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'cdn.reelmotion.ai',
+      },
+      {
+        protocol: 'https',
+        hostname: 'storage.googleapis.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'images.pexels.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'www.pexels.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'backend.reelmotion.ai',
+      },
+    ],
+    // Increase timeout for image optimization in production
+    minimumCacheTTL: 60,
+  },
   // Allow large file uploads (500MB max)
   experimental: {
     serverComponentsExternalPackages: [
