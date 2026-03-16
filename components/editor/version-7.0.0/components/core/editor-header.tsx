@@ -1,5 +1,6 @@
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import Image from "next/image";
 import dynamic from "next/dynamic";
 
 import RenderControls from "../rendering/render-controls";
@@ -63,6 +64,16 @@ export function EditorHeader() {
       border-b border-gray-100/10 dark:border-gray-100/10
       p-2.5 px-4.5"
     >
+      {/* Logo for mobile (hidden on desktop where sidebar shows it) */}
+      <a href="https://reelmotion.ai" className="sm:hidden flex items-center">
+        <Image
+          src="/icons/icon_reelmotion_ai.png"
+          alt="Logo"
+          width={27}
+          height={27}
+        />
+      </a>
+
       {/* Sidebar toggle button with theme-aware styling */}
       <SidebarTrigger className="hidden sm:block text-gray-700 dark:text-gray-300" />
 
