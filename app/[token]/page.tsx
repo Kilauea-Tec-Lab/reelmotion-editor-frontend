@@ -10,7 +10,6 @@ export default function TokenEditorPage() {
 
   useEffect(() => {
     // Log the token for debugging
-    console.log('Editor accessed with token:', token);
   }, [token]);
 
   // Decode the token if it's URL encoded

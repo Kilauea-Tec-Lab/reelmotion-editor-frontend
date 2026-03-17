@@ -64,7 +64,6 @@ export const uploadMediaFile = async (
     const width = 0;
     const height = 0;
 
-    console.log("⚡ FAST UPLOAD: Starting...", { fileName: file.name, size: file.size });
 
     // Upload file directly to Google Cloud Storage
     let uploadData;
@@ -75,7 +74,6 @@ export const uploadMediaFile = async (
       const gcsUrl = await uploadDirectlyToGCS(file, typeNumber, onProgress);
       serverPath = gcsUrl;
       
-      console.log("⚡ GCS upload complete, registering with backend...");
       
       // Send minimal data to backend (fast upload - no metadata)
       uploadData = await sendMetadataToBackend({
@@ -86,7 +84,6 @@ export const uploadMediaFile = async (
         backendUrl,
       });
       
-      console.log("⚡ FAST UPLOAD: Complete!");
       
     } catch (error) {
       console.warn("GCS upload failed, using local storage as fallback:", error);
@@ -152,7 +149,6 @@ const uploadDirectlyToGCS = async (
   try {
     const userId = getUserId();
     
-    console.log("⚡ Starting upload via API proxy:", { type, size: file.size });
 
     // Create FormData
     const formData = new FormData();
@@ -167,7 +163,6 @@ const uploadDirectlyToGCS = async (
       xhr.upload.addEventListener('progress', (event) => {
         if (event.lengthComputable && onProgress) {
           const percentage = Math.round((event.loaded / event.total) * 100);
-          console.log(`Upload progress: ${percentage}%`);
           onProgress({
             loaded: event.loaded,
             total: event.total,
@@ -181,7 +176,6 @@ const uploadDirectlyToGCS = async (
           try {
             const response = JSON.parse(xhr.responseText);
             if (response.success && response.url) {
-              console.log("⚡ Upload Complete!", response.url);
               resolve({ url: response.url });
             } else {
               reject(new Error(response.error || 'Upload failed'));
@@ -218,11 +212,9 @@ const getGoogleCloudAccessToken = async (): Promise<string> => {
   // Check cache first - return immediately if valid
   const now = Date.now();
   if (cachedAccessToken && tokenExpiresAt > now + 60000) { // 1 min buffer
-    console.log("⚡ Using cached access token");
     return cachedAccessToken;
   }
 
-  console.log("⚡ Generating new access token...");
   
   try {
     const clientEmail = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_EMAIL;
@@ -273,7 +265,6 @@ const getGoogleCloudAccessToken = async (): Promise<string> => {
       throw new Error('Invalid private key format after decoding');
     }
 
-    console.log('✅ Private key validated successfully');
 
     // Create JWT
     const now = Math.floor(Date.now() / 1000);
@@ -300,7 +291,6 @@ const getGoogleCloudAccessToken = async (): Promise<string> => {
         .setExpirationTime(now + 3600)
         .sign(key);
 
-      console.log("✅ JWT created successfully");
     } catch (jwtError) {
       console.error('❌ Error creating JWT:', jwtError);
       throw new Error('Failed to create JWT token');
@@ -330,7 +320,6 @@ const getGoogleCloudAccessToken = async (): Promise<string> => {
     cachedAccessToken = data.access_token;
     tokenExpiresAt = Date.now() + (data.expires_in * 1000) - 60000; // 1 min buffer
     
-    console.log("⚡ Access token obtained and cached");
     return data.access_token;
     
   } catch (error) {
@@ -550,7 +539,6 @@ const uploadToGCS = async (
  */
 const extractAndUploadVideoThumbnail = async (file: File, token: string): Promise<string> => {
   try {
-    console.log("Generating thumbnail from video...");
     
     // Generate thumbnail as blob
     const thumbnailBlob = await generateVideoThumbnailBlob(file);
@@ -562,12 +550,10 @@ const extractAndUploadVideoThumbnail = async (file: File, token: string): Promis
       { type: 'image/jpeg' }
     );
     
-    console.log("Thumbnail generated, uploading to GCS...");
     
     // Upload thumbnail to GCS images bucket (type = 1)
     const thumbnailUrl = await uploadDirectlyToGCS(thumbnailFile, 1);
     
-    console.log("Thumbnail uploaded successfully:", thumbnailUrl);
     return thumbnailUrl;
     
   } catch (error) {

@@ -69,12 +69,6 @@ export const KeyframeProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const getKeyframes = useCallback(
     (overlayId: string) => {
-      console.log(
-        "[KeyframeContext] Getting keyframes for overlay:",
-        overlayId,
-        "Cache state:",
-        cache
-      );
       return cache[overlayId] || null;
     },
     [cache]
@@ -82,17 +76,6 @@ export const KeyframeProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const updateKeyframes = useCallback(
     (overlayId: string, data: KeyframeData) => {
-      console.log(
-        "[KeyframeContext] Updating keyframes for overlay:",
-        overlayId,
-        "New data:",
-        {
-          framesCount: data.frames.length,
-          previewFrames: data.previewFrames,
-          durationInFrames: data.durationInFrames,
-          lastUpdated: data.lastUpdated,
-        }
-      );
       setCache((prev) => {
         const newCache = {
           ...prev,
@@ -101,7 +84,6 @@ export const KeyframeProvider: React.FC<{ children: React.ReactNode }> = ({
             lastUpdated: Date.now(),
           },
         };
-        console.log("[KeyframeContext] New cache state:", newCache);
         return newCache;
       });
     },
@@ -109,17 +91,14 @@ export const KeyframeProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 
   const clearKeyframes = useCallback((overlayId: string) => {
-    console.log("[KeyframeContext] Clearing keyframes for overlay:", overlayId);
     setCache((prev) => {
       const newCache = { ...prev };
       delete newCache[overlayId];
-      console.log("[KeyframeContext] Cache state after clear:", newCache);
       return newCache;
     });
   }, []);
 
   const clearAllKeyframes = useCallback(() => {
-    console.log("[KeyframeContext] Clearing all keyframes");
     setCache({});
   }, []);
 

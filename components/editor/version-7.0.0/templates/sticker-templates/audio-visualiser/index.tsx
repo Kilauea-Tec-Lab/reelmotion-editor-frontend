@@ -18,7 +18,6 @@ const AudioVisualiserComponent: React.FC<AudioVisualiserProps> = ({
   barWidth = 12,
   barGap = 4,
 }) => {
-  console.log("overlay", overlay);
   const frame = useCurrentFrame();
 
   const bars = Array.from({ length: barCount }).map((_, i) => {

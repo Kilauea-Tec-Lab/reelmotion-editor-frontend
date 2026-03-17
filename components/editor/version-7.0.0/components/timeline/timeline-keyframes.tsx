@@ -35,7 +35,6 @@ interface TimelineKeyframesProps {
  *   overlay={videoOverlay}
  *   currentFrame={30}
  *   zoomScale={1}
- *   onLoadingChange={(isLoading) => console.log('Loading:', isLoading)}
  * />
  * ```
  */

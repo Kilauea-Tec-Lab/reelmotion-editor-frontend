@@ -34,7 +34,6 @@ export const useVideoPrefetch = (overlays: Overlay[], baseUrl?: string) => {
 
       waitUntilDone()
         .then(() => {
-          console.log(`[Prefetch] Video ready: ${src}`);
         })
         .catch((err) => {
           console.warn(`[Prefetch] Failed to prefetch video ${src}:`, err);

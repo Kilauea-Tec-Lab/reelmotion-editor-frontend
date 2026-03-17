@@ -254,7 +254,6 @@ export const resolveMediaUrl = (url: string, baseUrl?: string): string => {
  */
 export const resolveVideoUrl = (url: string, baseUrl?: string): string => {
   // DEBUG log
-  // console.log("[resolveVideoUrl] Resolving:", url);
 
   const resolved = resolveMediaUrl(url, baseUrl);
 

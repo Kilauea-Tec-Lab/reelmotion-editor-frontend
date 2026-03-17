@@ -149,7 +149,6 @@ export const SaveRenderDialog: React.FC<SaveRenderDialogProps> = ({
       }
 
       const { gcsUrl } = await gcsUploadResponse.json();
-      console.log("Video uploaded to GCS:", gcsUrl);
 
 
       // 2. Save metadata to backend using the new GCS URL

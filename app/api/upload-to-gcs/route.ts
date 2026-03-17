@@ -98,7 +98,6 @@ export async function POST(request: NextRequest) {
     const extension = file.name.split('.').pop();
     const fileName = `${userId}/${timestamp}-${randomStr}.${extension}`;
 
-    console.log('⚡ Server-side upload to GCS:', { bucketName, fileName, size: file.size });
 
     // Get access token
     const accessToken = await getGCSAccessToken();
@@ -126,7 +125,6 @@ export async function POST(request: NextRequest) {
     }
 
     const publicUrl = `https://storage.googleapis.com/${bucketName}/${fileName}`;
-    console.log('⚡ Upload complete:', publicUrl);
 
     return NextResponse.json({ 
       success: true, 

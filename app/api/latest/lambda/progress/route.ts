@@ -22,8 +22,6 @@ import {
 export const POST = executeApi<ProgressResponse, typeof ProgressRequest>(
   ProgressRequest,
   async (req, body) => {
-    console.log("Progress request", { body });
-    console.log("Bucket name", { bucketName: body.bucketName });
     const renderProgress = await getRenderProgress({
       bucketName: body.bucketName,
       functionName: LAMBDA_FUNCTION_NAME,

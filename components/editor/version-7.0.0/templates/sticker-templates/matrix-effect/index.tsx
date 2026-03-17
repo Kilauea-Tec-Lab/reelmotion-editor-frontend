@@ -28,7 +28,6 @@ const MatrixRainComponent: React.FC<MatrixRainProps> = ({
   glowColor = "rgba(59, 130, 246, 0.9)",
   fontSize = 25,
 }) => {
-  console.log("overlay", overlay);
   const frame = useCurrentFrame();
   const { width, height } = useVideoConfig();
 

@@ -35,7 +35,6 @@ const RENDER_CONFIG = {
  * @throws {TypeError} If GCP credentials are missing
  */
 const validateGcpCredentials = () => {
-  console.log("[Cloud Run] Validating GCP credentials...");
 
   // 1. Check Standard Env Vars
   if (
@@ -66,9 +65,6 @@ const validateGcpCredentials = () => {
       process.env.NEXT_PUBLIC_GCP_PROJECT_ID ||
       GCP_PROJECT_ID;
 
-    console.log(
-      `[Cloud Run] Credentials loaded from NEXT_PUBLIC_ prefixed variables.`
-    );
     return;
   }
 
@@ -143,8 +139,6 @@ const validateGcpCredentials = () => {
     );
   }
 
-  console.log(`[Cloud Run] Using Project ID: ${projectId}`);
-  console.log(`[Cloud Run] Using Service Account: ${clientEmail}`);
 
   // Remotion Cloud Run APIs rely on these env vars when NOT running inside Cloud Tasks.
   process.env.REMOTION_GCP_CLIENT_EMAIL = clientEmail;
@@ -174,7 +168,6 @@ const validateGcpCredentials = () => {
     };
     fs.writeFileSync(credentialsPath, JSON.stringify(credentials, null, 2));
     process.env.GOOGLE_APPLICATION_CREDENTIALS = credentialsPath;
-    console.log(`[Cloud Run] Credentials file created at: ${credentialsPath}`);
   }
 
   if (!process.env.REMOTION_GCP_SERVICE_NAME) {
@@ -198,7 +191,6 @@ const validateGcpCredentials = () => {
       process.env.NEXT_PUBLIC_GCP_SERVE_URL;
     if (serveUrl) {
       process.env.REMOTION_GCP_SERVE_URL = serveUrl;
-      console.log(`[Cloud Run] Using Serve URL: ${serveUrl}`);
     } else {
       throw new TypeError(
         "The environment variable REMOTION_GCP_SERVE_URL is missing. Deploy a site first using 'npx remotion cloudrun sites create'. You can also set NEXT_PUBLIC_REMOTION_GCP_SERVE_URL in your environment."
@@ -221,7 +213,6 @@ const validateGcpCredentials = () => {
  * @throws {Error} If GCP credentials are invalid or missing
  */
 export const POST = executeApi(RenderRequest, async (req, body) => {
-  console.log("[Cloud Run] Received render request:", JSON.stringify(body, null, 2));
 
   // Validate GCP credentials first (this can throw)
   validateGcpCredentials();
@@ -230,12 +221,6 @@ export const POST = executeApi(RenderRequest, async (req, body) => {
   const renderId = uuidv4();
   const bucketName = GCS_RENDERED_VIDEOS_BUCKET || "remotion-cloudrun-renders";
 
-  console.log("[Cloud Run] Starting render...");
-  console.log("[Cloud Run] Render ID:", renderId);
-  console.log("[Cloud Run] Bucket:", bucketName);
-  console.log("[Cloud Run] Service:", process.env.REMOTION_GCP_SERVICE_NAME);
-  console.log("[Cloud Run] Region:", GCP_REGION);
-  console.log("[Cloud Run] Serve URL:", process.env.REMOTION_GCP_SERVE_URL);
 
   // Start render WITHOUT awaiting - this is the key for Netlify compatibility
   // The promise will be abandoned when the function returns, but Cloud Run
@@ -249,7 +234,6 @@ export const POST = executeApi(RenderRequest, async (req, body) => {
   // Use Remotion's scale parameter for resolution upscaling
   // scale=1 (default) = original resolution, scale=1.5 = 1080p, scale=3 = 4K
   const renderScale = body.renderScale && body.renderScale > 0 ? body.renderScale : undefined;
-  console.log("[Cloud Run] Render scale:", renderScale || "1 (default)");
 
   const renderPromise = renderMediaOnCloudrun({
     region: GCP_REGION as any,
@@ -281,7 +265,6 @@ export const POST = executeApi(RenderRequest, async (req, body) => {
   // Log result when it completes (if the function is still running)
   renderPromise
     .then((result) => {
-      console.log("[Cloud Run] Render completed:", JSON.stringify(result, null, 2));
     })
     .catch((error) => {
       console.error("[Cloud Run] Render failed:", error);

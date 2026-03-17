@@ -16,7 +16,6 @@ const makeRequest = async <Res>(
   endpoint: string,
   body: unknown
 ): Promise<Res> => {
-  console.log(`Making request to ${endpoint}`, { body });
   const result = await fetch(endpoint, {
     method: "post",
     body: JSON.stringify(body),
@@ -25,7 +24,6 @@ const makeRequest = async <Res>(
     },
   });
   const json = (await result.json()) as ApiResponse<Res>;
-  console.log(`Response received from ${endpoint}`, { json });
   if (json.type === "error") {
     console.error(`Error in response from ${endpoint}:`, json.message);
     throw new Error(json.message);
@@ -51,7 +49,6 @@ export const renderVideo = async ({
   inputProps: z.infer<typeof CompositionProps>;
   renderScale?: number;
 }) => {
-  console.log("Rendering video", { id, inputProps, renderScale });
   const body: z.infer<typeof RenderRequest> = {
     id,
     inputProps,
@@ -62,7 +59,6 @@ export const renderVideo = async ({
     "/api/latest/ssr/render",
     body
   );
-  console.log("Video render response", { response });
   return response;
 };
 
@@ -73,7 +69,6 @@ export const getProgress = async ({
   id: string;
   bucketName: string;
 }) => {
-  console.log("Getting progress", { id });
   const body: z.infer<typeof ProgressRequest> = {
     id,
     bucketName,
@@ -83,6 +78,5 @@ export const getProgress = async ({
     "/api/latest/ssr/progress",
     body
   );
-  console.log("Progress response", { response });
   return response;
 };

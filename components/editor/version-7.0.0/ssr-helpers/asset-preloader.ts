@@ -177,11 +177,9 @@ export async function preloadAssets(
   const urls = extractMediaUrls(overlays);
 
   if (urls.length === 0) {
-    console.log("[AssetPreloader] No remote assets to download");
     return assetMap;
   }
 
-  console.log(`[AssetPreloader] Pre-downloading ${urls.length} assets...`);
 
   // Create a subdirectory for this render session
   const sessionDir = path.join(ASSETS_CACHE_DIR, renderId);
@@ -196,16 +194,12 @@ export async function preloadAssets(
       const localFileName = `asset_${index}_${uuidv4().slice(0, 8)}${ext}`;
       const localPath = path.join(sessionDir, localFileName);
 
-      console.log(`[AssetPreloader] Downloading: ${url.slice(0, 80)}...`);
       const startTime = Date.now();
 
       await downloadFile(url, localPath);
 
       const stats = fs.statSync(localPath);
       const duration = Date.now() - startTime;
-      console.log(
-        `[AssetPreloader] ✓ Downloaded ${(stats.size / 1024 / 1024).toFixed(2)}MB in ${duration}ms: ${localFileName}`
-      );
 
       assetMap.set(url, localPath);
     } catch (error) {
@@ -215,10 +209,6 @@ export async function preloadAssets(
   });
 
   await Promise.all(downloadPromises);
-
-  console.log(
-    `[AssetPreloader] Pre-download complete: ${assetMap.size}/${urls.length} assets cached`
-  );
 
   return assetMap;
 }
@@ -257,14 +247,12 @@ export function replaceUrlsWithLocalPaths(
     if (overlay.type === "video" && overlay.src && assetMap.has(overlay.src)) {
       const localPath = assetMap.get(overlay.src)!;
       newOverlay.src = toPublicUrl(localPath);
-      console.log(`[AssetPreloader] Replaced video URL with public URL: ${newOverlay.src}`);
     }
 
     // Replace sound src
     if (overlay.type === "sound" && overlay.src && assetMap.has(overlay.src)) {
       const localPath = assetMap.get(overlay.src)!;
       newOverlay.src = toPublicUrl(localPath);
-      console.log(`[AssetPreloader] Replaced audio URL with public URL: ${newOverlay.src}`);
     }
 
     // Replace image src/content
@@ -293,7 +281,6 @@ export function cleanupAssets(renderId: string): void {
   if (fs.existsSync(sessionDir)) {
     try {
       fs.rmSync(sessionDir, { recursive: true, force: true });
-      console.log(`[AssetPreloader] Cleaned up assets for render: ${renderId}`);
     } catch (error) {
       console.error(`[AssetPreloader] Failed to cleanup assets:`, error);
     }
@@ -317,7 +304,6 @@ export function cleanupOldAssets(): void {
     if (stats.mtimeMs < oneHourAgo) {
       try {
         fs.rmSync(sessionPath, { recursive: true, force: true });
-        console.log(`[AssetPreloader] Cleaned up old session: ${session}`);
       } catch (error) {
         console.error(`[AssetPreloader] Failed to cleanup old session:`, error);
       }

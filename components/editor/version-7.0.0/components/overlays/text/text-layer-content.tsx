@@ -138,7 +138,6 @@ export const TextLayerContent: React.FC<TextLayerContentProps> = ({
   };
 
   const { ...restStyles } = overlay.styles;
-  console.log("OVERLAY", overlay.styles.backgroundColor);
   const textStyle: React.CSSProperties = {
     ...restStyles,
     animation: undefined,

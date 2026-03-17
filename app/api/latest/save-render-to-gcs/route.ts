@@ -122,7 +122,6 @@ export async function POST(request: NextRequest) {
     // Delete local file
     try {
       fs.unlinkSync(filePath);
-      console.log(`Deleted local file: ${filePath}`);
     } catch (err) {
       console.error('Failed to delete local file:', err);
       // Continue even if delete fails, as upload succeeded

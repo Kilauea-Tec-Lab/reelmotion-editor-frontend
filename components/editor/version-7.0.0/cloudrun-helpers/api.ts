@@ -22,7 +22,6 @@ const makeRequest = async <Res>(
   endpoint: string,
   body: unknown
 ): Promise<Res> => {
-  console.log(`[Cloud Run] Making request to ${endpoint}`, { body });
   const result = await fetch(endpoint, {
     method: "post",
     body: JSON.stringify(body),
@@ -31,7 +30,6 @@ const makeRequest = async <Res>(
     },
   });
   const json = (await result.json()) as ApiResponse<Res>;
-  console.log(`[Cloud Run] Response received from ${endpoint}`, { json });
   
   if (json.type === "error") {
     console.error(`[Cloud Run] Error in response from ${endpoint}:`, json.message);
@@ -80,7 +78,6 @@ export const renderVideo = async ({
   inputProps: z.infer<typeof CompositionProps>;
   renderScale?: number;
 }) => {
-  console.log("[Cloud Run] Rendering video", { id, inputProps, renderScale });
   const body: z.infer<typeof RenderRequest> = {
     id,
     inputProps,
@@ -91,7 +88,6 @@ export const renderVideo = async ({
     "/api/latest/cloudrun/render",
     body
   );
-  console.log("[Cloud Run] Video render response", { response });
   return response;
 };
 
@@ -108,7 +104,6 @@ export const getProgress = async ({
   id: string;
   bucketName: string;
 }) => {
-  console.log("[Cloud Run] Getting progress", { id, bucketName });
   const body: z.infer<typeof ProgressRequest> = {
     id,
     bucketName,
@@ -118,6 +113,5 @@ export const getProgress = async ({
     "/api/latest/cloudrun/progress",
     body
   );
-  console.log("[Cloud Run] Progress response", { response });
   return response;
 };

@@ -23,7 +23,6 @@ import {
 export const POST = executeApi<ProgressResponse, typeof ProgressRequest>(
   ProgressRequest,
   async (req, body) => {
-    console.log("[Cloud Run] Progress request", { body });
     
     const renderId = body.id;
     const bucketName = body.bucketName || GCS_RENDERED_VIDEOS_BUCKET || "remotioncloudrun-buaw10zfzk";
@@ -44,7 +43,6 @@ export const POST = executeApi<ProgressResponse, typeof ProgressRequest>(
         const contentLength = response.headers.get("content-length");
         const size = contentLength ? parseInt(contentLength, 10) : 0;
         
-        console.log("[Cloud Run] Render complete, file found:", publicUrl);
         
         return {
           type: "done",
@@ -55,7 +53,6 @@ export const POST = executeApi<ProgressResponse, typeof ProgressRequest>(
       
       if (response.status === 404) {
         // File doesn't exist yet - still rendering
-        console.log("[Cloud Run] File not found yet, still rendering...");
         
         // We don't have actual progress info from Cloud Run
         // Return -1 to indicate "in progress but unknown percentage"

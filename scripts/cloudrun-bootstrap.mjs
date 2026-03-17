@@ -91,21 +91,13 @@ const siteName = process.env.REMOTION_SITE_NAME ?? "reelmotion-editor";
 const skipPermissionsTest = process.argv.includes("--skip-permissions");
 
 const main = async () => {
-  console.log("[cloudrun-bootstrap] Project:", projectID);
-  console.log("[cloudrun-bootstrap] Region:", region);
-  console.log("[cloudrun-bootstrap] Entry point:", entryPoint);
 
   if (skipPermissionsTest) {
-    console.log(
-      "[cloudrun-bootstrap] ⚠️  Skipping permissions test (--skip-permissions)",
-    );
   } else {
-    console.log("[cloudrun-bootstrap] Testing permissions...");
     try {
       const { results } = await testPermissions({
         onTest: (r) => {
           if (!r.decision) {
-            console.log(`  ❌ ${r.permissionName}`);
           }
         },
       });
@@ -115,7 +107,6 @@ const main = async () => {
           `[cloudrun-bootstrap] ⚠️  Missing ${missing.length} permissions. Proceeding anyway...`,
         );
       } else {
-        console.log("[cloudrun-bootstrap] ✅ Permissions OK");
       }
     } catch (err) {
       console.warn(
@@ -126,14 +117,10 @@ const main = async () => {
     }
   }
 
-  console.log("[cloudrun-bootstrap] Ensuring bucket exists...");
   const { bucketName } = await getOrCreateBucket({
     region,
-    updateBucketState: (s) => console.log("  -", s),
   });
-  console.log("[cloudrun-bootstrap] Bucket:", bucketName);
 
-  console.log("[cloudrun-bootstrap] Deploying service...");
   const service = await deployService({
     projectID,
     region,
@@ -143,28 +130,16 @@ const main = async () => {
     minInstances: 0,
     maxInstances: 2, // Máximo permitido por tu quota (20 vCPUs / 4 = 5, pero con 8GB solo permite 2)
   });
-  console.log("[cloudrun-bootstrap] Service:", service.shortName);
-  console.log("[cloudrun-bootstrap] URL:", service.uri);
 
-  console.log("[cloudrun-bootstrap] Deploying site...");
   const site = await deploySite({
     entryPoint,
     bucketName,
     siteName,
     options: {
-      onBundleProgress: (p) => console.log(`  - bundle ${p}%`),
-      onUploadProgress: ({ totalFiles, filesUploaded }) =>
-        console.log(`  - upload ${filesUploaded}/${totalFiles}`),
+      onUploadProgress: ({ totalFiles, filesUploaded }) => {},
     },
   });
-  console.log("[cloudrun-bootstrap] Serve URL:", site.serveUrl);
 
-  console.log("\nPaste these into your .env (server-side):");
-  console.log(`GCP_PROJECT_ID=${projectID}`);
-  console.log(`REMOTION_GCP_REGION=${region}`);
-  console.log(`REMOTION_GCP_SERVICE_NAME=${service.shortName}`);
-  console.log(`REMOTION_GCP_SERVE_URL=${site.serveUrl}`);
-  console.log(`GCS_RENDERED_VIDEOS_BUCKET=${bucketName}`);
 };
 
 main().catch((err) => {

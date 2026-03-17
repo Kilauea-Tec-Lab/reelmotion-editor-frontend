@@ -34,7 +34,6 @@ const LAMBDA_CONFIG = {
  * @throws {TypeError} If AWS credentials are missing
  */
 const validateAwsCredentials = () => {
-  console.log("Validating AWS credentials....");
   if (
     !process.env.AWS_ACCESS_KEY_ID &&
     !process.env.REMOTION_AWS_ACCESS_KEY_ID
@@ -62,14 +61,11 @@ export const POST = executeApi<RenderMediaOnLambdaOutput, typeof RenderRequest>(
   RenderRequest,
   async (req, body) => {
     // Debug logging
-    // console.log("Received body:", JSON.stringify(body, null, 2));
-    // console.log("inputProps:", JSON.stringify(body.inputProps, null, 2));
 
     // Validate AWS credentials
     validateAwsCredentials();
 
     try {
-      console.log("Rendering media on Lambda....");
       // Use Remotion's scale parameter for resolution upscaling
       const renderScale = body.renderScale && body.renderScale > 0 ? body.renderScale : undefined;
 
@@ -96,7 +92,6 @@ export const POST = executeApi<RenderMediaOnLambdaOutput, typeof RenderRequest>(
         ...(renderScale ? { scale: renderScale } : {}),
       });
 
-      console.log("Render result:", JSON.stringify(result, null, 2));
       return result;
     } catch (error) {
       console.error("Error in renderMediaOnLambda:", error);

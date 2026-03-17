@@ -74,7 +74,6 @@ export const TextDetails: React.FC<TextDetailsProps> = ({
     field: keyof TextOverlay["styles"],
     value: string
   ) => {
-    console.log(field, value);
     // Update local state immediately for responsive UI
     setLocalOverlay({
       ...localOverlay,

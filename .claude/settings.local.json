@@ -6,7 +6,8 @@
       "Bash(powershell.exe:*)",
       "Bash(npx next:*)",
       "Bash(rm:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(xargs sed:*)"
     ]
   }
 }

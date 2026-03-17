@@ -153,15 +153,9 @@ export const useOverlays = (initialOverlays?: Overlay[]) => {
     const fps = 30; // Make this configurable
     const msPerFrame = 1000 / fps;
 
-    console.log("=== Starting Caption Split Operation ===");
-    console.log(
-      `Split requested at frame ${splitFrame} (${splitFrame * msPerFrame}ms)`
-    );
-
     setOverlays((prevOverlays) => {
       const overlayToSplit = prevOverlays.find((overlay) => overlay.id === id);
       if (!overlayToSplit) {
-        console.log("Overlay not found:", id);
         return prevOverlays;
       }
 
@@ -279,16 +273,6 @@ const createSplitOverlays = (
     const originalStartMs = original.from * msPerFrame;
     const splitOffsetMs = splitTimeMs - originalStartMs; // Time relative to overlay start
 
-    console.log("🎯 Split Timing Calculations:", {
-      originalStartMs,
-      splitTimeMs,
-      splitOffsetMs,
-      originalCaptions: original.captions.map((c) => ({
-        text: c.text,
-        startMs: c.startMs,
-        endMs: c.endMs,
-      })),
-    });
 
     // Split captions at word level, keeping timestamps relative to their overlay
     const firstHalfCaptions = original.captions
@@ -329,26 +313,6 @@ const createSplitOverlays = (
         text: caption.words.map((w) => w.word).join(" "),
       }));
 
-    console.log("📑 Split Results:", {
-      firstHalf: {
-        captionCount: firstHalfCaptions.length,
-        captions: firstHalfCaptions.map((c) => ({
-          text: c.text,
-          startMs: c.startMs,
-          endMs: c.endMs,
-          wordCount: c.words.length,
-        })),
-      },
-      secondHalf: {
-        captionCount: secondHalfCaptions.length,
-        captions: secondHalfCaptions.map((c) => ({
-          text: c.text,
-          startMs: c.startMs,
-          endMs: c.endMs,
-          wordCount: c.words.length,
-        })),
-      },
-    });
 
     // Create the split overlays with adjusted captions
     const firstHalf: CaptionOverlay = {

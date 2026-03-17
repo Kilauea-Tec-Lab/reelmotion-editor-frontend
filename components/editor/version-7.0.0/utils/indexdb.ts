@@ -298,7 +298,6 @@ export const resetIndexedDB = async (): Promise<boolean> => {
       const deleteRequest = indexedDB.deleteDatabase(DB_NAME);
       
       deleteRequest.onsuccess = () => {
-        console.log('IndexedDB successfully deleted and will be recreated on next use');
         resolve(true);
       };
       

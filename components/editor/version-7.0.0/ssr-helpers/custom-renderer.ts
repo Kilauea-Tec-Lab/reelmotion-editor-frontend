@@ -48,18 +48,15 @@ const REMOTION_ENTRY = path.join(
 async function getCachedBundle(): Promise<string> {
   // Return cached bundle if available
   if (cachedBundleLocation && fs.existsSync(cachedBundleLocation)) {
-    console.log("[Bundle] Using cached bundle:", cachedBundleLocation);
     return cachedBundleLocation;
   }
 
   // If bundling is already in progress, wait for it
   if (bundlePromise) {
-    console.log("[Bundle] Bundle in progress, waiting...");
     return bundlePromise;
   }
 
   // Start bundling
-  console.log("[Bundle] Creating new bundle (this only happens ONCE)...");
   const startTime = Date.now();
 
   bundlePromise = bundle(REMOTION_ENTRY, undefined, {
@@ -84,7 +81,6 @@ async function getCachedBundle(): Promise<string> {
   try {
     cachedBundleLocation = await bundlePromise;
     const duration = ((Date.now() - startTime) / 1000).toFixed(1);
-    console.log(`[Bundle] ✓ Bundle created in ${duration}s: ${cachedBundleLocation}`);
     return cachedBundleLocation;
   } catch (error) {
     bundlePromise = null;
@@ -173,9 +169,6 @@ export async function startRendering(
   // Start rendering asynchronously
   (async () => {
     try {
-      console.log(`\n${"=".repeat(60)}`);
-      console.log(`[Render ${renderId}] Starting render...`);
-      console.log(`${"=".repeat(60)}`);
       
       // Cleanup old cached assets periodically (non-blocking)
       cleanupOldAssets();
@@ -186,26 +179,20 @@ export async function startRendering(
 
       // ⚡ STEP 1: Pre-download assets ONLY if there are remote URLs
       if (hasRemoteAssets(overlays)) {
-        console.log(`[Render ${renderId}] Pre-downloading remote assets...`);
         updateRenderProgress(renderId, 0.05);
         
         const assetMap = await preloadAssets(overlays, renderId);
         const optimizedOverlays = replaceUrlsWithLocalPaths(overlays, assetMap);
         optimizedInputProps = { ...inputProps, overlays: optimizedOverlays };
         
-        console.log(`[Render ${renderId}] ✓ Assets ready`);
       } else {
-        console.log(`[Render ${renderId}] No remote assets to download`);
       }
 
       // ⚡ STEP 2: Get cached bundle (this is INSTANT after first render)
-      console.log(`[Render ${renderId}] Getting bundle...`);
       updateRenderProgress(renderId, 0.1);
       const bundleLocation = await getCachedBundle();
-      console.log(`[Render ${renderId}] ✓ Bundle ready`);
 
       // ⚡ STEP 3: Select composition
-      console.log(`[Render ${renderId}] Selecting composition...`);
       updateRenderProgress(renderId, 0.15);
       
       const composition = await selectComposition({
@@ -219,10 +206,8 @@ export async function startRendering(
         (inputProps.durationInFrames as number) || composition.durationInFrames;
       const durationSecs = (actualDurationInFrames / composition.fps).toFixed(1);
       
-      console.log(`[Render ${renderId}] Composition: ${actualDurationInFrames} frames (${durationSecs}s @ ${composition.fps}fps)`);
 
       // ⚡ STEP 4: Render with maximum speed settings
-      console.log(`[Render ${renderId}] Rendering with ${RENDER_CONFIG.CONCURRENCY} CPU cores...`);
       updateRenderProgress(renderId, 0.2);
 
       const outputPath = path.join(VIDEOS_DIR, `${renderId}.mp4`);
@@ -230,7 +215,6 @@ export async function startRendering(
       // Use Remotion's scale parameter for resolution upscaling
       const effectiveScale = renderScale && renderScale > 0 ? renderScale : undefined;
       if (effectiveScale) {
-        console.log(`[Render ${renderId}] Rendering with scale: ${effectiveScale}x`);
       }
 
       await renderMedia({
@@ -272,7 +256,6 @@ export async function startRendering(
           // Log every 25%
           const percent = Math.floor(progress.progress * 100);
           if (percent % 25 === 0 && percent > 0) {
-            console.log(`[Render ${renderId}] ${percent}% complete`);
           }
         }) as RenderMediaOnProgress,
       });
@@ -285,9 +268,6 @@ export async function startRendering(
       
       completeRender(renderId, publicPath, stats.size);
       
-      console.log(`[Render ${renderId}] ✓ COMPLETE in ${totalTime}s`);
-      console.log(`[Render ${renderId}] Output: ${fileSizeMB}MB`);
-      console.log(`${"=".repeat(60)}\n`);
 
       // Cleanup downloaded assets
       cleanupAssets(renderId);
@@ -308,10 +288,8 @@ export async function startRendering(
  * Call this on server startup to avoid cold start delays
  */
 export async function warmupBundle(): Promise<void> {
-  console.log("[Warmup] Pre-warming bundle cache...");
   try {
     await getCachedBundle();
-    console.log("[Warmup] ✓ Bundle cache ready");
   } catch (error) {
     console.error("[Warmup] Failed to warm bundle:", error);
   }
@@ -321,7 +299,6 @@ export async function warmupBundle(): Promise<void> {
  * Get the current progress of a render
  */
 export function getRenderProgress(renderId: string) {
-  console.log("Checking progress for render:", renderId);
 
   const progress = renderProgress.get(renderId) || 0;
   const status = renderStatus.get(renderId) || "rendering";

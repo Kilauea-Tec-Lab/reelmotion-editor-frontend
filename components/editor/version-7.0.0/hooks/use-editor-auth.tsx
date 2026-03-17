@@ -95,17 +95,14 @@ export const useEditorAuth = (): UseEditorAuthResult => {
           
           // Check if it matches the expected format: numbers|alphanumeric
           if (/^\d+\|[a-zA-Z0-9]+$/.test(decodedToken)) {
-            console.log("Valid UUID found in URI:", decodedToken);
             tokenToUse = decodedToken;
           } else {
-            console.log("Invalid token format in URI:", decodedToken);
           }
         }
         
         if (!tokenToUse) {
           // No valid UUID in URI, try to get token from cookies
           const cookieToken = Cookies.get("token");
-          console.log("Token from cookies:", cookieToken);
           tokenToUse = cookieToken;
         }
         
@@ -141,11 +138,9 @@ export const useEditorAuth = (): UseEditorAuthResult => {
           // If we used UUID from URI and it worked, save it as token in cookies
           if (uuidMatch && /^\d+\|[a-zA-Z0-9]+$/.test(tokenToUse)) {
             Cookies.set("token", tokenToUse);
-            console.log("UUID validated and saved as token:", tokenToUse);
           }
         } else {
           // Invalid response structure
-          console.log("Invalid response structure, code:", data.code);
 
                   window.location.href =
           process.env.NEXT_PUBLIC_REELMOTION_URL || "https://reelmotion.ai";
