@@ -442,9 +442,10 @@ export const LocalMediaGallery = React.memo(function LocalMediaGallery({
                   <Button
                     size="icon"
                     variant="ghost"
-                    className="h-6 w-6 shrink-0 bg-black/60 backdrop-blur-sm hover:bg-black/80 text-pink-400 rounded-full"
+                    aria-label="Edit file name"
+                    className="h-8 w-8 shrink-0 bg-black/60 backdrop-blur-sm hover:bg-black/80 text-pink-400 rounded-full"
                   >
-                    <Pencil className="h-3 w-3" />
+                    <Pencil className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-60 p-2">
@@ -459,6 +460,7 @@ export const LocalMediaGallery = React.memo(function LocalMediaGallery({
                         e.stopPropagation(); // Prevent timeline actions
                       }}
                       onClick={(e) => e.stopPropagation()}
+                      style={{ fontSize: "16px" }}
                     />
                     <Button 
                       size="icon" 
@@ -479,13 +481,14 @@ export const LocalMediaGallery = React.memo(function LocalMediaGallery({
               <Button
                 size="icon"
                 variant="ghost"
-                className="h-6 w-6 shrink-0 bg-black/60 backdrop-blur-sm hover:bg-black/80 text-red-400 rounded-full"
+                aria-label="Delete file"
+                className="h-8 w-8 shrink-0 bg-black/60 backdrop-blur-sm hover:bg-black/80 text-red-400 rounded-full"
                 onClick={(e) => {
                   e.stopPropagation();
                   handleDeleteMedia(file.id);
                 }}
               >
-                <Trash2 className="h-3 w-3" />
+                <Trash2 className="h-4 w-4" />
               </Button>
             </div>
           </div>
@@ -533,6 +536,7 @@ export const LocalMediaGallery = React.memo(function LocalMediaGallery({
             className="gap-1"
             onClick={handleUploadClick}
             disabled={isLoading || isUploading}
+            aria-label="Upload media"
           >
             {isUploading ? (
               <Loader2 className="w-4 h-4 animate-spin" />

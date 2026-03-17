@@ -1,10 +1,20 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Trash2, Copy, Scissors } from "lucide-react";
 
 /**
@@ -52,32 +62,53 @@ export const TimelineItemContextMenu: React.FC<
   onSplitItem,
   itemId,
 }) => {
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
   return (
-    <ContextMenu onOpenChange={onOpenChange}>
-      <ContextMenuTrigger className="z-[100]">{children}</ContextMenuTrigger>
-      <ContextMenuContent className="dark:bg-slate-900 dark:border-slate-800">
-        <ContextMenuItem
-          className="dark:hover:bg-slate-800 dark:focus:bg-slate-800 dark:text-slate-200"
-          onClick={() => onDeleteItem(itemId)}
-        >
-          <Trash2 className="mr-4 h-4 w-4" />
-          Delete
-        </ContextMenuItem>
-        <ContextMenuItem
-          className="dark:hover:bg-slate-800 dark:focus:bg-slate-800 dark:text-slate-200"
-          onClick={() => onDuplicateItem(itemId)}
-        >
-          <Copy className="mr-4 h-4 w-4" />
-          Duplicate
-        </ContextMenuItem>
-        <ContextMenuItem
-          className="dark:hover:bg-slate-800 dark:focus:bg-slate-800 dark:text-slate-200"
-          onClick={() => onSplitItem(itemId)}
-        >
-          <Scissors className="mr-4 h-4 w-4" />
-          Split
-        </ContextMenuItem>
-      </ContextMenuContent>
-    </ContextMenu>
+    <>
+      <ContextMenu onOpenChange={onOpenChange}>
+        <ContextMenuTrigger className="z-[100]">{children}</ContextMenuTrigger>
+        <ContextMenuContent className="dark:bg-slate-900 dark:border-slate-800">
+          <ContextMenuItem
+            className="dark:hover:bg-slate-800 dark:focus:bg-slate-800 dark:text-slate-200"
+            onClick={() => setDeleteDialogOpen(true)}
+          >
+            <Trash2 className="mr-4 h-4 w-4" />
+            Delete
+          </ContextMenuItem>
+          <ContextMenuItem
+            className="dark:hover:bg-slate-800 dark:focus:bg-slate-800 dark:text-slate-200"
+            onClick={() => onDuplicateItem(itemId)}
+          >
+            <Copy className="mr-4 h-4 w-4" />
+            Duplicate
+          </ContextMenuItem>
+          <ContextMenuItem
+            className="dark:hover:bg-slate-800 dark:focus:bg-slate-800 dark:text-slate-200"
+            onClick={() => onSplitItem(itemId)}
+          >
+            <Scissors className="mr-4 h-4 w-4" />
+            Split
+          </ContextMenuItem>
+        </ContextMenuContent>
+      </ContextMenu>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Overlay</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this overlay?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => onDeleteItem(itemId)}>
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };

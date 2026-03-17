@@ -480,6 +480,7 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
 
     // Autosave
     saveProject: handleManualSave,
+    lastSaveTime,
 
     // Edition data for backend save
     editionData,
@@ -530,6 +531,7 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
     canRedo,
     updateOverlayStyles,
     handleManualSave,
+    lastSaveTime,
     editionData,
     handleLoadEdit,
     subscriptionPlan,

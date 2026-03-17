@@ -12,8 +12,11 @@ import {
   Layout,
   Plus,
   X,
+  Undo2,
+  Redo2,
 } from "lucide-react";
 import { useSidebar } from "../../contexts/sidebar-context";
+import { useEditorContext } from "../../contexts/editor-context";
 import { OverlayType } from "../../types";
 import {
   Tooltip,
@@ -46,6 +49,7 @@ import { TemplateOverlayPanel } from "../overlays/templates/template-overlay-pan
  */
 export function MobileNavBar() {
   const { activePanel, setActivePanel } = useSidebar();
+  const { undo, redo, canUndo, canRedo } = useEditorContext();
   const [clickedItemId, setClickedItemId] = useState<string | null>(null);
   const scrollableRef = useRef<HTMLDivElement>(null);
   const [showScrollIndicator, setShowScrollIndicator] = useState(false);
@@ -245,14 +249,43 @@ export function MobileNavBar() {
               msOverflowStyle: "none",
             }}
           >
+            {/* Undo/Redo buttons */}
+            <div className="flex items-center gap-1 pr-1.5 mr-1.5 border-r border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => undo()}
+                disabled={!canUndo}
+                aria-label="Undo"
+                className={`rounded flex items-center justify-center min-h-[44px] min-w-[44px]
+                  ${canUndo
+                    ? 'text-gray-700 dark:text-zinc-200 hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                    : 'text-gray-300 dark:text-gray-600'}
+                  transition-all`}
+              >
+                <Undo2 className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => redo()}
+                disabled={!canRedo}
+                aria-label="Redo"
+                className={`rounded flex items-center justify-center min-h-[44px] min-w-[44px]
+                  ${canRedo
+                    ? 'text-gray-700 dark:text-zinc-200 hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                    : 'text-gray-300 dark:text-gray-600'}
+                  transition-all`}
+              >
+                <Redo2 className="h-4 w-4" />
+              </button>
+            </div>
+
             {navigationItems.map((item) => (
               <TooltipProvider key={item.title} delayDuration={50}>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
                       data-panel={item.panel}
+                      aria-label={item.title}
                       onClick={() => handleItemClick(item)}
-                      className={`rounded flex flex-col items-center px-2 py-1.5
+                      className={`rounded flex flex-col items-center px-3 py-2.5 min-h-[44px] min-w-[44px] justify-center
                       ${
                         clickedItemId === item.title
                           ? "scale-95 opacity-80"
@@ -274,6 +307,7 @@ export function MobileNavBar() {
             {/* "More" indicator button for discoverability */}
             {showScrollIndicator && (
               <button
+                aria-label="Show more panels"
                 onClick={() => {
                   if (scrollableRef.current) {
                     scrollableRef.current.scrollBy({
@@ -298,7 +332,7 @@ export function MobileNavBar() {
         {/* Bottom swipe indicator for the pane */}
         {isSheetOpen && (
           <div className="absolute bottom-0 left-0 right-0 flex justify-center pb-1 pointer-events-none">
-            <div className="h-1 w-10 bg-gray-300 dark:bg-gray-700 rounded-full opacity-50" />
+            <div className="h-1.5 w-12 bg-gray-300 dark:bg-gray-700 rounded-full opacity-70" />
           </div>
         )}
       </div>
@@ -314,7 +348,7 @@ export function MobileNavBar() {
               <SheetTitle className="text-left text-lg font-light">
                 {activePanel && getPanelTitle(activePanel)}
               </SheetTitle>
-              <SheetClose className="rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary">
+              <SheetClose className="rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary p-2 min-h-[44px] min-w-[44px] flex items-center justify-center">
                 <X className="h-4 w-4" />
                 <span className="sr-only">Close</span>
               </SheetClose>

@@ -72,7 +72,7 @@ export const TemplateOverlayPanel: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col gap-2 p-2 sm:gap-4 sm:p-4 bg-gray-100/40 dark:bg-darkBox  h-full scrollbar-hide overflow-hidden">
+    <div className="flex flex-col gap-2 p-2 sm:gap-4 sm:p-4 bg-white dark:bg-darkBox  h-full scrollbar-hide overflow-hidden">
       <>
         <div className="flex gap-2">
           <form onSubmit={handleSearch} className="flex-1 flex gap-2">
@@ -130,7 +130,7 @@ export const TemplateOverlayPanel: React.FC = () => {
                       <CardTitle className="text-xs sm:text-sm font-light">
                         {template.name}
                       </CardTitle>
-                      <p className="text-[10px] sm:text-xs text-muted-foreground line-clamp-2">
+                      <p className="text-xs text-muted-foreground line-clamp-2">
                         {template.description}
                       </p>
                     </div>
@@ -139,18 +139,18 @@ export const TemplateOverlayPanel: React.FC = () => {
                         {template.tags.slice(0, 3).map((tag, index) => (
                           <span
                             key={index}
-                            className="px-1.5 py-0.5 bg-sky-200 dark:bg-sky-400/30 rounded-sm text-[8px] sm:text-[9px] text-gray-800/70 dark:text-white"
+                            className="px-1.5 py-0.5 bg-sky-200 dark:bg-sky-400/30 rounded-sm text-[10px] sm:text-xs text-gray-800/70 dark:text-white"
                           >
                             {tag}
                           </span>
                         ))}
                         {template.tags.length > 3 && (
-                          <span className="text-[8px] sm:text-[10px] text-muted-foreground">
+                          <span className="text-[10px] sm:text-xs text-muted-foreground">
                             +{template.tags.length - 3}
                           </span>
                         )}
                       </div>
-                      <div className="flex float-right gap-1 sm:gap-2 text-[10px] sm:text-xs text-muted-foreground">
+                      <div className="flex float-right gap-1 sm:gap-2 text-xs text-muted-foreground">
                         <span>
                           {new Date(template.updatedAt).toLocaleDateString()}
                         </span>

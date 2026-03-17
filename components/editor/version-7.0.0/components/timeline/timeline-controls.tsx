@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Play,
@@ -43,6 +43,16 @@ import { useTimelineShortcuts } from "../../hooks/use-timeline-shortcuts";
 import { useAssetLoading } from "../../contexts/asset-loading-context";
 import { useKeyframeContext } from "../../contexts/keyframe-context";
 import { Separator } from "@/components/ui/separator";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // Types
 type AspectRatioOption = "16:9" | "9:16" | "1:1" | "4:5" | "4:3" | "2:1" | "3:4";
@@ -188,6 +198,7 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
 
   // Add state for dropdown
   const [dropdownOpen, setDropdownOpen] = React.useState(false);
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
 
   const handleReset = () => {
     resetOverlays();
@@ -311,6 +322,7 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
                 disabled={!canSplit}
                 size="icon"
                 variant="ghost"
+                aria-label="Split overlay"
                 className="h-7 w-7 text-gray-700 dark:text-zinc-200 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100/80 dark:hover:bg-gray-800/80"
               >
                 <Scissors className="h-3.5 w-3.5" />
@@ -404,6 +416,7 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
                 onClick={handlePlayPause}
                 size="sm"
                 variant="default"
+                aria-label={isPlaying ? "Pause" : "Play"}
                 className="h-7 bg-gray-100 hover:bg-gray-200 dark:bg-darkBoxSub  dark:hover:bg-gray-700"
               >
                 {isPlaying ? (
@@ -454,6 +467,7 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
                   onClick={handleZoomOut}
                   variant="ghost"
                   size="icon"
+                  aria-label="Zoom out"
                   className="h-6 w-6 text-gray-500 dark:text-zinc-400 hover:bg-gray-100/80 dark:hover:bg-gray-800/80"
                   disabled={zoomScale <= ZOOM_CONSTRAINTS.min}
                 >
@@ -488,6 +502,7 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
                   onClick={handleZoomIn}
                   variant="ghost"
                   size="icon"
+                  aria-label="Zoom in"
                   className="h-6 w-6 text-gray-500 dark:text-zinc-400 hover:bg-gray-100/80 dark:hover:bg-gray-800/80"
                   disabled={zoomScale >= ZOOM_CONSTRAINTS.max}
                 >
@@ -516,6 +531,7 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
                 onClick={handleResetZoom}
                 variant="ghost"
                 size="icon"
+                aria-label="Reset zoom"
                 className="hidden sm:block h-7 w-7 text-gray-700 dark:text-zinc-200 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100/80 dark:hover:bg-gray-800/80 transition-colors rounded-md"
               >
                 <SquareSquare className="h-3.5 w-3.5 m-auto" />
@@ -542,6 +558,7 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
             <Button
               variant="ghost"
               size="icon"
+              aria-label="Timeline settings"
               className="h-7 w-7 text-gray-700 dark:text-zinc-200 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100/80 dark:hover:bg-gray-800/80 transition-colors rounded-md"
             >
               <Settings className="h-3.5 w-3.5" />
@@ -624,9 +641,13 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
             {/* Reset Timeline */}
             <div className="px-2 py-2">
               <Button
-                onClick={handleReset}
+                onClick={() => {
+                  setDropdownOpen(false);
+                  setResetDialogOpen(true);
+                }}
                 variant="outline"
                 size="sm"
+                aria-label="Reset timeline"
                 className="w-full text-gray-600 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-zinc-200
                   bg-white hover:bg-gray-50 dark:bg-darkBoxSub /50 dark:hover:bg-gray-700/80
                   border-gray-200 dark:border-gray-700"
@@ -636,6 +657,23 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
             </div>
           </DropdownMenuContent>
         </DropdownMenu>
+
+        <AlertDialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Reset Timeline</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to reset the timeline? This will remove all overlays and cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleReset}>
+                Reset Timeline
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );

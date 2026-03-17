@@ -27,7 +27,7 @@ export const TimelineItemHandle: React.FC<TimelineItemHandleProps> = ({
 }) => {
   return (
     <div
-      className={`bg-gray-400/20 dark:bg-white/10 backdrop-blur-sm w-4 absolute ${position}-0 top-0 bottom-0 w-2 cursor-ew-resize z-50
+      className={`bg-gray-400/20 dark:bg-white/10 backdrop-blur-sm absolute ${position}-0 top-0 bottom-0 w-4 cursor-ew-resize z-50
       hover:bg-gray-400/30 dark:hover:bg-white/20 opacity-0 group-hover:opacity-100 ${
         isSelected ? "opacity-100" : ""
       }

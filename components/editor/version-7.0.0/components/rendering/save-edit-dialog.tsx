@@ -148,6 +148,7 @@ export const SaveEditDialog: React.FC<SaveEditDialogProps> = ({
               disabled={isSaving}
               className="bg-white dark:bg-darkBoxSub  border-gray-200 dark:border-white/5"
               autoFocus
+              style={{ fontSize: "16px" }}
             />
           </div>
         </div>

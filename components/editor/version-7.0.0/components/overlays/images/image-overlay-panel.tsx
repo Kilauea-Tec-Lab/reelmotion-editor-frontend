@@ -168,7 +168,7 @@ export const ImageOverlayPanel: React.FC = () => {
                       className="rounded-sm object-cover w-full h-full hover:opacity-60 transition-opacity duration-200"
                       loading="lazy"
                     />
-                    <div className="absolute inset-0 dark:bg-darkBox /20 opacity-0 hover:opacity-100 transition-opacity duration-200" />
+                    <div className="absolute inset-0 bg-black/20 opacity-0 hover:opacity-100 transition-opacity duration-200" />
                   </div>
                 </button>
               ))

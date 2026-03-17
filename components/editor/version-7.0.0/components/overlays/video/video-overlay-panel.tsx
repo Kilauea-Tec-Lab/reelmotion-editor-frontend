@@ -278,13 +278,14 @@ export const VideoOverlayPanel: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col gap-4 p-4 bg-gray-100/40 dark:bg-darkBox  h-full">
+    <div className="flex flex-col gap-4 p-4 bg-white dark:bg-darkBox  h-full">
       {!localOverlay ? (
         <>
           <div className="flex gap-2">
             <Input
               placeholder="Search videos..."
               value={searchQuery}
+              aria-label="Search videos"
               className="bg-white dark:bg-darkBoxSub  border-gray-200 dark:border-white/5 text-gray-900 dark:text-zinc-200 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus-visible:ring-blue-400"
               onChange={(e) => setSearchQuery(e.target.value)}
               // NOTE: Stops zooming in on input focus on iPhone
@@ -311,6 +312,7 @@ export const VideoOverlayPanel: React.FC = () => {
                       key={`${video.id}-${video.video_url}`}
                       draggable
                       onDragStart={(e) => handleDragStart(e, video)}
+                      aria-label={video.name || "Add video to timeline"}
                       className="relative block w-full cursor-pointer border border-transparent rounded-md overflow-hidden"
                       onClick={() => handleAddClip(video)}
                     >
@@ -364,9 +366,10 @@ export const VideoOverlayPanel: React.FC = () => {
                                 <Button
                                   size="icon"
                                   variant="ghost"
-                                  className="h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100 transition-all bg-black/60 backdrop-blur-sm hover:bg-black/80 text-pink-400 rounded-full"
+                                  aria-label="Edit video name"
+                                  className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100 transition-all bg-black/60 backdrop-blur-sm hover:bg-black/80 text-pink-400 rounded-full"
                                 >
-                                  <Pencil className="h-3 w-3" />
+                                  <Pencil className="h-4 w-4" />
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end" className="w-60 p-2">
@@ -379,6 +382,7 @@ export const VideoOverlayPanel: React.FC = () => {
                                     onKeyDown={(e) => {
                                       if (e.key === 'Enter') handleRename();
                                     }}
+                                    style={{ fontSize: "16px" }}
                                   />
                                   <Button 
                                     size="icon" 

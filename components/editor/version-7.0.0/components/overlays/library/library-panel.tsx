@@ -273,7 +273,7 @@ export const LibraryPanel: React.FC = React.memo(() => {
         onValueChange={(value) => setActiveTab(value as "images" | "videos")}
         className="flex flex-col h-full"
       >
-        <TabsList  className="w-full grid grid-cols-2 bg-gray-100/50 dark:bg-darkBoxSub /50 backdrop-blur-sm rounded-sm border border-gray-200 dark:border-gray-700 gap-1">
+        <TabsList  className="w-full grid grid-cols-2 bg-gray-100/50 dark:bg-darkBoxSub/50 backdrop-blur-sm rounded-sm border border-gray-200 dark:border-gray-700 gap-1">
           <TabsTrigger value="images" className="data-[state=active]:bg-primarioLogo data-[state=active]:text-gray-900 dark:data-[state=active]:text-white 
             rounded-sm transition-all duration-200 text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-200 hover:bg-gray-200/50 dark:hover:bg-gray-700/50">Images</TabsTrigger>
           <TabsTrigger value="videos" className="data-[state=active]:bg-primarioLogo data-[state=active]:text-gray-900 dark:data-[state=active]:text-white 
@@ -289,7 +289,7 @@ export const LibraryPanel: React.FC = React.memo(() => {
                 <button
                   key={category.query}
                   onClick={() => handleImageCategoryChange(category.query)}
-                  className={`px-3 py-1.5 text-xs rounded-md transition-all ${
+                  className={`px-3 py-1.5 text-xs rounded-md transition-all duration-200 ${
                     selectedImageCategory === category.query
                       ? "bg-primarioLogo text-white font-medium"
                       : "bg-gray-100 dark:bg-darkBoxSub text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
@@ -324,7 +324,7 @@ export const LibraryPanel: React.FC = React.memo(() => {
                         loading="lazy"
                       />
                       {/* Title badge */}
-                      <div className="absolute bottom-0 left-0 right-0 text-[11px] text-white bg-gradient-to-t from-black/80 to-transparent px-2 py-2 pt-6">
+                      <div className="absolute bottom-0 left-0 right-0 text-xs text-white bg-gradient-to-t from-black/80 to-transparent px-2 py-2 pt-6">
                         <div className="line-clamp-1 font-medium">
                           {image.alt || `Image #${image.id}`}
                         </div>
@@ -356,7 +356,7 @@ export const LibraryPanel: React.FC = React.memo(() => {
                 <button
                   key={category.query}
                   onClick={() => handleVideoCategoryChange(category.query)}
-                  className={`px-3 py-1.5 text-xs rounded-md transition-all ${
+                  className={`px-3 py-1.5 text-xs rounded-md transition-all duration-200 ${
                     selectedVideoCategory === category.query
                       ? "bg-primarioLogo text-white font-medium"
                       : "bg-gray-100 dark:bg-darkBoxSub text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
@@ -392,12 +392,12 @@ export const LibraryPanel: React.FC = React.memo(() => {
                       />
                       {/* Duration badge */}
                       {video.duration && (
-                        <div className="absolute top-2 right-2 text-[10px] text-white bg-black/70 px-2 py-1 rounded backdrop-blur-sm">
+                        <div className="absolute top-2 right-2 text-xs text-white bg-black/70 px-2 py-1 rounded backdrop-blur-sm">
                           {Math.round(video.duration)}s
                         </div>
                       )}
                       {/* Tags/Title badge */}
-                      <div className="absolute bottom-0 left-0 right-0 text-[11px] text-white bg-gradient-to-t from-black/80 to-transparent px-2 py-2 pt-6">
+                      <div className="absolute bottom-0 left-0 right-0 text-xs text-white bg-gradient-to-t from-black/80 to-transparent px-2 py-2 pt-6">
                         <div className="line-clamp-1 font-medium">
                           {video.tags && video.tags.length > 0 
                             ? video.tags[0].charAt(0).toUpperCase() + video.tags[0].slice(1)

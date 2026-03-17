@@ -394,6 +394,7 @@ const SoundsPanel: React.FC = React.memo(() => {
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') handleRename();
                   }}
+                  style={{ fontSize: "16px" }}
                 />
                 <Button 
                   size="icon" 
@@ -416,7 +417,7 @@ const SoundsPanel: React.FC = React.memo(() => {
   };
 
   return (
-    <div className="space-y-4 p-4 bg-gray-50 dark:bg-darkBox  h-full">
+    <div className="space-y-4 p-4 bg-white dark:bg-darkBox  h-full">
       {!localOverlay ? (
         localSounds.map(renderSoundCard)
       ) : (

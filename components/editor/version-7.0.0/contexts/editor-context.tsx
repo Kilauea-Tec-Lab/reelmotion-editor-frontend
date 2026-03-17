@@ -67,6 +67,7 @@ interface EditorContextProps {
 
   // Autosave functionality
   saveProject?: () => Promise<void>; // Manual save function
+  lastSaveTime?: number | null; // Timestamp of last successful autosave
 
   // Add renderType to the context
   renderType: "ssr" | "lambda" | "cloudrun";

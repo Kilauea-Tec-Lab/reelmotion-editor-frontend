@@ -249,6 +249,7 @@ export const SaveRenderDialog: React.FC<SaveRenderDialogProps> = ({
                 value={videoName}
                 onChange={(e) => setVideoName(e.target.value)}
                 disabled={isSaving}
+                style={{ fontSize: "16px" }}
               />
             </div>
         </div>
