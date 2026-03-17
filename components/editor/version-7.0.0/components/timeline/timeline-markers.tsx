@@ -29,12 +29,15 @@ const TimeMarkers = ({
     const totalSeconds = durationInFrames / FPS;
 
     // Dynamic interval calculation based on zoom level
+    // Goal: keep ~6-12 visible labels so they never overlap
     const baseInterval = ((): number => {
-      const targetMarkerCount = Math.max(
-        8,
-        Math.min(40, Math.floor(25 * zoomScale))
+      // Target fewer labels to avoid crowding
+      const targetLabelCount = Math.max(
+        4,
+        Math.min(15, Math.floor(8 * zoomScale))
       );
-      const rawInterval = totalSeconds / targetMarkerCount;
+      // labelInterval = majorInterval * 2, so we need half as many major ticks
+      const rawInterval = totalSeconds / (targetLabelCount * 2);
 
       const niceIntervals: number[] = [
         0.04, 0.08, 0.1, 0.2, 0.25, 0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300,
@@ -44,11 +47,9 @@ const TimeMarkers = ({
         return niceIntervals[0];
       }
 
-      return niceIntervals.reduce((prev, curr) =>
-        Math.abs(curr - rawInterval) < Math.abs(prev - rawInterval)
-          ? curr
-          : prev
-      );
+      // Pick the nearest nice interval that is >= rawInterval to avoid overcrowding
+      const larger = niceIntervals.find((n) => n >= rawInterval);
+      return larger ?? niceIntervals[niceIntervals.length - 1];
     })();
 
     // Calculate sub-intervals for different marker types
