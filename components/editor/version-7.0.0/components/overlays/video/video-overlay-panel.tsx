@@ -1,14 +1,12 @@
-import { useState, useEffect, useRef, useCallback, memo } from "react";
-import { Search, Loader2, Pencil, Check, Film } from "lucide-react";
+import { useState, useEffect, useRef, memo } from "react";
+import { Loader2, Pencil, Check, Film } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import Cookies from "js-cookie";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
@@ -70,7 +68,7 @@ const LazyVideoThumbnail = memo(({ video, onLoaded, isLoaded, isMobile }: {
   }, []);
 
   return (
-    <div ref={containerRef} className="relative aspect-video bg-gray-200 dark:bg-darkBoxSub">
+    <div ref={containerRef} className="relative aspect-video bg-gray-200 dark:bg-darkBoxSub ">
       {/* Loading spinner */}
       {!isLoaded && isVisible && (
         <div className="absolute inset-0 flex items-center justify-center z-10">
@@ -116,6 +114,8 @@ const LazyVideoThumbnail = memo(({ video, onLoaded, isLoaded, isMobile }: {
     </div>
   );
 });
+
+LazyVideoThumbnail.displayName = "LazyVideoThumbnail";
 
 /**
  * VideoOverlayPanel is a component that provides video search and management functionality.
