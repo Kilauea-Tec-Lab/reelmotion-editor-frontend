@@ -72,8 +72,16 @@ export function MobileNavBar() {
     };
 
     checkScrollWidth();
-    window.addEventListener("resize", checkScrollWidth);
-    return () => window.removeEventListener("resize", checkScrollWidth);
+    let resizeTimer: NodeJS.Timeout;
+    const debouncedCheckScrollWidth = () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(checkScrollWidth, 250);
+    };
+    window.addEventListener("resize", debouncedCheckScrollWidth);
+    return () => {
+      window.removeEventListener("resize", debouncedCheckScrollWidth);
+      clearTimeout(resizeTimer);
+    };
   }, []);
 
   // Scroll active item into view when it changes
@@ -222,7 +230,7 @@ export function MobileNavBar() {
 
   return (
     <>
-      <div className="md:hidden flex flex-col border-t border-gray-200 dark:border-gray-100/10 bg-white/95 dark:bg-darkBox  backdrop-blur-sm">
+      <div className="md:hidden flex flex-col border-t border-gray-200 dark:border-gray-100/10 bg-white/95 dark:bg-darkBox">
         <div className="relative flex-1 flex">
           {/* Left fade gradient to indicate scrollable content */}
           {showScrollIndicator && (

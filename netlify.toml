@@ -18,6 +18,16 @@
     X-XSS-Protection = "1; mode=block"
     X-Content-Type-Options = "nosniff"
 
+[[headers]]
+  for = "/_next/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/images/*"
+  [headers.values]
+    Cache-Control = "public, max-age=86400"
+
 # Note: For long-running renders, consider:
 # 1. Upgrading to Netlify Pro for 26s function timeout
 # 2. Using Netlify Background Functions for up to 15 minutes

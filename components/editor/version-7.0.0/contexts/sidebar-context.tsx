@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState, useMemo, useCallback } from "react";
 import { OverlayType } from "../types";
 import { useSidebar as useUISidebar } from "../../../ui/sidebar";
 
@@ -34,13 +34,17 @@ export const SidebarProvider: React.FC<React.PropsWithChildren> = ({
   const [activePanel, setActivePanel] = useState<OverlayType>(OverlayType.VIDEO);
   const { setOpen } = useUISidebar();
 
-  const value = {
+  const stableSetActivePanel = useCallback((panel: OverlayType) => {
+    setActivePanel(panel);
+  }, []);
+
+  const contextValue = useMemo(() => ({
     activePanel,
-    setActivePanel,
+    setActivePanel: stableSetActivePanel,
     setIsOpen: setOpen,
-  };
+  }), [activePanel, stableSetActivePanel, setOpen]);
 
   return (
-    <SidebarContext.Provider value={value}>{children}</SidebarContext.Provider>
+    <SidebarContext.Provider value={contextValue}>{children}</SidebarContext.Provider>
   );
 };

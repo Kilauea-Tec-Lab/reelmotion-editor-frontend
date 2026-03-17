@@ -60,7 +60,7 @@ import { Button } from "@/components/ui/button";
  * @component
  * @param props - Props extending from the base Sidebar component
  */
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+export const AppSidebar = React.memo(function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { activePanel, setActivePanel, setIsOpen } = useSidebar();
   const { setSelectedOverlayId, selectedOverlayId, overlays } = useEditorContext();
 
@@ -99,7 +99,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     }
   };
 
-  const navigationItems = [
+  const navigationItems = React.useMemo(() => [
     {
       title: getPanelTitle(OverlayType.VIDEO),
       url: "#",
@@ -107,7 +107,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       panel: OverlayType.VIDEO,
       type: OverlayType.VIDEO,
     },
-    
+
     {
       title: getPanelTitle(OverlayType.TEXT),
       url: "#",
@@ -167,7 +167,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       panel: OverlayType.TEMPLATE,
       type: OverlayType.TEMPLATE,
     },*/
-  ];
+  ], []);
 
   /**
    * Renders the appropriate panel component based on the active panel selection
@@ -333,4 +333,4 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </Sidebar>
     </Sidebar>
   );
-}
+});

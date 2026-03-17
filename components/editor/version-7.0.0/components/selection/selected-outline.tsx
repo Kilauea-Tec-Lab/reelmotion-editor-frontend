@@ -60,14 +60,14 @@ export const SelectionOutline: React.FC<{
     return {
       width: Number.isFinite(overlay.width) ? overlay.width : 0,
       height: Number.isFinite(overlay.height) ? overlay.height : 0,
-      left: overlay.left,
-      top: overlay.top,
+      left: 0,
+      top: 0,
       position: "absolute",
       outline:
         (hovered && !isDragging) || isSelected
           ? `${scaledBorder}px solid #3B8BF2`
           : undefined,
-      transform: `rotate(${overlay.rotation || 0}deg)`,
+      transform: `translate(${overlay.left}px, ${overlay.top}px) rotate(${overlay.rotation || 0}deg)`,
       transformOrigin: "center center",
       userSelect: "none",
       touchAction: "none",

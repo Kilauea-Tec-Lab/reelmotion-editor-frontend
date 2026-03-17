@@ -431,6 +431,7 @@ const TimelineItem: React.FC<TimelineItemProps> = ({
           left: `${(item.from / totalDuration) * 100}%`,
           width: `${(item.durationInFrames / totalDuration) * 100}%`,
           zIndex: isDragging ? 1 : isSelected ? 35 : 30, // Increase z-index when selected
+          willChange: 'transform',
           // Apply transform immediately if pushed, otherwise use standard transition
           transition: `opacity 0.2s ${
             livePushOffsetPercent !== 0

@@ -6,6 +6,7 @@ import React, {
   useState,
   useEffect,
   useCallback,
+  useMemo,
 } from "react";
 import { LocalMediaFile } from "../types";
 import { uploadMediaFile, deleteMediaFile, UploadProgressCallback } from "../utils/media-upload";
@@ -214,8 +215,8 @@ export const LocalMediaProvider: React.FC<{
       const token = Cookies.get("token");
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "https://backend.reelmotion.ai";
 
-      // Delete all backend files
-      for (const file of localMediaFiles) {
+      // Delete all backend files in parallel
+      await Promise.all(localMediaFiles.map(async (file) => {
         const isBackendUpload = backendUploads.some((upload) => upload.id === file.id);
 
         if (isBackendUpload) {
@@ -230,12 +231,12 @@ export const LocalMediaProvider: React.FC<{
           });
 
           const data = await response.json();
-          
+
           if (data.code !== 200) {
             console.error("Failed to delete upload:", data.message);
           }
         }
-      }
+      }));
 
       // Update state
       setLocalMediaFiles([]);
@@ -244,7 +245,7 @@ export const LocalMediaProvider: React.FC<{
     }
   }, [localMediaFiles, backendUploads]);
 
-  const value = {
+  const value = useMemo(() => ({
     localMediaFiles,
     addMediaFile,
     removeMediaFile,
@@ -252,7 +253,15 @@ export const LocalMediaProvider: React.FC<{
     isLoading,
     uploadProgress,
     updateMediaFileName
-  };
+  }), [
+    localMediaFiles,
+    addMediaFile,
+    removeMediaFile,
+    clearMediaFiles,
+    isLoading,
+    uploadProgress,
+    updateMediaFileName
+  ]);
 
   return (
     <LocalMediaContext.Provider value={value}>

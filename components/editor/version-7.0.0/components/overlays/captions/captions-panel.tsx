@@ -55,7 +55,7 @@ interface WordsFileData {
  * <CaptionsPanel />
  * ```
  */
-export const CaptionsPanel: React.FC = () => {
+export const CaptionsPanel: React.FC = React.memo(() => {
   const [script, setScript] = useState("");
   const [isBannerVisible, setIsBannerVisible] = useState(true);
   const {
@@ -375,4 +375,6 @@ export const CaptionsPanel: React.FC = () => {
       )}
     </div>
   );
-};
+});
+
+CaptionsPanel.displayName = "CaptionsPanel";

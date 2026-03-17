@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  productionBrowserSourceMaps: false,
   // Image optimization configuration
   images: {
     remotePatterns: [
@@ -25,7 +26,7 @@ const nextConfig = {
       },
     ],
     // Increase timeout for image optimization in production
-    minimumCacheTTL: 60,
+    minimumCacheTTL: 86400,
   },
   // Allow large file uploads (500MB max)
   experimental: {

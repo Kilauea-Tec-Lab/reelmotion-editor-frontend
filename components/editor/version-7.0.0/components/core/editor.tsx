@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useCallback } from "react";
 import { EditorHeader } from "./editor-header";
 
 import { useEditorContext } from "../../contexts/editor-context";
@@ -51,8 +51,16 @@ export const Editor: React.FC = () => {
     };
 
     checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
+    let checkMobileTimer: NodeJS.Timeout;
+    const debouncedCheckMobile = () => {
+      clearTimeout(checkMobileTimer);
+      checkMobileTimer = setTimeout(checkMobile, 250);
+    };
+    window.addEventListener("resize", debouncedCheckMobile);
+    return () => {
+      window.removeEventListener("resize", debouncedCheckMobile);
+      clearTimeout(checkMobileTimer);
+    };
   }, []);
 
   /**
@@ -69,15 +77,21 @@ export const Editor: React.FC = () => {
     // Initial call
     handleResize();
 
-    // Handle orientation changes and resizes
-    window.addEventListener("resize", handleResize);
+    // Handle orientation changes and resizes with debounce
+    let resizeTimer: NodeJS.Timeout;
+    const debouncedResize = () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(handleResize, 250);
+    };
+    window.addEventListener("resize", debouncedResize);
 
     // Prevent any scrolling on body
     document.body.style.overflow = "hidden";
     document.documentElement.style.overflow = "hidden";
 
     return () => {
-      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("resize", debouncedResize);
+      clearTimeout(resizeTimer);
       document.body.style.overflow = "";
       document.documentElement.style.overflow = "";
     };
@@ -104,6 +118,16 @@ export const Editor: React.FC = () => {
     durationInFrames, // Total duration in frames
     setOverlays, // Function to update overlays
   } = useEditorContext();
+
+  const handleSetCurrentFrame = useCallback((frame: number) => {
+    if (playerRef.current) {
+      try {
+        playerRef.current.seekTo(frame / FPS);
+      } catch (error) {
+        console.error("Failed to seek player:", error);
+      }
+    }
+  }, [playerRef]);
 
   /**
    * Mobile fallback UI
@@ -181,15 +205,7 @@ export const Editor: React.FC = () => {
         onOverlayDelete={deleteOverlay}
         onOverlayDuplicate={duplicateOverlay}
         onSplitOverlay={splitOverlay}
-        setCurrentFrame={(frame) => {
-          if (playerRef.current) {
-            try {
-              playerRef.current.seekTo(frame / FPS);
-            } catch (error) {
-              console.error("Failed to seek player:", error);
-            }
-          }
-        }}
+        setCurrentFrame={handleSetCurrentFrame}
         setOverlays={setOverlays}
         onTimelineClick={handleTimelineClick}
       />

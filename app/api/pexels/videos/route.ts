@@ -64,7 +64,12 @@ export async function GET(request: NextRequest) {
     // Try to return JSON if possible; otherwise return raw text.
     try {
       const json = JSON.parse(text);
-      return NextResponse.json(json, { status: response.status });
+      return NextResponse.json(json, {
+        status: response.status,
+        headers: {
+          'Cache-Control': 'public, max-age=300, stale-while-revalidate=600',
+        },
+      });
     } catch {
       return new NextResponse(text, { status: response.status });
     }

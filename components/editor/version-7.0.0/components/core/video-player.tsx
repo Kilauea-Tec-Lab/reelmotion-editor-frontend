@@ -108,10 +108,16 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ playerRef }) => {
     };
 
     handleDimensionUpdate(); // Initial update
-    window.addEventListener("resize", handleDimensionUpdate);
+    let resizeTimer: NodeJS.Timeout;
+    const debouncedResize = () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(handleDimensionUpdate, 250);
+    };
+    window.addEventListener("resize", debouncedResize);
 
     return () => {
-      window.removeEventListener("resize", handleDimensionUpdate);
+      window.removeEventListener("resize", debouncedResize);
+      clearTimeout(resizeTimer);
     };
   }, [aspectRatio, updatePlayerDimensions]);
 

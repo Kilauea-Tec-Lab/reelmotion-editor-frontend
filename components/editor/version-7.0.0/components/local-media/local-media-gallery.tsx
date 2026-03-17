@@ -34,7 +34,7 @@ import {
  * - Delete media files
  * - Add media to the timeline
  */
-export function LocalMediaGallery({
+export const LocalMediaGallery = React.memo(function LocalMediaGallery({
   onSelectMedia,
 }: {
   onSelectMedia?: (mediaFile: any) => void;
@@ -680,4 +680,4 @@ export function LocalMediaGallery({
       </Dialog>
     </div>
   );
-}
+});

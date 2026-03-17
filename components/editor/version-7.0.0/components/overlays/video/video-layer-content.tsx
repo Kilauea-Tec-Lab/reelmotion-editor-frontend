@@ -42,14 +42,6 @@ export const VideoLayerContent: React.FC<VideoLayerContentProps> = ({
 
   const videoSrc = resolveVideoUrl(overlay.src, baseUrl);
 
-  // DEBUGGING: Check what URL is being used
-  useEffect(() => {
-    console.log("[VideoLayerContent] Overlay ID:", overlay.id);
-    console.log("[VideoLayerContent] Original Src:", overlay.src);
-    console.log("[VideoLayerContent] BaseUrl:", baseUrl);
-    console.log("[VideoLayerContent] Resolved Video Src:", videoSrc);
-  }, [overlay.id, overlay.src, baseUrl, videoSrc]);
-
   // Calculate if we're in the exit phase (last 30 frames)
   const isExitPhase = frame >= overlay.durationInFrames - 30;
 

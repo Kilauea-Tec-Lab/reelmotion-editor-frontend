@@ -40,7 +40,7 @@ import { TimelineProvider } from "./contexts/timeline-context";
 // Autosave Components
 import { AutosaveRecoveryDialog } from "./components/autosave/autosave-recovery-dialog";
 import { AutosaveStatus } from "./components/autosave/autosave-status";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useAutosave } from "./hooks/use-autosave";
 import { LocalMediaProvider } from "./contexts/local-media-context";
 import { KeyframeProvider } from "./contexts/keyframe-context";
@@ -152,9 +152,9 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
   } = useAspectRatio();
 
   // Event handlers
-  const handleOverlayChange = (updatedOverlay: Overlay) => {
+  const handleOverlayChange = useCallback((updatedOverlay: Overlay) => {
     changeOverlay(updatedOverlay.id, () => updatedOverlay);
-  };
+  }, [changeOverlay]);
 
   const { width: compositionWidth, height: compositionHeight } =
     getAspectRatioDimensions();
@@ -332,7 +332,7 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
   };
 
   // Handle loading an edit from the backend
-  const handleLoadEdit = (loadedEdit: any) => {
+  const handleLoadEdit = useCallback((loadedEdit: any) => {
     console.log("Loading edition:", loadedEdit);
     
     // Store the edit ID and name for future saves
@@ -368,13 +368,13 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
         if (inferred) setAspectRatio(inferred);
       }
     }
-  };
+  }, [setOverlays, setAspectRatio, setCurrentEditId, setCurrentEditName]);
 
   // Manual save function for use in keyboard shortcuts or save button
-  const handleManualSave = async () => {
+  const handleManualSave = useCallback(async () => {
     setIsSaving(true);
     await saveState();
-  };
+  }, [saveState]);
 
   // Set up keyboard shortcut for manual save (Ctrl+S)
   useEffect(() => {
@@ -432,7 +432,7 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
   };
 
   // Combine all editor context values
-  const editorContextValue = {
+  const editorContextValue = useMemo(() => ({
     // Overlay management
     overlays,
     setOverlays,
@@ -463,7 +463,7 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
     updatePlayerDimensions,
     getAspectRatioDimensions,
     durationInFrames,
-    contentDurationInFrames, // Added contentDurationInFrames
+    contentDurationInFrames,
     durationInSeconds,
 
     // Add renderType to the context
@@ -497,7 +497,49 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
 
     // Export limit
     exportNumber,
-  };
+  }), [
+    overlays,
+    setOverlays,
+    selectedOverlayId,
+    setSelectedOverlayId,
+    changeOverlay,
+    handleOverlayChange,
+    addOverlay,
+    deleteOverlay,
+    duplicateOverlay,
+    splitOverlay,
+    resetOverlays,
+    isPlaying,
+    currentFrame,
+    playerRef,
+    togglePlayPause,
+    formatTime,
+    handleTimelineClick,
+    playbackRate,
+    setPlaybackRate,
+    aspectRatio,
+    setAspectRatio,
+    playerDimensions,
+    updatePlayerDimensions,
+    getAspectRatioDimensions,
+    durationInFrames,
+    contentDurationInFrames,
+    durationInSeconds,
+    renderMedia,
+    state,
+    deleteOverlaysByRow,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+    updateOverlayStyles,
+    handleManualSave,
+    editionData,
+    handleLoadEdit,
+    subscriptionPlan,
+    isPro,
+    exportNumber,
+  ]);
 
   // Show loading state while authenticating
   if (isLoading) {

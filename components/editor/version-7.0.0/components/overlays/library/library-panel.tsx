@@ -49,7 +49,7 @@ const VIDEO_CATEGORIES = [
   { label: "Abstract", query: "abstract" },
 ];
 
-export const LibraryPanel: React.FC = () => {
+export const LibraryPanel: React.FC = React.memo(() => {
   const [activeTab, setActiveTab] = useState<"images" | "videos">("images");
   const [selectedImageCategory, setSelectedImageCategory] = useState("curated");
   const [selectedVideoCategory, setSelectedVideoCategory] = useState("nature");
@@ -110,25 +110,46 @@ export const LibraryPanel: React.FC = () => {
     }
   }, [videosLoading, hasMoreVideos, selectedVideoCategory, videoPage, fetchVideos]);
 
-  // Attach scroll listeners
+  // Attach scroll listeners with requestAnimationFrame throttling
   React.useEffect(() => {
     const imageContainer = imageScrollRef.current;
     const videoContainer = videoScrollRef.current;
 
+    let imageRafId: number | null = null;
+    let videoRafId: number | null = null;
+
+    const throttledImageScroll = () => {
+      if (imageRafId) return;
+      imageRafId = requestAnimationFrame(() => {
+        handleImageScroll();
+        imageRafId = null;
+      });
+    };
+
+    const throttledVideoScroll = () => {
+      if (videoRafId) return;
+      videoRafId = requestAnimationFrame(() => {
+        handleVideoScroll();
+        videoRafId = null;
+      });
+    };
+
     if (imageContainer) {
-      imageContainer.addEventListener('scroll', handleImageScroll);
+      imageContainer.addEventListener('scroll', throttledImageScroll, { passive: true });
     }
     if (videoContainer) {
-      videoContainer.addEventListener('scroll', handleVideoScroll);
+      videoContainer.addEventListener('scroll', throttledVideoScroll, { passive: true });
     }
 
     return () => {
       if (imageContainer) {
-        imageContainer.removeEventListener('scroll', handleImageScroll);
+        imageContainer.removeEventListener('scroll', throttledImageScroll);
       }
       if (videoContainer) {
-        videoContainer.removeEventListener('scroll', handleVideoScroll);
+        videoContainer.removeEventListener('scroll', throttledVideoScroll);
       }
+      if (imageRafId) cancelAnimationFrame(imageRafId);
+      if (videoRafId) cancelAnimationFrame(videoRafId);
     };
   }, [handleImageScroll, handleVideoScroll, activeTab]);
 
@@ -403,6 +424,8 @@ export const LibraryPanel: React.FC = () => {
       </Tabs>
     </div>
   );
-};
+});
+
+LibraryPanel.displayName = "LibraryPanel";
 
 export default LibraryPanel;

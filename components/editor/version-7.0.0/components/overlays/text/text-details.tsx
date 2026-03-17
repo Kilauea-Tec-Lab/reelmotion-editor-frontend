@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useMemo, useRef } from "react";
 import { useEditorContext } from "../../../contexts/editor-context";
 import { TextOverlay } from "../../../types";
 import { PaintBucket, Settings } from "lucide-react";
@@ -36,12 +36,16 @@ export const TextDetails: React.FC<TextDetailsProps> = ({
   /**
    * Debounced function to update the overlay in the global state
    * Prevents excessive re-renders by waiting 300ms between updates
+   * Uses a ref to always call the latest changeOverlay without recreating the debounced function
    */
-  const debouncedUpdateOverlay = useCallback(
-    debounce((id: number, newOverlay: TextOverlay) => {
-      changeOverlay(id, newOverlay);
+  const changeOverlayRef = useRef(changeOverlay);
+  changeOverlayRef.current = changeOverlay;
+
+  const debouncedUpdateOverlay = useMemo(
+    () => debounce((id: number, newOverlay: TextOverlay) => {
+      changeOverlayRef.current(id, newOverlay);
     }, 300),
-    [changeOverlay]
+    []
   );
 
   /**
@@ -74,7 +78,6 @@ export const TextDetails: React.FC<TextDetailsProps> = ({
     field: keyof TextOverlay["styles"],
     value: string
   ) => {
-    console.log(field, value);
     // Update local state immediately for responsive UI
     setLocalOverlay({
       ...localOverlay,

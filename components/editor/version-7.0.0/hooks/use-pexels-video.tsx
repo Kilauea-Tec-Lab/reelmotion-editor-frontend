@@ -1,5 +1,5 @@
 import { toast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useState, useRef } from "react";
 
 // Interface defining the structure of video data returned from Pexels API
 interface PexelsVideo {
@@ -34,29 +34,36 @@ export function usePexelsVideos() {
   const [page, setPage] = useState(1);
   // State for tracking if there are more results
   const [hasMore, setHasMore] = useState(true);
+  // Ref for aborting in-flight requests
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Function to fetch videos based on search query or popular content
   const fetchVideos = async (query: string, pageNum: number = 1, append: boolean = false) => {
+    // Cancel previous request
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = new AbortController();
+
     setIsLoading(true);
     try {
       const endpoint = `/api/pexels/videos?query=${encodeURIComponent(query)}&per_page=30&page=${pageNum}`;
 
-      const response = await fetch(endpoint);
+      const response = await fetch(endpoint, { signal: abortControllerRef.current.signal });
       const data = await response.json().catch(() => null);
 
       if (!response.ok) {
         throw new Error(data?.error || data?.message || `HTTP error! status: ${response.status}`);
       }
-      
+
       if (append) {
         setVideos(prev => [...prev, ...data.videos]);
       } else {
         setVideos(data.videos);
       }
-      
+
       setPage(pageNum);
       setHasMore(data.videos.length > 0);
     } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') return;
       // Log error and show user-friendly toast notification
       console.error("Error fetching Pexels media:", error);
       toast({

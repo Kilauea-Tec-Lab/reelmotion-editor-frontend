@@ -2,7 +2,12 @@
 
 import { useParams } from 'next/navigation';
 import { useEffect } from 'react';
-import ReactVideoEditor from '@/components/editor/version-7.0.0/react-video-editor';
+import dynamic from "next/dynamic";
+
+const ReactVideoEditor = dynamic(
+  () => import("@/components/editor/version-7.0.0/react-video-editor"),
+  { ssr: false }
+);
 
 export default function TokenEditorPage() {
   const params = useParams();

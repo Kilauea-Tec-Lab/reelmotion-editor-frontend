@@ -73,7 +73,6 @@ export const useRendering = (
 
   // Main function to handle the rendering process
   const renderMedia = useCallback(async (renderOptions?: { scale?: number }) => {
-    console.log(`Starting renderMedia process using ${renderType}`);
     setState({
       status: "invoking",
     });
@@ -97,11 +96,8 @@ export const useRendering = (
       // overlay positions or composition dimensions — guaranteed correct
       const renderScale = renderOptions?.scale;
 
-      console.log("Calling renderVideo API with inputProps", inputProps, "scale:", renderScale);
-      
       // Start the render (all render types now return a renderId for polling)
       const response = await renderVideo({ id, inputProps, renderScale });
-      console.log("Render response:", response);
       
       // Check if immediate error
       if ('type' in response && response.type === "error") {
@@ -161,7 +157,6 @@ export const useRendering = (
       const maxThrottleBackoffMs = 10000; // Reduced from 15s for faster recovery
 
       while (pending) {
-        console.log(`Checking progress for renderId=${renderId}`);
         let result: Awaited<ReturnType<typeof getProgress>>;
 
         try {
@@ -172,10 +167,6 @@ export const useRendering = (
           throttleBackoffMs = initialThrottleBackoffMs;
         } catch (err) {
           if (isRateLimitError(err)) {
-            console.warn(
-              `Progress check throttled (Rate Exceeded). Retrying in ${throttleBackoffMs}ms`,
-              err
-            );
             await wait(throttleBackoffMs);
             throttleBackoffMs = Math.min(
               Math.round(throttleBackoffMs * 1.8),
@@ -186,7 +177,6 @@ export const useRendering = (
 
           throw err;
         }
-        console.log("result", result);
         switch (result.type) {
           case "error": {
             console.error(`Render error: ${result.message}`);
@@ -199,9 +189,6 @@ export const useRendering = (
             break;
           }
           case "done": {
-            console.log(
-              `Render complete: url=${result.url}, size=${result.size}`
-            );
             setState({
               size: result.size,
               url: result.url,
@@ -211,7 +198,6 @@ export const useRendering = (
             break;
           }
           case "progress": {
-            console.log(`Render progress: ${result.progress}%`);
             setState({
               status: "rendering",
               progress: result.progress,

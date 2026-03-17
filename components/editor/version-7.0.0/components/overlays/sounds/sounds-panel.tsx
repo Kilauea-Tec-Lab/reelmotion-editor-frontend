@@ -36,7 +36,7 @@ import { getOptimizedMediaUrl } from "../../../utils/url-helper";
  *
  * @component
  */
-const SoundsPanel: React.FC = () => {
+const SoundsPanel: React.FC = React.memo(() => {
   const [playingTrack, setPlayingTrack] = useState<string | null>(null);
   const [loadingTrack, setLoadingTrack] = useState<string | null>(null);
   const audioRefs = useRef<{ [key: string]: HTMLAudioElement }>({});
@@ -427,6 +427,8 @@ const SoundsPanel: React.FC = () => {
       )}
     </div>
   );
-};
+});
+
+SoundsPanel.displayName = "SoundsPanel";
 
 export default SoundsPanel;

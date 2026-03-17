@@ -1,5 +1,10 @@
-import ReactVideoEditor from "@/components/editor/version-7.0.0/react-video-editor";
+import dynamic from "next/dynamic";
 import { SidebarProvider } from "@/components/ui/sidebar";
+
+const ReactVideoEditor = dynamic(
+  () => import("@/components/editor/version-7.0.0/react-video-editor"),
+  { ssr: false }
+);
 
 export default function Home() {
   /**

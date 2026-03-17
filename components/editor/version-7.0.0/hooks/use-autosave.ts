@@ -107,8 +107,14 @@ export const useAutosave = (
       }
     };
 
-    // Set up interval for autosave
-    timerRef.current = setInterval(saveIfChanged, interval);
+    // Set up interval for autosave with requestIdleCallback when available
+    timerRef.current = setInterval(() => {
+      if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+        requestIdleCallback(() => saveIfChanged());
+      } else {
+        saveIfChanged();
+      }
+    }, 10000);
 
     // Clean up timer on unmount
     return () => {
