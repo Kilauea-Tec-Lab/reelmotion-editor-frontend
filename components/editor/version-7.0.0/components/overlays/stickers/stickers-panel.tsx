@@ -14,10 +14,12 @@ import { Sequence } from "remotion";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { StickerDetails } from "./sticker-details";
 
-// Wrapper component for sticker preview with static frame
+// Wrapper component for sticker preview - lazy loads the Remotion Player
 const StickerPreview = memo(
-  ({ template, onClick }: { template: any; onClick: () => void }) => {
+  ({ template, onClick, isMobile }: { template: any; onClick: () => void; isMobile: boolean }) => {
     const playerRef = useRef<any>(null);
+    const containerRef = useRef<HTMLButtonElement>(null);
+    const [isVisible, setIsVisible] = useState(false);
     const { Component } = template;
 
     const stickerDuration =
@@ -47,13 +49,30 @@ const StickerPreview = memo(
       ...template.config.defaultProps,
     };
 
-    const MemoizedComponent = memo(Component);
+    // Lazy visibility - only mount Player when scrolled into view
+    useEffect(() => {
+      const el = containerRef.current;
+      if (!el) return;
 
-    const PreviewComponent = () => (
+      const observer = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting) {
+            setIsVisible(true);
+            observer.disconnect();
+          }
+        },
+        { rootMargin: "100px" }
+      );
+
+      observer.observe(el);
+      return () => observer.disconnect();
+    }, []);
+
+    const PreviewComponent = useCallback(() => (
       <Sequence from={0} durationInFrames={stickerDuration}>
-        <MemoizedComponent {...previewProps} />
+        <Component {...previewProps} />
       </Sequence>
-    );
+    ), [stickerDuration]);
 
     const handleMouseEnter = useCallback(() => {
       if (playerRef.current) {
@@ -71,9 +90,10 @@ const StickerPreview = memo(
 
     return (
       <button
+        ref={containerRef}
         onClick={onClick}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
+        onMouseEnter={!isMobile ? handleMouseEnter : undefined}
+        onMouseLeave={!isMobile ? handleMouseLeave : undefined}
         className={`
           group relative w-full h-full
           rounded-lg bg-gray-100/40 dark:bg-darkBoxSub /40
@@ -85,28 +105,33 @@ const StickerPreview = memo(
         `}
       >
         <div className="absolute inset-0 flex items-center justify-center">
-          <Player
-            ref={playerRef}
-            component={PreviewComponent}
-            durationInFrames={stickerDuration}
-            compositionWidth={template.config.layout === "double" ? 280 : 140}
-            compositionHeight={140}
-            fps={30}
-            initialFrame={15}
-            autoPlay={false}
-            loop
-            controls={false}
-            style={{
-              width: template.config.layout === "double" ? "100%" : "140px",
-              height: "140px",
-            }}
-          />
+          {isVisible ? (
+            <Player
+              ref={playerRef}
+              component={PreviewComponent}
+              durationInFrames={stickerDuration}
+              compositionWidth={template.config.layout === "double" ? 280 : 140}
+              compositionHeight={140}
+              fps={30}
+              initialFrame={15}
+              autoPlay={false}
+              loop
+              controls={false}
+              style={{
+                width: template.config.layout === "double" ? "100%" : "140px",
+                height: "140px",
+              }}
+            />
+          ) : (
+            <div className="w-full h-full bg-gray-200/50 dark:bg-gray-700/30 animate-pulse rounded-lg" />
+          )}
         </div>
       </button>
     );
   },
   (prevProps, nextProps) =>
-    prevProps.template.config.id === nextProps.template.config.id
+    prevProps.template.config.id === nextProps.template.config.id &&
+    prevProps.isMobile === nextProps.isMobile
 );
 
 StickerPreview.displayName = "StickerPreview";
@@ -226,6 +251,7 @@ export function StickersPanel() {
           <StickerPreview
             template={template}
             onClick={() => handleStickerClick(template.config.id)}
+            isMobile={!!isMobile}
           />
         </div>
       ))}

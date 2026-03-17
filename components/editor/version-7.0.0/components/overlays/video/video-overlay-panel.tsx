@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { Search, Loader2, Pencil, Check } from "lucide-react";
+import { useState, useEffect, useRef, useCallback, memo } from "react";
+import { Search, Loader2, Pencil, Check, Film } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import Cookies from "js-cookie";
 import { toast } from "@/hooks/use-toast";
@@ -20,6 +20,7 @@ import { useAspectRatio } from "../../../hooks/use-aspect-ratio";
 import { useTimeline } from "../../../contexts/timeline-context";
 import { ClipOverlay, Overlay, OverlayType } from "../../../types";
 import { VideoDetails } from "./video-details";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface ReelmotionVideo {
   id: string;
@@ -27,6 +28,94 @@ interface ReelmotionVideo {
   video_url: string;
   thumbnail_url?: string | null;
 }
+
+const MobilePlaceholder = ({ videoId, onLoaded }: { videoId: string; onLoaded: (id: string) => void }) => {
+  useEffect(() => { onLoaded(videoId); }, [videoId, onLoaded]);
+  return (
+    <div className="w-full h-full rounded-sm flex items-center justify-center bg-gray-300 dark:bg-gray-700">
+      <Film className="w-10 h-10 text-gray-400 dark:text-gray-500" />
+    </div>
+  );
+};
+
+/**
+ * Lazy thumbnail component - only loads the image/video when visible in viewport.
+ * On mobile, videos without thumbnails show a placeholder icon instead of loading the full video.
+ */
+const LazyVideoThumbnail = memo(({ video, onLoaded, isLoaded, isMobile }: {
+  video: ReelmotionVideo;
+  onLoaded: (id: string) => void;
+  isLoaded: boolean;
+  isMobile: boolean;
+}) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "200px" }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div ref={containerRef} className="relative aspect-video bg-gray-200 dark:bg-darkBoxSub">
+      {/* Loading spinner */}
+      {!isLoaded && isVisible && (
+        <div className="absolute inset-0 flex items-center justify-center z-10">
+          <Loader2 className="w-8 h-8 text-gray-400 dark:text-gray-500 animate-spin" />
+        </div>
+      )}
+
+      {isVisible ? (
+        video.thumbnail_url ? (
+          <img
+            src={video.thumbnail_url}
+            alt={video.name || "Video thumbnail"}
+            className={`w-full h-full rounded-sm object-cover hover:opacity-60 transition-opacity duration-200 ${
+              !isLoaded ? 'opacity-0' : 'opacity-100'
+            }`}
+            loading="lazy"
+            decoding="async"
+            onLoad={() => onLoaded(video.id)}
+            onError={() => onLoaded(video.id)}
+          />
+        ) : isMobile ? (
+          // On mobile, don't load full video - show placeholder
+          <MobilePlaceholder videoId={video.id} onLoaded={onLoaded} />
+        ) : (
+          <video
+            src={video.video_url}
+            className={`w-full h-full rounded-sm object-cover hover:opacity-60 transition-opacity duration-200 ${
+              !isLoaded ? 'opacity-0' : 'opacity-100'
+            }`}
+            muted
+            playsInline
+            preload="metadata"
+            onLoadedData={() => onLoaded(video.id)}
+          />
+        )
+      ) : (
+        // Placeholder before entering viewport
+        <div className="w-full h-full" />
+      )}
+
+      {/* Hover overlay */}
+      <div className="absolute inset-0 bg-black/20 opacity-0 hover:opacity-100 transition-opacity duration-200" />
+    </div>
+  );
+});
 
 /**
  * VideoOverlayPanel is a component that provides video search and management functionality.
@@ -68,6 +157,7 @@ export const VideoOverlayPanel: React.FC = () => {
   const { findNextAvailablePosition } = useTimelinePositioning();
   const { getAspectRatioDimensions } = useAspectRatio();
   const { visibleRows } = useTimeline();
+  const isMobile = useIsMobile();
   const [localOverlay, setLocalOverlay] = useState<Overlay | null>(null);
   const [loadedVideos, setLoadedVideos] = useState<Set<string>>(new Set());
   
@@ -267,7 +357,7 @@ export const VideoOverlayPanel: React.FC = () => {
           >
             <div className="grid grid-cols-2 gap-3">
               {isLoading ? (
-                Array.from({ length: 15 }).map((_, index) => (
+                Array.from({ length: 6 }).map((_, index) => (
                   <div
                     key={`skeleton-${index}`}
                     className="relative aspect-video w-full bg-gray-200 dark:bg-darkBoxSub  animate-pulse rounded-sm"
@@ -283,91 +373,61 @@ export const VideoOverlayPanel: React.FC = () => {
                       className="relative block w-full cursor-pointer border border-transparent rounded-md overflow-hidden"
                       onClick={() => handleAddClip(video)}
                     >
-                      <div className="relative aspect-video bg-gray-200 dark:bg-darkBoxSub">
-                        {/* Loading spinner */}
-                        {!loadedVideos.has(video.id) && (
-                          <div className="absolute inset-0 flex items-center justify-center z-10">
-                            <Loader2 className="w-8 h-8 text-gray-400 dark:text-gray-500 animate-spin" />
-                          </div>
-                        )}
-                        
-                        {/* Use thumbnail if available, otherwise video element */}
-                        {video.thumbnail_url ? (
-                          <img
-                            src={video.thumbnail_url}
-                            alt={video.name || "Video thumbnail"}
-                            className={`w-full h-full rounded-sm object-cover hover:opacity-60 transition-opacity duration-200 ${
-                              !loadedVideos.has(video.id) ? 'opacity-0' : 'opacity-100'
-                            }`}
-                            loading="lazy"
-                            onLoad={() => handleVideoLoaded(video.id)}
-                            onError={() => handleVideoLoaded(video.id)}
-                          />
-                        ) : (
-                          <video
-                            src={video.video_url}
-                            className={`w-full h-full rounded-sm object-cover hover:opacity-60 transition-opacity duration-200 ${
-                              !loadedVideos.has(video.id) ? 'opacity-0' : 'opacity-100'
-                            }`}
-                            muted
-                            playsInline
-                            preload="metadata"
-                            onLoadedData={() => handleVideoLoaded(video.id)}
-                          />
-                        )}
-                        
-                        {/* Hover overlay */}
-                        <div className="absolute inset-0 bg-black/20 opacity-0 hover:opacity-100 transition-opacity duration-200" />
-                        
-                        {/* Video name & Options */}
-                        <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/70 to-transparent flex items-center justify-between gap-1 group">
-                          <p className="text-white text-xs font-medium truncate flex-1 text-left">
-                            {video.name || "Untitled"}
-                          </p>
-                          
-                          <div onClick={(e) => e.stopPropagation()}>
-                            <DropdownMenu onOpenChange={(isOpen) => {
-                              if (isOpen) {
-                                setVideoToRename(video);
-                                setNewName(video.name || "");
-                              }
-                            }}>
-                              <DropdownMenuTrigger asChild>
+                      <LazyVideoThumbnail
+                        video={video}
+                        onLoaded={handleVideoLoaded}
+                        isLoaded={loadedVideos.has(video.id)}
+                        isMobile={!!isMobile}
+                      />
+
+                      {/* Video name & Options */}
+                      <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/70 to-transparent flex items-center justify-between gap-1 group">
+                        <p className="text-white text-xs font-medium truncate flex-1 text-left">
+                          {video.name || "Untitled"}
+                        </p>
+
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <DropdownMenu onOpenChange={(isOpen) => {
+                            if (isOpen) {
+                              setVideoToRename(video);
+                              setNewName(video.name || "");
+                            }
+                          }}>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100 transition-all bg-black/60 backdrop-blur-sm hover:bg-black/80 text-pink-400 rounded-full"
+                              >
+                                <Pencil className="h-3 w-3" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-60 p-2">
+                              <div className="flex items-center gap-2" onKeyDown={(e) => e.stopPropagation()}>
+                                <Input
+                                  value={newName}
+                                  onChange={(e) => setNewName(e.target.value)}
+                                  className="h-8 text-xs"
+                                  placeholder="Rename video..."
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') handleRename();
+                                  }}
+                                />
                                 <Button
                                   size="icon"
-                                  variant="ghost"
-                                  className="h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100 transition-all bg-black/60 backdrop-blur-sm hover:bg-black/80 text-pink-400 rounded-full"
+                                  className="h-8 w-8 shrink-0 bg-pink-500 hover:bg-pink-600 text-white"
+                                  onClick={handleRename}
+                                  disabled={isRenaming}
                                 >
-                                  <Pencil className="h-3 w-3" />
+                                  {isRenaming ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <Check className="h-4 w-4" />
+                                  )}
                                 </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-60 p-2">
-                                <div className="flex items-center gap-2" onKeyDown={(e) => e.stopPropagation()}>
-                                  <Input
-                                    value={newName}
-                                    onChange={(e) => setNewName(e.target.value)}
-                                    className="h-8 text-xs"
-                                    placeholder="Rename video..."
-                                    onKeyDown={(e) => {
-                                      if (e.key === 'Enter') handleRename();
-                                    }}
-                                  />
-                                  <Button 
-                                    size="icon" 
-                                    className="h-8 w-8 shrink-0 bg-pink-500 hover:bg-pink-600 text-white"
-                                    onClick={handleRename}
-                                    disabled={isRenaming}
-                                  >
-                                    {isRenaming ? (
-                                      <Loader2 className="h-4 w-4 animate-spin" />
-                                    ) : (
-                                      <Check className="h-4 w-4" />
-                                    )}
-                                  </Button>
-                                </div>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
+                              </div>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </div>
                     </button>
@@ -375,7 +435,7 @@ export const VideoOverlayPanel: React.FC = () => {
                   
                   {/* Loading more indicator */}
                   {isLoadingMore &&
-                    Array.from({ length: 15 }).map((_, index) => (
+                    Array.from({ length: 4 }).map((_, index) => (
                       <div
                         key={`loading-more-${index}`}
                         className="relative aspect-video w-full bg-gray-200 dark:bg-darkBoxSub  animate-pulse rounded-sm"
