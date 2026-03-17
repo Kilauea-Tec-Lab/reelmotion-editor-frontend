@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, memo } from "react";
-import { Loader2, Pencil, Check, Film } from "lucide-react";
+import { Loader2, Pencil, Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import Cookies from "js-cookie";
 import { toast } from "@/hooks/use-toast";
@@ -18,7 +18,6 @@ import { useAspectRatio } from "../../../hooks/use-aspect-ratio";
 import { useTimeline } from "../../../contexts/timeline-context";
 import { ClipOverlay, Overlay, OverlayType } from "../../../types";
 import { VideoDetails } from "./video-details";
-import { useIsMobile } from "@/hooks/use-mobile";
 
 interface ReelmotionVideo {
   id: string;
@@ -27,24 +26,14 @@ interface ReelmotionVideo {
   thumbnail_url?: string | null;
 }
 
-const MobilePlaceholder = ({ videoId, onLoaded }: { videoId: string; onLoaded: (id: string) => void }) => {
-  useEffect(() => { onLoaded(videoId); }, [videoId, onLoaded]);
-  return (
-    <div className="w-full h-full rounded-sm flex items-center justify-center bg-gray-300 dark:bg-gray-700">
-      <Film className="w-10 h-10 text-gray-400 dark:text-gray-500" />
-    </div>
-  );
-};
-
 /**
- * Lazy thumbnail component - only loads the image/video when visible in viewport.
- * On mobile, videos without thumbnails show a placeholder icon instead of loading the full video.
+ * Lazy thumbnail component - only loads the image/video when scrolled into viewport.
+ * Uses IntersectionObserver so only ~2-4 videos load at a time instead of all 15.
  */
-const LazyVideoThumbnail = memo(({ video, onLoaded, isLoaded, isMobile }: {
+const LazyVideoThumbnail = memo(({ video, onLoaded, isLoaded }: {
   video: ReelmotionVideo;
   onLoaded: (id: string) => void;
   isLoaded: boolean;
-  isMobile: boolean;
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(false);
@@ -68,7 +57,7 @@ const LazyVideoThumbnail = memo(({ video, onLoaded, isLoaded, isMobile }: {
   }, []);
 
   return (
-    <div ref={containerRef} className="relative aspect-video bg-gray-200 dark:bg-darkBoxSub ">
+    <div ref={containerRef} className="relative aspect-video bg-gray-200 dark:bg-darkBoxSub">
       {/* Loading spinner */}
       {!isLoaded && isVisible && (
         <div className="absolute inset-0 flex items-center justify-center z-10">
@@ -89,12 +78,9 @@ const LazyVideoThumbnail = memo(({ video, onLoaded, isLoaded, isMobile }: {
             onLoad={() => onLoaded(video.id)}
             onError={() => onLoaded(video.id)}
           />
-        ) : isMobile ? (
-          // On mobile, don't load full video - show placeholder
-          <MobilePlaceholder videoId={video.id} onLoaded={onLoaded} />
         ) : (
           <video
-            src={video.video_url}
+            src={`${video.video_url}#t=0.1`}
             className={`w-full h-full rounded-sm object-cover hover:opacity-60 transition-opacity duration-200 ${
               !isLoaded ? 'opacity-0' : 'opacity-100'
             }`}
@@ -102,6 +88,7 @@ const LazyVideoThumbnail = memo(({ video, onLoaded, isLoaded, isMobile }: {
             playsInline
             preload="metadata"
             onLoadedData={() => onLoaded(video.id)}
+            onError={() => onLoaded(video.id)}
           />
         )
       ) : (
@@ -157,7 +144,6 @@ export const VideoOverlayPanel: React.FC = () => {
   const { findNextAvailablePosition } = useTimelinePositioning();
   const { getAspectRatioDimensions } = useAspectRatio();
   const { visibleRows } = useTimeline();
-  const isMobile = useIsMobile();
   const [localOverlay, setLocalOverlay] = useState<Overlay | null>(null);
   const [loadedVideos, setLoadedVideos] = useState<Set<string>>(new Set());
   
@@ -377,7 +363,6 @@ export const VideoOverlayPanel: React.FC = () => {
                         video={video}
                         onLoaded={handleVideoLoaded}
                         isLoaded={loadedVideos.has(video.id)}
-                        isMobile={!!isMobile}
                       />
 
                       {/* Video name & Options */}
