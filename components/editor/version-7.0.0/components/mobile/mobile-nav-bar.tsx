@@ -6,20 +6,15 @@ import {
   Music,
   Type,
   Subtitles,
-  ImageIcon,
   FolderOpen,
   Sticker,
   Layout,
   Plus,
   X,
+  Library,
 } from "lucide-react";
 import { useSidebar } from "../../contexts/sidebar-context";
 import { OverlayType } from "../../types";
-import {
-  Tooltip,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import {
   Sheet,
   SheetContent,
@@ -27,15 +22,43 @@ import {
   SheetTitle,
   SheetClose,
 } from "@/components/ui/sheet";
-import { useEffect, useState, useRef } from "react";
-import { VideoOverlayPanel } from "../overlays/video/video-overlay-panel";
-import { TextOverlaysPanel } from "../overlays/text/text-overlays-panel";
-import SoundsPanel from "../overlays/sounds/sounds-panel";
-import { CaptionsPanel } from "../overlays/captions/captions-panel";
-import { ImageOverlayPanel } from "../overlays/images/image-overlay-panel";
-import { StickersPanel } from "../overlays/stickers/stickers-panel";
-import { LocalMediaPanel } from "../overlays/local-media/local-media-panel";
-import { TemplateOverlayPanel } from "../overlays/templates/template-overlay-panel";
+import { useEffect, useState, useRef, Suspense, useCallback, startTransition } from "react";
+import { Loader2 } from "lucide-react";
+
+// Lazy load all panel components - they only load when first accessed
+const VideoOverlayPanel = React.lazy(() => import("../overlays/video/video-overlay-panel").then(m => ({ default: m.VideoOverlayPanel })));
+const TextOverlaysPanel = React.lazy(() => import("../overlays/text/text-overlays-panel").then(m => ({ default: m.TextOverlaysPanel })));
+const SoundsPanel = React.lazy(() => import("../overlays/sounds/sounds-panel"));
+const CaptionsPanel = React.lazy(() => import("../overlays/captions/captions-panel").then(m => ({ default: m.CaptionsPanel })));
+const ImageOverlayPanel = React.lazy(() => import("../overlays/images/image-overlay-panel").then(m => ({ default: m.ImageOverlayPanel })));
+const StickersPanel = React.lazy(() => import("../overlays/stickers/stickers-panel").then(m => ({ default: m.StickersPanel })));
+const LocalMediaPanel = React.lazy(() => import("../overlays/local-media/local-media-panel").then(m => ({ default: m.LocalMediaPanel })));
+const TemplateOverlayPanel = React.lazy(() => import("../overlays/templates/template-overlay-panel").then(m => ({ default: m.TemplateOverlayPanel })));
+const LibraryPanel = React.lazy(() => import("../overlays/library/library-panel").then(m => ({ default: m.LibraryPanel })));
+
+// Panel title mapping (static, no need to recreate)
+const PANEL_TITLES: Record<string, string> = {
+  [OverlayType.VIDEO]: "Video",
+  [OverlayType.TEXT]: "Text",
+  [OverlayType.SOUND]: "Audio",
+  [OverlayType.CAPTION]: "Caption",
+  [OverlayType.IMAGE]: "Image",
+  [OverlayType.LIBRARY]: "Library",
+  [OverlayType.LOCAL_DIR]: "Media",
+  [OverlayType.STICKER]: "Sticker",
+  [OverlayType.TEMPLATE]: "Template",
+};
+
+const NAVIGATION_ITEMS = [
+  { title: "Video", icon: Film, panel: OverlayType.VIDEO },
+  { title: "Text", icon: Type, panel: OverlayType.TEXT },
+  { title: "Audio", icon: Music, panel: OverlayType.SOUND },
+  { title: "Caption", icon: Subtitles, panel: OverlayType.CAPTION },
+  { title: "Library", icon: Library, panel: OverlayType.LIBRARY },
+  { title: "Sticker", icon: Sticker, panel: OverlayType.STICKER },
+  { title: "Media", icon: FolderOpen, panel: OverlayType.LOCAL_DIR },
+  { title: "Template", icon: Layout, panel: OverlayType.TEMPLATE },
+];
 
 /**
  * MobileNavBar Component
@@ -46,10 +69,11 @@ import { TemplateOverlayPanel } from "../overlays/templates/template-overlay-pan
  */
 export function MobileNavBar() {
   const { activePanel, setActivePanel } = useSidebar();
-  const [clickedItemId, setClickedItemId] = useState<string | null>(null);
   const scrollableRef = useRef<HTMLDivElement>(null);
   const [showScrollIndicator, setShowScrollIndicator] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  // Track which panel to render (deferred from activePanel to not block sheet open)
+  const [renderedPanel, setRenderedPanel] = useState<OverlayType | null>(null);
 
   // Check if scrolling is needed
   useEffect(() => {
@@ -73,7 +97,6 @@ export function MobileNavBar() {
       ) as HTMLElement;
 
       if (activeItem) {
-        // Calculate the scroll position to center the active item
         const containerWidth = scrollableRef.current.offsetWidth;
         const itemLeft = activeItem.offsetLeft;
         const itemWidth = activeItem.offsetWidth;
@@ -87,95 +110,8 @@ export function MobileNavBar() {
     }
   }, [activePanel]);
 
-  // Use shorter names on mobile
-  const getPanelTitle = (type: OverlayType): string => {
-    switch (type) {
-      case OverlayType.VIDEO:
-        return "Video";
-      case OverlayType.TEXT:
-        return "Text";
-      case OverlayType.SOUND:
-        return "Audio";
-      case OverlayType.CAPTION:
-        return "Caption";
-      case OverlayType.IMAGE:
-        return "Image";
-      case OverlayType.LOCAL_DIR:
-        return "Media";
-      case OverlayType.STICKER:
-        return "Sticker";
-      case OverlayType.TEMPLATE:
-        return "Template";
-      default:
-        return "Unknown";
-    }
-  };
-
-  const navigationItems = [
-    {
-      title: getPanelTitle(OverlayType.VIDEO),
-      url: "#",
-      icon: Film,
-      panel: OverlayType.VIDEO,
-      type: OverlayType.VIDEO,
-    },
-    {
-      title: getPanelTitle(OverlayType.TEXT),
-      url: "#",
-      icon: Type,
-      panel: OverlayType.TEXT,
-      type: OverlayType.TEXT,
-    },
-    {
-      title: getPanelTitle(OverlayType.SOUND),
-      url: "#",
-      icon: Music,
-      panel: OverlayType.SOUND,
-      type: OverlayType.SOUND,
-    },
-    {
-      title: getPanelTitle(OverlayType.CAPTION),
-      url: "#",
-      icon: Subtitles,
-      panel: OverlayType.CAPTION,
-      type: OverlayType.CAPTION,
-    },
-    {
-      title: getPanelTitle(OverlayType.IMAGE),
-      url: "#",
-      icon: ImageIcon,
-      panel: OverlayType.IMAGE,
-      type: OverlayType.IMAGE,
-    },
-    {
-      title: getPanelTitle(OverlayType.STICKER),
-      url: "#",
-      icon: Sticker,
-      panel: OverlayType.STICKER,
-      type: OverlayType.STICKER,
-    },
-    {
-      title: getPanelTitle(OverlayType.LOCAL_DIR),
-      url: "#",
-      icon: FolderOpen,
-      panel: OverlayType.LOCAL_DIR,
-      type: OverlayType.LOCAL_DIR,
-    },
-    {
-      title: getPanelTitle(OverlayType.TEMPLATE),
-      url: "#",
-      icon: Layout,
-      panel: OverlayType.TEMPLATE,
-      type: OverlayType.TEMPLATE,
-    },
-  ];
-
-  /**
-   * Renders the appropriate panel component based on the active panel selection
-   * @returns {React.ReactNode} The component corresponding to the active panel
-   */
   const renderActivePanel = () => {
-    switch (activePanel) {
+    switch (renderedPanel) {
       case OverlayType.TEXT:
         return <TextOverlaysPanel />;
       case OverlayType.SOUND:
@@ -186,6 +122,8 @@ export function MobileNavBar() {
         return <CaptionsPanel />;
       case OverlayType.IMAGE:
         return <ImageOverlayPanel />;
+      case OverlayType.LIBRARY:
+        return <LibraryPanel />;
       case OverlayType.STICKER:
         return <StickersPanel />;
       case OverlayType.LOCAL_DIR:
@@ -197,62 +135,57 @@ export function MobileNavBar() {
     }
   };
 
-  const handleItemClick = (item: any) => {
-    // Set the clicked item ID for animation
-    setClickedItemId(item.title);
-
-    // Clear the animation after it completes
-    setTimeout(() => setClickedItemId(null), 300);
-
-    // Set the active panel and open the bottom sheet
-    setActivePanel(item.panel);
+  const handleItemClick = useCallback((panel: OverlayType) => {
+    // Open sheet immediately for instant visual feedback
+    setActivePanel(panel);
     setIsSheetOpen(true);
-  };
+
+    // Defer the heavy panel render so the sheet animation isn't blocked
+    startTransition(() => {
+      setRenderedPanel(panel);
+    });
+  }, [setActivePanel]);
+
+  const handleSheetChange = useCallback((open: boolean) => {
+    setIsSheetOpen(open);
+    if (!open) {
+      // Clear rendered panel when sheet closes to free memory
+      setRenderedPanel(null);
+    }
+  }, []);
 
   return (
     <>
       <div className="md:hidden flex flex-col border-t border-gray-200 dark:border-gray-100/10 bg-white/95 dark:bg-darkBox  backdrop-blur-sm">
         <div className="relative flex-1 flex">
-          {/* Left fade gradient to indicate scrollable content */}
           {showScrollIndicator && (
             <div className="absolute left-0 top-0 bottom-0 w-4 bg-gradient-to-r from-white/90 to-transparent dark:from-gray-900/90 z-10 pointer-events-none" />
           )}
 
           <div
             ref={scrollableRef}
-            className={`flex-1 flex items-center overflow-x-auto scrollbar-hide px-1 py-2 overflow-auto gap-1.5 relative`}
+            className="flex-1 flex items-center overflow-x-auto scrollbar-hide px-1 py-2 overflow-auto gap-1.5 relative"
             style={{
               scrollbarWidth: "none",
               msOverflowStyle: "none",
             }}
           >
-            {navigationItems.map((item) => (
-              <TooltipProvider key={item.title} delayDuration={50}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      data-panel={item.panel}
-                      onClick={() => handleItemClick(item)}
-                      className={`rounded flex flex-col items-center px-2 py-1.5
-                      ${
-                        clickedItemId === item.title
-                          ? "scale-95 opacity-80"
-                          : ""
-                      }
-                      ${
-                        activePanel === item.panel
-                          ? "bg-gray-100 text-gray-900 dark:bg-darkBoxSub  dark:text-white shadow-sm"
-                          : "text-gray-700 dark:text-zinc-200 hover:bg-gray-50 dark:hover:bg-gray-800/50"
-                      } transition-all`}
-                    >
-                      <item.icon className="h-4 w-4" />
-                    </button>
-                  </TooltipTrigger>
-                </Tooltip>
-              </TooltipProvider>
+            {NAVIGATION_ITEMS.map((item) => (
+              <button
+                key={item.panel}
+                data-panel={item.panel}
+                onClick={() => handleItemClick(item.panel)}
+                className={`rounded flex flex-col items-center px-2 py-1.5
+                  ${
+                    activePanel === item.panel
+                      ? "bg-gray-100 text-gray-900 dark:bg-darkBoxSub  dark:text-white shadow-sm"
+                      : "text-gray-700 dark:text-zinc-200 active:bg-gray-100 dark:active:bg-gray-800/50"
+                  } transition-colors`}
+              >
+                <item.icon className="h-4 w-4" />
+              </button>
             ))}
 
-            {/* "More" indicator button for discoverability */}
             {showScrollIndicator && (
               <button
                 onClick={() => {
@@ -270,13 +203,11 @@ export function MobileNavBar() {
             )}
           </div>
 
-          {/* Right fade gradient to indicate scrollable content */}
           {showScrollIndicator && (
             <div className="absolute right-0 top-0 bottom-0 w-4 bg-gradient-to-l from-white/90 to-transparent dark:from-gray-900/90 z-10 pointer-events-none" />
           )}
         </div>
 
-        {/* Bottom swipe indicator for the pane */}
         {isSheetOpen && (
           <div className="absolute bottom-0 left-0 right-0 flex justify-center pb-1 pointer-events-none">
             <div className="h-1 w-10 bg-gray-300 dark:bg-gray-700 rounded-full opacity-50" />
@@ -285,7 +216,7 @@ export function MobileNavBar() {
       </div>
 
       {/* Bottom Sheet for Mobile */}
-      <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+      <Sheet open={isSheetOpen} onOpenChange={handleSheetChange}>
         <SheetContent
           side="bottom"
           className="pt-4 h-[70vh] rounded-t-xl pb-0 px-0 overflow-hidden"
@@ -293,7 +224,7 @@ export function MobileNavBar() {
           <div className="flex flex-col h-full">
             <SheetHeader className="px-4 pb-3 border-b">
               <SheetTitle className="text-left text-lg font-light">
-                {activePanel && getPanelTitle(activePanel)}
+                {activePanel && PANEL_TITLES[activePanel]}
               </SheetTitle>
               <SheetClose className="rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary">
                 <X className="h-4 w-4" />
@@ -301,7 +232,13 @@ export function MobileNavBar() {
               </SheetClose>
             </SheetHeader>
             <div className="flex-1 overflow-y-auto p-0">
-              {renderActivePanel()}
+              <Suspense fallback={
+                <div className="flex items-center justify-center h-40">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              }>
+                {isSheetOpen && renderActivePanel()}
+              </Suspense>
             </div>
           </div>
         </SheetContent>

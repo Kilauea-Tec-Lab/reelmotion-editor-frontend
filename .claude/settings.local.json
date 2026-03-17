@@ -3,7 +3,10 @@
     "allow": [
       "Bash(xargs grep:*)",
       "Bash(grep:*)",
-      "Bash(powershell.exe:*)"
+      "Bash(powershell.exe:*)",
+      "Bash(npx next:*)",
+      "Bash(rm:*)",
+      "Bash(npx tsc:*)"
     ]
   }
 }

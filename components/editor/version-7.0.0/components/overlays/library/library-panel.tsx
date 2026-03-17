@@ -65,14 +65,18 @@ export const LibraryPanel: React.FC = () => {
   const imageScrollRef = React.useRef<HTMLDivElement>(null);
   const videoScrollRef = React.useRef<HTMLDivElement>(null);
 
-  // Fetch initial content when category changes
+  // Only fetch data for the active tab when its category changes
   React.useEffect(() => {
-    fetchImages(selectedImageCategory, 1, false);
-  }, [selectedImageCategory]);
+    if (activeTab === "images") {
+      fetchImages(selectedImageCategory, 1, false);
+    }
+  }, [selectedImageCategory, activeTab]);
 
   React.useEffect(() => {
-    fetchVideos(selectedVideoCategory, 1, false);
-  }, [selectedVideoCategory]);
+    if (activeTab === "videos") {
+      fetchVideos(selectedVideoCategory, 1, false);
+    }
+  }, [selectedVideoCategory, activeTab]);
 
   const handleImageCategoryChange = (category: string) => {
     setSelectedImageCategory(category);
@@ -299,6 +303,7 @@ export const LibraryPanel: React.FC = () => {
                       <img
                         src={image.src.medium}
                         alt="Pexels image"
+                        loading="lazy"
                         className="w-full h-full object-cover"
                       />
                       {/* Title badge */}
@@ -365,6 +370,7 @@ export const LibraryPanel: React.FC = () => {
                       <img
                         src={video.image}
                         alt="Pexels video"
+                        loading="lazy"
                         className="w-full h-full object-cover"
                       />
                       {/* Duration badge */}

@@ -241,9 +241,11 @@ export function StickersPanel() {
     );
   }
 
+  const [activeCategory, setActiveCategory] = useState(stickerCategories[0]);
+
   return (
     <div className="flex flex-col gap-4 p-4 bg-white dark:bg-darkBox  h-full">
-      <Tabs defaultValue={stickerCategories[0]} className="w-full">
+      <Tabs value={activeCategory} onValueChange={setActiveCategory} className="w-full">
         <TabsList className="w-full flex space-x-1 bg-gray-100/50 dark:bg-darkBoxSub /50 backdrop-blur-sm rounded-lg p-1">
           {stickerCategories.map((category) => (
             <TabsTrigger
@@ -261,17 +263,16 @@ export function StickersPanel() {
           ))}
         </TabsList>
 
-        {stickerCategories.map((category) => (
-          <TabsContent key={category} value={category} className="mt-2">
-            {isMobile ? (
-              renderStickerContent(category)
-            ) : (
-              <ScrollArea className="h-[calc(100vh-140px)]">
-                {renderStickerContent(category)}
-              </ScrollArea>
-            )}
-          </TabsContent>
-        ))}
+        {/* Only render the active category's content */}
+        <TabsContent key={activeCategory} value={activeCategory} className="mt-2">
+          {isMobile ? (
+            renderStickerContent(activeCategory)
+          ) : (
+            <ScrollArea className="h-[calc(100vh-140px)]">
+              {renderStickerContent(activeCategory)}
+            </ScrollArea>
+          )}
+        </TabsContent>
       </Tabs>
     </div>
   );

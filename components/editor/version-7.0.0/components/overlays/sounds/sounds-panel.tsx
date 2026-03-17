@@ -144,29 +144,33 @@ const SoundsPanel: React.FC = () => {
   };
 
   /**
-   * Initialize audio elements for each sound and handle cleanup
+   * Get or create an audio element lazily (only when needed)
    */
-  useEffect(() => {
-    localSounds.forEach((sound) => {
-      const audio = new Audio(sound.file);
-      audio.preload = "metadata";
-      audioRefs.current[sound.id] = audio;
-      
-      // Extract duration when metadata is loaded
-      audio.addEventListener("loadedmetadata", () => {
-        if (audio.duration && !isNaN(audio.duration) && isFinite(audio.duration)) {
-          audioDurationsRef.current[sound.id] = audio.duration;
-        }
-      });
+  const getOrCreateAudio = (soundId: string, file: string): HTMLAudioElement => {
+    if (audioRefs.current[soundId]) return audioRefs.current[soundId];
+
+    const audio = new Audio(file);
+    audio.preload = "metadata";
+    audioRefs.current[soundId] = audio;
+
+    audio.addEventListener("loadedmetadata", () => {
+      if (audio.duration && !isNaN(audio.duration) && isFinite(audio.duration)) {
+        audioDurationsRef.current[soundId] = audio.duration;
+      }
     });
 
+    return audio;
+  };
+
+  // Cleanup audio elements on unmount
+  useEffect(() => {
     return () => {
       Object.values(audioRefs.current).forEach((audio) => {
         audio.pause();
         audio.currentTime = 0;
       });
     };
-  }, [localSounds]);
+  }, []);
 
   /**
    * Get audio duration - extracts from audio element or returns cached value
@@ -232,12 +236,15 @@ const SoundsPanel: React.FC = () => {
    * @param soundId - Unique identifier of the sound to toggle
    */
   const togglePlay = (soundId: string) => {
-    const audio = audioRefs.current[soundId];
+    const sound = localSounds.find((s) => s.id === soundId);
+    if (!sound) return;
+
+    const audio = getOrCreateAudio(soundId, sound.file);
     if (playingTrack === soundId) {
       audio.pause();
       setPlayingTrack(null);
     } else {
-      if (playingTrack) {
+      if (playingTrack && audioRefs.current[playingTrack]) {
         audioRefs.current[playingTrack].pause();
       }
       audio
