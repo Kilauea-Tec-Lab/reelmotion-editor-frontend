@@ -279,6 +279,7 @@ const RenderControls: React.FC<RenderControlsProps> = ({
         className="relative hover:bg-accent"
         onClick={() => setIsLoadDialogOpen(true)}
         disabled={!onLoadEdit}
+        aria-label="Load edit"
         title={!onLoadEdit ? "Load functionality not available" : "Load edit"}
       >
         <FolderOpen className="w-3.5 h-3.5" />&nbsp;Load
@@ -290,6 +291,7 @@ const RenderControls: React.FC<RenderControlsProps> = ({
         className="relative hover:bg-accent"
         onClick={() => setIsSaveDialogOpen(true)}
         disabled={!editionData}
+        aria-label="Save edit"
         title={!editionData ? "No edition data available" : "Save edit"}
       >
         <Save className="w-3.5 h-3.5" />&nbsp;Save
@@ -300,6 +302,7 @@ const RenderControls: React.FC<RenderControlsProps> = ({
             variant="ghost"
             size="sm"
             className="relative hover:bg-accent"
+            aria-label="Render notifications"
           >
             <Bell className="w-3.5 h-3.5" />
             {hasNewRender && (
@@ -394,6 +397,7 @@ const RenderControls: React.FC<RenderControlsProps> = ({
                 variant="default"
                 disabled={isRenderDisabled || isTimelineEmpty || isFreeExportBlocked}
                 size="sm"
+                aria-label="Export video"
                 className="bg-primarioLogo hover:bg-primarioLogo/90 text-white"
                 title={isTimelineEmpty ? "Add elements to the timeline before exporting" : isFreeExportBlocked ? "You have reached the free export limit. Upgrade your plan to continue exporting." : isRenderDisabled ? "Rendering is currently disabled" : undefined}
               >
