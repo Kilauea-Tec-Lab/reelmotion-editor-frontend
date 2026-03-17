@@ -118,6 +118,7 @@ export function StickersPanel() {
   const stickerCategories = getStickerCategories();
   const isMobile = useIsMobile();
   const [localOverlay, setLocalOverlay] = useState<Overlay | null>(null);
+  const [activeCategory, setActiveCategory] = useState(stickerCategories[0]);
 
   useEffect(() => {
     if (selectedOverlayId === null) {
@@ -240,8 +241,6 @@ export function StickersPanel() {
       />
     );
   }
-
-  const [activeCategory, setActiveCategory] = useState(stickerCategories[0]);
 
   return (
     <div className="flex flex-col gap-4 p-4 bg-white dark:bg-darkBox  h-full">
