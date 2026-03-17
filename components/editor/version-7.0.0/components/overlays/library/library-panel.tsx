@@ -300,6 +300,7 @@ export const LibraryPanel: React.FC = () => {
                         src={image.src.medium}
                         alt="Pexels image"
                         className="w-full h-full object-cover"
+                        loading="lazy"
                       />
                       {/* Title badge */}
                       <div className="absolute bottom-0 left-0 right-0 text-[11px] text-white bg-gradient-to-t from-black/80 to-transparent px-2 py-2 pt-6">
@@ -366,6 +367,7 @@ export const LibraryPanel: React.FC = () => {
                         src={video.image}
                         alt="Pexels video"
                         className="w-full h-full object-cover"
+                        loading="lazy"
                       />
                       {/* Duration badge */}
                       {video.duration && (

@@ -50,6 +50,17 @@ export function MobileNavBar() {
   const scrollableRef = useRef<HTMLDivElement>(null);
   const [showScrollIndicator, setShowScrollIndicator] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [sheetMounted, setSheetMounted] = useState(false);
+
+  useEffect(() => {
+    if (isSheetOpen) {
+      // Delay mounting panel content until after sheet animation
+      const timer = setTimeout(() => setSheetMounted(true), 100);
+      return () => clearTimeout(timer);
+    } else {
+      setSheetMounted(false);
+    }
+  }, [isSheetOpen]);
 
   // Check if scrolling is needed
   useEffect(() => {
@@ -301,7 +312,7 @@ export function MobileNavBar() {
               </SheetClose>
             </SheetHeader>
             <div className="flex-1 overflow-y-auto p-0">
-              {renderActivePanel()}
+              {sheetMounted && renderActivePanel()}
             </div>
           </div>
         </SheetContent>

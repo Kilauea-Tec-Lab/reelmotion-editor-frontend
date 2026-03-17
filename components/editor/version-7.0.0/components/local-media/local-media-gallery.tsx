@@ -385,6 +385,7 @@ export function LocalMediaGallery({
               src={file.thumbnail || file.path}
               alt={file.name}
               className="w-full h-full object-cover"
+              loading="lazy"
             />
           )}
           {file.type === "video" && (
@@ -395,7 +396,7 @@ export function LocalMediaGallery({
                 crossOrigin="anonymous"
                 muted
                 playsInline
-                preload="metadata"
+                preload="none"
                 className="w-full h-full object-cover"
                 onLoadedMetadata={(e) => {
                   // Seek to first frame for thumbnail

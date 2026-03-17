@@ -12,6 +12,37 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+const LazyVideo = ({ src, className, onLoad }: { src: string; className: string; onLoad: () => void }) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setIsVisible(true); observer.disconnect(); } },
+      { rootMargin: '200px' }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div ref={ref} className="w-full h-full">
+      {isVisible ? (
+        <video
+          src={src}
+          className={className}
+          muted
+          playsInline
+          preload="none"
+          onLoadedData={onLoad}
+        />
+      ) : null}
+    </div>
+  );
+};
+
 import { useEditorContext } from "../../../contexts/editor-context";
 import { useTimelinePositioning } from "../../../hooks/use-timeline-positioning";
 
@@ -304,15 +335,12 @@ export const VideoOverlayPanel: React.FC = () => {
                             onError={() => handleVideoLoaded(video.id)}
                           />
                         ) : (
-                          <video
+                          <LazyVideo
                             src={video.video_url}
                             className={`w-full h-full rounded-sm object-cover hover:opacity-60 transition-opacity duration-200 ${
                               !loadedVideos.has(video.id) ? 'opacity-0' : 'opacity-100'
                             }`}
-                            muted
-                            playsInline
-                            preload="metadata"
-                            onLoadedData={() => handleVideoLoaded(video.id)}
+                            onLoad={() => handleVideoLoaded(video.id)}
                           />
                         )}
                         

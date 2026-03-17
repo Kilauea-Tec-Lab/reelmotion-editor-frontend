@@ -118,6 +118,7 @@ export function StickersPanel() {
   const stickerCategories = getStickerCategories();
   const isMobile = useIsMobile();
   const [localOverlay, setLocalOverlay] = useState<Overlay | null>(null);
+  const [activeCategory, setActiveCategory] = useState(stickerCategories[0]);
 
   useEffect(() => {
     if (selectedOverlayId === null) {
@@ -243,7 +244,7 @@ export function StickersPanel() {
 
   return (
     <div className="flex flex-col gap-4 p-4 bg-white dark:bg-darkBox  h-full">
-      <Tabs defaultValue={stickerCategories[0]} className="w-full">
+      <Tabs defaultValue={stickerCategories[0]} onValueChange={setActiveCategory} className="w-full">
         <TabsList className="w-full flex space-x-1 bg-gray-100/50 dark:bg-darkBoxSub /50 backdrop-blur-sm rounded-lg p-1">
           {stickerCategories.map((category) => (
             <TabsTrigger
@@ -263,12 +264,14 @@ export function StickersPanel() {
 
         {stickerCategories.map((category) => (
           <TabsContent key={category} value={category} className="mt-2">
-            {isMobile ? (
-              renderStickerContent(category)
-            ) : (
-              <ScrollArea className="h-[calc(100vh-140px)]">
-                {renderStickerContent(category)}
-              </ScrollArea>
+            {activeCategory === category && (
+              isMobile ? (
+                renderStickerContent(category)
+              ) : (
+                <ScrollArea className="h-[calc(100vh-140px)]">
+                  {renderStickerContent(category)}
+                </ScrollArea>
+              )
             )}
           </TabsContent>
         ))}
