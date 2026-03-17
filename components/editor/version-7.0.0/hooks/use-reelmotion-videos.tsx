@@ -121,18 +121,15 @@ export function useReelmotionVideos() {
 
     setIsLoadingMore(true);
 
-    // Simulate loading delay for UX
-    setTimeout(() => {
-      const nextPage = currentPage + 1;
-      const startIndex = 0;
-      const endIndex = nextPage * ITEMS_PER_PAGE;
-      const newDisplayedVideos = filteredVideos.slice(startIndex, endIndex);
+    const nextPage = currentPage + 1;
+    const startIndex = 0;
+    const endIndex = nextPage * ITEMS_PER_PAGE;
+    const newDisplayedVideos = filteredVideos.slice(startIndex, endIndex);
 
-      setDisplayedVideos(newDisplayedVideos);
-      setCurrentPage(nextPage);
-      setHasMore(endIndex < filteredVideos.length);
-      setIsLoadingMore(false);
-    }, 500);
+    setDisplayedVideos(newDisplayedVideos);
+    setCurrentPage(nextPage);
+    setHasMore(endIndex < filteredVideos.length);
+    setIsLoadingMore(false);
   };
 
   const updateVideoName = (id: string, newName: string) => {

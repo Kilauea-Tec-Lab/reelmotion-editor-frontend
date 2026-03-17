@@ -273,7 +273,6 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
       setLastSaveTime(Date.now());
     },
     onLoad: (loadedState) => {
-      console.log("loadedState", loadedState);
       if (loadedState) {
         // Apply loaded state to editor
         setOverlays(loadedState.overlays || []);
@@ -302,8 +301,7 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
   // Handle recovery dialog actions
   const handleRecoverAutosave = async () => {
     const loadedState = await loadState();
-    console.log("loadedState", loadedState);
-    
+
     if (loadedState) {
       // Restore overlays
       if (loadedState.overlays) {
@@ -333,8 +331,6 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
 
   // Handle loading an edit from the backend
   const handleLoadEdit = useCallback((loadedEdit: any) => {
-    console.log("Loading edition:", loadedEdit);
-    
     // Store the edit ID and name for future saves
     if (loadedEdit.id) {
       setCurrentEditId(loadedEdit.id);

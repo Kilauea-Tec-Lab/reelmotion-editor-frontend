@@ -271,12 +271,10 @@ const TimelineItem: React.FC<TimelineItemProps> = ({
   const handleMouseMove = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
       if (!e.currentTarget) {
-        console.warn("Current target is null or undefined");
         return;
       }
       const rect = e.currentTarget.getBoundingClientRect();
       if (!rect) {
-        console.warn("getBoundingClientRect returned null or undefined");
         return;
       }
       const relativeX = e.clientX - rect.left;
