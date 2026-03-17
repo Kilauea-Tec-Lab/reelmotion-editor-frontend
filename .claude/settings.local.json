@@ -8,7 +8,9 @@
       "Bash(rm:*)",
       "Bash(npx tsc:*)",
       "Bash(xargs sed:*)",
-      "Bash(find C:\\\\Users\\\\Victor\\\\Documents\\\\Proyectos\\\\reelmotion-editor-frontend\\\\components:*)"
+      "Bash(find C:\\\\Users\\\\Victor\\\\Documents\\\\Proyectos\\\\reelmotion-editor-frontend\\\\components:*)",
+      "Bash(node:*)",
+      "Bash(powershell:*)"
     ]
   }
 }
