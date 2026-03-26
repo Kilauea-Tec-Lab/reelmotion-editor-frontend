@@ -14,7 +14,10 @@
       "Bash(gcloud compute ssh reelmotion-pro-server:*)",
       "Bash(npm install:*)",
       "Bash(npm ls:*)",
-      "Bash(gcloud auth:*)"
+      "Bash(gcloud auth:*)",
+      "Bash(gcloud projects:*)",
+      "Bash(do echo:*)",
+      "Bash(gcloud config:*)"
     ]
   }
 }
