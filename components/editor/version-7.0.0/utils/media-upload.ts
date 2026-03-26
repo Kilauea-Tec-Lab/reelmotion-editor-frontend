@@ -57,12 +57,19 @@ export const uploadMediaFile = async (
     const token = Cookies.get("token");
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "https://backend.reelmotion.ai";
 
-    // FAST UPLOAD: Skip metadata extraction for speed
-    // Backend only needs: user_id (from token), type, file_name, file_url
+    // Extract media duration client-side (fast, uses blob URL)
     const thumbnailUrl = "";
-    const duration: number | undefined = undefined;
+    let duration: number | undefined = undefined;
     const width = 0;
     const height = 0;
+
+    if (fileType === "video" || fileType === "audio") {
+      try {
+        duration = await getMediaDuration(file);
+      } catch (err) {
+        console.warn("Could not extract media duration:", err);
+      }
+    }
 
 
     // Upload file directly to Google Cloud Storage
@@ -125,8 +132,12 @@ export const uploadMediaFile = async (
       createdAt: Date.now(),
     };
 
-    // Store in IndexedDB
-    await addMediaItem(mediaItem);
+    // Store in IndexedDB (non-blocking — backend is source of truth)
+    try {
+      await addMediaItem(mediaItem);
+    } catch (indexDbError) {
+      console.warn("IndexedDB storage failed (non-critical):", indexDbError);
+    }
 
     return mediaItem;
   } catch (error) {

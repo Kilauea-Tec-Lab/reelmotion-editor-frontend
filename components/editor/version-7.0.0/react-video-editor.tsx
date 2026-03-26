@@ -40,8 +40,9 @@ import { TimelineProvider } from "./contexts/timeline-context";
 // Autosave Components
 import { AutosaveRecoveryDialog } from "./components/autosave/autosave-recovery-dialog";
 import { AutosaveStatus } from "./components/autosave/autosave-status";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useAutosave } from "./hooks/use-autosave";
+import { toast } from "@/hooks/use-toast";
 import { LocalMediaProvider } from "./contexts/local-media-context";
 import { KeyframeProvider } from "./contexts/keyframe-context";
 import { AssetLoadingProvider } from "./contexts/asset-loading-context";
@@ -133,6 +134,74 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
     updateOverlayStyles,
     resetOverlays,
   } = useOverlays(DEFAULT_OVERLAYS);
+
+  // Track which URLs have already been validated to avoid re-checking
+  const validatedUrlsRef = useRef<Set<string>>(new Set());
+  const isValidatingRef = useRef(false);
+
+  /**
+   * Validate overlay URLs and remove overlays whose media no longer exists (404).
+   * Runs once when overlays are loaded from autosave/backend.
+   */
+  const validateOverlayUrls = useCallback(async (currentOverlays: Overlay[]) => {
+    if (isValidatingRef.current || currentOverlays.length === 0) return;
+
+    // Find overlays with remote src URLs that haven't been validated yet
+    const overlaysToCheck = currentOverlays.filter((o) => {
+      if (!('src' in o) || typeof (o as any).src !== 'string') return false;
+      const src = (o as any).src as string;
+      if (!src.startsWith('http')) return false;
+      return !validatedUrlsRef.current.has(src);
+    });
+
+    if (overlaysToCheck.length === 0) return;
+
+    isValidatingRef.current = true;
+    const brokenIds: number[] = [];
+
+    await Promise.all(
+      overlaysToCheck.map(async (overlay) => {
+        const src = (overlay as any).src as string;
+        try {
+          const res = await fetch(src, { method: 'HEAD', mode: 'cors' });
+          if (res.status === 404 || res.status === 403) {
+            brokenIds.push(overlay.id);
+          } else {
+            validatedUrlsRef.current.add(src);
+          }
+        } catch {
+          // Network error or CORS — try GET with no-cors as fallback
+          try {
+            const res = await fetch(src, { method: 'HEAD', mode: 'no-cors' });
+            // no-cors returns opaque response (status 0) — can't determine 404
+            // Mark as valid to avoid false positives
+            validatedUrlsRef.current.add(src);
+          } catch {
+            // Complete network failure — mark as broken
+            brokenIds.push(overlay.id);
+          }
+        }
+      })
+    );
+
+    isValidatingRef.current = false;
+
+    if (brokenIds.length > 0) {
+      setOverlays((prev) => prev.filter((o) => !brokenIds.includes(o.id)));
+      toast({
+        title: "Removed missing media",
+        description: `${brokenIds.length} item(s) were removed from the timeline because their files no longer exist.`,
+      });
+    }
+  }, [setOverlays]);
+
+  // Run URL validation when overlays change (debounced, only for new overlays)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      validateOverlayUrls(overlays);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [overlays, validateOverlayUrls]);
 
   // Video player controls and state
   const { isPlaying, currentFrame, playerRef, togglePlayPause, formatTime } =
