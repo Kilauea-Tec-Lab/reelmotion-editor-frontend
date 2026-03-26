@@ -11,7 +11,10 @@
       "Bash(find C:\\\\Users\\\\Victor\\\\Documents\\\\Proyectos\\\\reelmotion-editor-frontend\\\\components:*)",
       "Bash(node:*)",
       "Bash(powershell:*)",
-      "Bash(gcloud compute ssh reelmotion-pro-server:*)"
+      "Bash(gcloud compute ssh reelmotion-pro-server:*)",
+      "Bash(npm install:*)",
+      "Bash(npm ls:*)",
+      "Bash(gcloud auth:*)"
     ]
   }
 }
