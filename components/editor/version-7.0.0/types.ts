@@ -304,6 +304,7 @@ export const CompositionProps = z.object({
   height: z.number(),
   fps: z.number(),
   src: z.string(),
+  backgroundColor: z.string().optional(),
 });
 
 // Other types remain the same
