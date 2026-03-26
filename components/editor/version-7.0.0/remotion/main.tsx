@@ -36,11 +36,12 @@ export type MainProps = {
   readonly height: number;
   /** Base URL for media assets (optional) */
   readonly baseUrl?: string;
+  /** Background color for the composition canvas */
+  readonly backgroundColor?: string;
 };
 
-const outer: React.CSSProperties = {
-  backgroundColor: "#222225",
-};
+const DEFAULT_BG_COLOR = "#222225";
+
 
 const layerContainer: React.CSSProperties = {
   overflow: "hidden",
@@ -60,6 +61,7 @@ export const Main: React.FC<MainProps> = ({
   selectedOverlayId,
   changeOverlay,
   baseUrl,
+  backgroundColor = DEFAULT_BG_COLOR,
 }) => {
   const onPointerDown = useCallback(
     (e: React.PointerEvent) => {
@@ -75,7 +77,7 @@ export const Main: React.FC<MainProps> = ({
   return (
     <AbsoluteFill
       style={{
-        ...outer,
+        backgroundColor,
       }}
       onPointerDown={onPointerDown}
     >

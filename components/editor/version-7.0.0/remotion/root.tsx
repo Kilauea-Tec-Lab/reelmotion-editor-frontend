@@ -17,6 +17,7 @@ export const RemotionRoot: React.FC = () => {
     setSelectedOverlayId: () => {},
     selectedOverlayId: null,
     changeOverlay: () => {},
+    backgroundColor: "#222225",
   };
 
   return (

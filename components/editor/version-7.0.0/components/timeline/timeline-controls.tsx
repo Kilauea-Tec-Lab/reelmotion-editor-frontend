@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
+import { HexColorPicker } from "react-colorful";
 import { Button } from "@/components/ui/button";
 import {
   Play,
@@ -110,6 +111,8 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
     overlays,
     playerRef,
     contentDurationInFrames, // Get content duration from context
+    backgroundColor,
+    setBackgroundColor,
   } = useEditorContext();
 
   const { visibleRows, addRow, removeRow, zoomScale, setZoomScale } =
@@ -616,6 +619,60 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
                     </Button>
                   );
                 })}
+              </div>
+            </div>
+
+            <DropdownMenuSeparator className="bg-gray-200 dark:bg-gray-700" />
+
+            {/* Background Color */}
+            <div className="px-2 py-2 space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs text-gray-400 dark:text-zinc-500">
+                  Background Color
+                </Label>
+                <div className="flex items-center gap-1.5">
+                  <div
+                    className="w-4 h-4 rounded-sm border border-gray-600"
+                    style={{ backgroundColor }}
+                  />
+                  <input
+                    type="text"
+                    value={backgroundColor}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (/^#[0-9a-fA-F]{0,6}$/.test(val)) setBackgroundColor(val);
+                    }}
+                    className="w-[68px] h-6 text-[10px] font-mono uppercase bg-gray-100 dark:bg-darkBoxSub border border-gray-200 dark:border-gray-700 rounded px-1.5 text-gray-700 dark:text-zinc-300 outline-none focus:border-primarioLogo"
+                  />
+                </div>
+              </div>
+              <div
+                className="[&_.react-colorful]:w-full [&_.react-colorful]:h-[120px] [&_.react-colorful]:rounded-md [&_.react-colorful__saturation]:rounded-t-md [&_.react-colorful__last-control]:rounded-b-md [&_.react-colorful__pointer]:w-4 [&_.react-colorful__pointer]:h-4 [&_.react-colorful__hue]:h-3"
+                onClick={(e) => e.stopPropagation()}
+                onPointerDown={(e) => e.stopPropagation()}
+              >
+                <HexColorPicker color={backgroundColor} onChange={setBackgroundColor} />
+              </div>
+              {/* Preset Colors */}
+              <div className="grid grid-cols-8 gap-1">
+                {[
+                  "#000000", "#222225", "#ffffff", "#1a1a2e",
+                  "#0f3460", "#16213e", "#e94560", "#533483",
+                  "#1b1b2f", "#162447", "#e43f5a", "#1f4068",
+                  "#00b4d8", "#2ec4b6", "#ff6b6b", "#ffd93d",
+                ].map((color) => (
+                  <button
+                    key={color}
+                    onClick={() => setBackgroundColor(color)}
+                    className={`w-full aspect-square rounded-sm border transition-transform hover:scale-110 ${
+                      backgroundColor === color
+                        ? "border-primarioLogo ring-1 ring-primarioLogo"
+                        : "border-gray-600/50"
+                    }`}
+                    style={{ backgroundColor: color }}
+                    title={color}
+                  />
+                ))}
               </div>
             </div>
 

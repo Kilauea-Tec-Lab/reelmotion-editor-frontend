@@ -88,6 +88,10 @@ interface EditorContextProps {
 
   // Export limit for free users
   exportNumber: number;
+
+  // Background color for the composition canvas
+  backgroundColor: string;
+  setBackgroundColor: (color: string) => void;
 }
 
 // Create the context with undefined as default value

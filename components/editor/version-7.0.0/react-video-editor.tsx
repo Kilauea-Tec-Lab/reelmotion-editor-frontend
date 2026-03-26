@@ -115,6 +115,9 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
   const [currentEditId, setCurrentEditId] = useState<string | null>(null);
   const [currentEditName, setCurrentEditName] = useState<string | null>(null);
 
+  // Background color for the composition canvas
+  const [backgroundColor, setBackgroundColor] = useState("#222225");
+
   // Overlay management hooks
   const {
     overlays,
@@ -247,6 +250,7 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
     width: renderWidth, // Use calculated render dimensions
     height: renderHeight,
     src: "",
+    backgroundColor,
   };
 
   const { renderMedia, state } = useRendering(
@@ -263,6 +267,7 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
     overlays,
     aspectRatio,
     playerDimensions,
+    backgroundColor,
   };
 
   // Implment load state
@@ -282,6 +287,8 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
             loadedState.playerDimensions.width,
             loadedState.playerDimensions.height
           );
+        if (loadedState.backgroundColor)
+          setBackgroundColor(loadedState.backgroundColor);
       }
     },
     onAutosaveDetected: (timestamp) => {
@@ -320,8 +327,13 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
           loadedState.playerDimensions.height
         );
       }
+
+      // Restore background color
+      if (loadedState.backgroundColor) {
+        setBackgroundColor(loadedState.backgroundColor);
+      }
     }
-    
+
     setShowRecoveryDialog(false);
   };
 
@@ -364,6 +376,11 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
         );
         if (inferred) setAspectRatio(inferred);
       }
+
+      // Restore background color
+      const savedBgColor =
+        editionData.backgroundColor ?? editionData.inputProps?.backgroundColor;
+      if (savedBgColor) setBackgroundColor(savedBgColor);
     }
   };
 
@@ -420,9 +437,11 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
       width: compositionWidth,
       height: compositionHeight,
       aspectRatio,
+      backgroundColor,
       src: "",
     },
     aspectRatio,
+    backgroundColor,
     // Include current edit info if available
     editId: currentEditId,
     editName: currentEditName,
@@ -494,6 +513,10 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
 
     // Export limit
     exportNumber,
+
+    // Background color
+    backgroundColor,
+    setBackgroundColor,
   };
 
   // Show loading state while authenticating
