@@ -3,6 +3,7 @@ import { AbsoluteFill } from "remotion";
 
 import { Overlay } from "../types";
 import { SortedOutlines } from "../components/selection/sorted-outlines";
+import { CanvasGuides } from "../components/selection/canvas-guides";
 import { Layer } from "../components/core/layer";
 
 /**
@@ -98,6 +99,10 @@ export const Main: React.FC<MainProps> = ({
         overlays={overlays}
         setSelectedOverlayId={setSelectedOverlayId}
         changeOverlay={changeOverlay}
+      />
+      <CanvasGuides
+        overlays={overlays}
+        selectedOverlayId={selectedOverlayId}
       />
     </AbsoluteFill>
   );

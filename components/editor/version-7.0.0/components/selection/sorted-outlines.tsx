@@ -56,6 +56,7 @@ export const SortedOutlines: React.FC<{
           setSelectedOverlayId={setSelectedOverlayId}
           selectedOverlayId={selectedOverlayId}
           isDragging={isDragging}
+          allOverlays={overlays}
         />
       </Sequence>
     );
