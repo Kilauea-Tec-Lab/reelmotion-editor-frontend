@@ -1,22 +1,20 @@
 import { useEffect, useRef, useCallback } from "react";
 import { prefetch } from "remotion";
-import { Overlay, ClipOverlay, OverlayType } from "../types";
-import { resolveVideoUrl } from "../utils/url-helper";
+import { Overlay, ClipOverlay, SoundOverlay, OverlayType } from "../types";
+import { resolveVideoUrl, toAbsoluteUrl } from "../utils/url-helper";
 
 /**
- * Custom hook to prefetch all video assets in the timeline
- * This prevents black flashes when transitioning between videos
- * by preloading them before they appear on screen
+ * Custom hook to prefetch all video and audio assets in the timeline
+ * This prevents black flashes and audio stuttering when transitioning
+ * between media by preloading them before they appear on screen
  */
 export const useVideoPrefetch = (overlays: Overlay[], baseUrl?: string) => {
   // Store references to prefetch cleanup functions
   const prefetchRefs = useRef<Map<string, () => void>>(new Map());
-  // Track which videos have been prefetched
+  // Track which media have been prefetched
   const prefetchedUrls = useRef<Set<string>>(new Set());
 
-  const prefetchVideo = useCallback((src: string) => {
-    const resolvedUrl = resolveVideoUrl(src, baseUrl);
-    
+  const prefetchMedia = useCallback((src: string, contentType: string, resolvedUrl: string) => {
     // Skip if already prefetched
     if (prefetchedUrls.current.has(resolvedUrl)) {
       return;
@@ -25,7 +23,7 @@ export const useVideoPrefetch = (overlays: Overlay[], baseUrl?: string) => {
     try {
       const { free, waitUntilDone } = prefetch(resolvedUrl, {
         method: "blob-url",
-        contentType: "video/mp4",
+        contentType,
       });
 
       // Store the cleanup function
@@ -36,35 +34,52 @@ export const useVideoPrefetch = (overlays: Overlay[], baseUrl?: string) => {
         .then(() => {
         })
         .catch((err) => {
-          console.warn(`[Prefetch] Failed to prefetch video ${src}:`, err);
+          console.warn(`[Prefetch] Failed to prefetch ${src}:`, err);
           // Remove from prefetched set if failed
           prefetchedUrls.current.delete(resolvedUrl);
         });
     } catch (err) {
       console.warn(`[Prefetch] Error prefetching ${src}:`, err);
     }
-  }, [baseUrl]);
+  }, []);
 
-  // Prefetch all video overlays
+  const prefetchVideo = useCallback((src: string) => {
+    const resolvedUrl = resolveVideoUrl(src, baseUrl);
+    prefetchMedia(src, "video/mp4", resolvedUrl);
+  }, [baseUrl, prefetchMedia]);
+
+  const prefetchAudio = useCallback((src: string) => {
+    // Resolve audio URL the same way sound-layer-content does
+    let audioSrc = src;
+    if (src.startsWith("/") && baseUrl) {
+      audioSrc = `${baseUrl}${src}`;
+    } else if (src.startsWith("/")) {
+      audioSrc = toAbsoluteUrl(src);
+    }
+    const contentType = audioSrc.endsWith(".wav") ? "audio/wav" : "audio/mpeg";
+    prefetchMedia(src, contentType, audioSrc);
+  }, [baseUrl, prefetchMedia]);
+
+  // Prefetch all video and audio overlays
   useEffect(() => {
+    // Prefetch videos
     const videoOverlays = overlays.filter(
       (overlay): overlay is ClipOverlay => overlay.type === OverlayType.VIDEO
     );
-
-    // Get all unique video sources
     const videoSources = new Set(videoOverlays.map((overlay) => overlay.src));
-
-    // Prefetch each video
     videoSources.forEach((src) => {
       prefetchVideo(src);
     });
 
-    // Cleanup removed videos
-    return () => {
-      // Note: We don't clean up prefetched videos here because
-      // they might be used again and the cache is beneficial
-    };
-  }, [overlays, prefetchVideo]);
+    // Prefetch audio/sound
+    const soundOverlays = overlays.filter(
+      (overlay): overlay is SoundOverlay => overlay.type === OverlayType.SOUND || overlay.type === ("sound" as any)
+    );
+    const audioSources = new Set(soundOverlays.filter((o) => o.src).map((o) => o.src));
+    audioSources.forEach((src) => {
+      prefetchAudio(src);
+    });
+  }, [overlays, prefetchVideo, prefetchAudio]);
 
   // Cleanup all prefetched videos on unmount
   useEffect(() => {

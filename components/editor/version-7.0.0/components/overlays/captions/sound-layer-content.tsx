@@ -34,6 +34,7 @@ export const SoundLayerContent: React.FC<SoundLayerContentProps> = ({
       src={audioSrc}
       startFrom={overlay.startFromSound || 0}
       volume={overlay.styles?.volume ?? 1}
+      pauseWhenBuffering
     />
   );
 };

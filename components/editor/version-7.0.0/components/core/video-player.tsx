@@ -230,6 +230,8 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ playerRef }) => {
               inputProps={inputProps}
               errorFallback={PlayerErrorFallback}
               overflowVisible
+              numberOfSharedAudioTags={20}
+              pauseWhenBuffering
             />
           </div>
         </div>
