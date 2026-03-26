@@ -40,12 +40,12 @@ export const useTimelineShortcuts = ({
   setZoomScale,
 }: UseTimelineShortcutsProps) => {
   useHotkeys(
-    "alt+space",
+    "space",
     (e) => {
       e.preventDefault();
       handlePlayPause();
     },
-    { enableOnFormTags: true }
+    { enableOnFormTags: false }
   );
 
   useHotkeys("meta+z, ctrl+z", (e) => {

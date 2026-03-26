@@ -29,7 +29,7 @@ interface SelectTextOverlayProps {
  * @component
  */
 export const SelectTextOverlay: React.FC<SelectTextOverlayProps> = () => {
-  const { addOverlay, overlays, durationInFrames } = useEditorContext();
+  const { addOverlay, overlays, durationInFrames, currentFrame } = useEditorContext();
   const { findNextAvailablePosition } = useTimelinePositioning();
   const { visibleRows } = useTimeline();
 
@@ -41,7 +41,8 @@ export const SelectTextOverlay: React.FC<SelectTextOverlayProps> = () => {
     const { from, row } = findNextAvailablePosition(
       overlays,
       visibleRows,
-      durationInFrames
+      durationInFrames,
+      currentFrame
     );
 
     const newOverlay: TextOverlay = {

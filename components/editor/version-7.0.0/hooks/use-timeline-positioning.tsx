@@ -2,31 +2,38 @@ import { Overlay } from "../types";
 
 export const useTimelinePositioning = () => {
   /**
-   * Finds the next available position for a new overlay in a multi-row timeline
+   * Finds the next available position for a new overlay in a multi-row timeline.
+   * Places at the current playhead position and finds the first row without conflicts.
    * @param existingOverlays - Array of current overlays in the timeline
    * @param visibleRows - Number of rows currently visible in the timeline
    * @param totalDuration - Total duration of the timeline in frames
+   * @param currentFrame - Current playhead position (frame number)
    * @returns Object containing the starting position (from) and row number
    */
   const findNextAvailablePosition = (
     existingOverlays: Overlay[],
     visibleRows: number,
-    totalDuration: number
+    totalDuration: number,
+    currentFrame: number = 0
   ): { from: number; row: number } => {
-    // If no overlays exist, start at the beginning
-    if (existingOverlays.length === 0) {
-      return { from: 0, row: 0 };
+    // Always start at the playhead position
+    const from = currentFrame;
+
+    // Find the first row where no existing overlay occupies the current frame
+    for (let row = 0; row < visibleRows; row++) {
+      const hasConflict = existingOverlays.some(
+        (overlay) =>
+          overlay.row === row &&
+          overlay.from < from + 1 &&
+          overlay.from + overlay.durationInFrames > from
+      );
+      if (!hasConflict) {
+        return { from, row };
+      }
     }
 
-    // UX rule: always assign new overlays to the first channel (row 0).
-    // To prevent overlaps (we don't know the new overlay duration here), always append
-    // to the end of row 0.
-    const endOfFirstRow = existingOverlays.reduce((maxEnd, overlay) => {
-      if (overlay.row !== 0) return maxEnd;
-      return Math.max(maxEnd, overlay.from + overlay.durationInFrames);
-    }, 0);
-
-    return { from: endOfFirstRow, row: 0 };
+    // All visible rows occupied at this frame — use the last visible row
+    return { from, row: visibleRows - 1 };
   };
 
   return { findNextAvailablePosition };

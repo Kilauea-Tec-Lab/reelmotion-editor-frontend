@@ -24,8 +24,13 @@ import {
   SHOW_LOADING_PROJECT_ALERT,
   SNAPPING_CONFIG,
   MAX_ROWS,
+  FPS,
 } from "../../constants";
 import { useAssetLoading } from "../../contexts/asset-loading-context";
+import { useLocalMedia } from "../../contexts/local-media-context";
+import { useEditorContext } from "../../contexts/editor-context";
+import { useAspectRatio } from "../../hooks/use-aspect-ratio";
+import { useTimelinePositioning } from "../../hooks/use-timeline-positioning";
 import { MobileNavBar } from "../mobile/mobile-nav-bar";
 import { useTimelineSnapping } from "../../hooks/use-timeline-snapping";
 import {
@@ -283,10 +288,134 @@ const Timeline: React.FC<TimelineProps> = ({
     setIsDraggingRow(false);
   };
 
-  // Handle drop from sidebar panels (videos, audio, images)
+  // Handle drop from sidebar panels (videos, audio, images) or native files from OS
   const handleTimelineDrop = async (e: React.DragEvent) => {
     e.preventDefault();
-    
+    setIsFileDropping(false);
+
+    // Check for native file drops from OS first
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      const hasReelmotionData =
+        e.dataTransfer.getData("application/reelmotion-video") ||
+        e.dataTransfer.getData("application/reelmotion-sound") ||
+        e.dataTransfer.getData("application/reelmotion-text") ||
+        e.dataTransfer.getData("application/reelmotion-sticker") ||
+        e.dataTransfer.getData("application/reelmotion-library-image") ||
+        e.dataTransfer.getData("application/reelmotion-library-video");
+
+      // Only handle native files if no reelmotion data is present
+      if (!hasReelmotionData) {
+        // Capture drop position BEFORE async operations (avoid stale refs)
+        const timelineRect = timelineRef.current?.getBoundingClientRect();
+        if (!timelineRect) return;
+
+        const dropY = e.clientY - timelineRect.top;
+        const headerHeight = 21;
+        const rowY = dropY - headerHeight;
+        const targetRow = Math.max(0, Math.min(visibleRows - 1, Math.floor(rowY / ROW_HEIGHT)));
+        const { width: compWidth, height: compHeight } = getAspectRatioDimensions();
+
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+          const isVideo = file.type.startsWith("video/");
+          const isImage = file.type.startsWith("image/");
+          const isAudio = file.type.startsWith("audio/");
+
+          if (!isVideo && !isImage && !isAudio) continue;
+
+          try {
+            setFileUploadProgress({ name: file.name, percentage: 0 });
+
+            // Upload to server via local media context (also adds to uploads panel)
+            const mediaFile = await addMediaFile(file, (progress) => {
+              setFileUploadProgress({ name: file.name, percentage: progress.percentage });
+            });
+
+            if (!mediaFile) continue;
+
+            // Find next available position in the target row
+            const { from: startFrame } = findNextAvailablePosition(
+              editorOverlays,
+              visibleRows,
+              editorDuration,
+              editorCurrentFrame
+            );
+
+            // Use editorAddOverlay which uses functional state update (no stale closure)
+            if (isVideo) {
+              editorAddOverlay({
+                left: 0,
+                top: 0,
+                width: compWidth,
+                height: compHeight,
+                durationInFrames: mediaFile.duration ? Math.round(mediaFile.duration * FPS) : 200,
+                from: startFrame,
+                rotation: 0,
+                row: targetRow,
+                isDragging: false,
+                type: OverlayType.VIDEO,
+                content: mediaFile.path,
+                src: mediaFile.path,
+                videoStartTime: 0,
+                styles: {
+                  opacity: 1,
+                  zIndex: 100,
+                  transform: "none",
+                  objectFit: "cover",
+                },
+              } as Overlay);
+            } else if (isImage) {
+              editorAddOverlay({
+                left: 0,
+                top: 0,
+                width: compWidth,
+                height: compHeight,
+                durationInFrames: 200,
+                from: startFrame,
+                rotation: 0,
+                row: targetRow,
+                isDragging: false,
+                type: OverlayType.IMAGE,
+                src: mediaFile.path,
+                content: mediaFile.path,
+                styles: {
+                  objectFit: "cover",
+                  animation: {
+                    enter: "fadeIn",
+                    exit: "fadeOut",
+                  },
+                },
+              } as Overlay);
+            } else {
+              editorAddOverlay({
+                left: 0,
+                top: 0,
+                width: 0,
+                height: 0,
+                durationInFrames: mediaFile.duration ? Math.round(mediaFile.duration * FPS) : 200,
+                from: startFrame,
+                rotation: 0,
+                row: targetRow,
+                isDragging: false,
+                type: OverlayType.SOUND,
+                content: mediaFile.name,
+                src: mediaFile.path,
+                styles: {
+                  volume: 1,
+                },
+              } as Overlay);
+            }
+          } catch (error) {
+            console.error("Error uploading dropped file:", error);
+          } finally {
+            setFileUploadProgress(null);
+          }
+        }
+        return;
+      }
+    }
+
     const videoData = e.dataTransfer.getData("application/reelmotion-video");
     const soundData = e.dataTransfer.getData("application/reelmotion-sound");
     const textData = e.dataTransfer.getData("application/reelmotion-text");
@@ -547,6 +676,27 @@ const Timeline: React.FC<TimelineProps> = ({
   const handleTimelineDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "copy";
+
+    // Detect native file drag from OS
+    if (e.dataTransfer.types.includes("Files")) {
+      setIsFileDropping(true);
+    }
+  };
+
+  const handleTimelineDragLeave = (e: React.DragEvent) => {
+    // Only reset if leaving the timeline container (not entering a child)
+    const rect = timelineRef.current?.getBoundingClientRect();
+    if (rect) {
+      const { clientX, clientY } = e;
+      if (
+        clientX < rect.left ||
+        clientX > rect.right ||
+        clientY < rect.top ||
+        clientY > rect.bottom
+      ) {
+        setIsFileDropping(false);
+      }
+    }
   };
 
   useEffect(() => {
@@ -556,6 +706,16 @@ const Timeline: React.FC<TimelineProps> = ({
     element.addEventListener("wheel", handleWheelZoom, { passive: false });
     return () => element.removeEventListener("wheel", handleWheelZoom);
   }, [handleWheelZoom]);
+
+  // Local media context for uploading files dropped from OS
+  const { addMediaFile } = useLocalMedia();
+  const { addOverlay: editorAddOverlay, overlays: editorOverlays, durationInFrames: editorDuration, currentFrame: editorCurrentFrame } = useEditorContext();
+  const { getAspectRatioDimensions } = useAspectRatio();
+  const { findNextAvailablePosition } = useTimelinePositioning();
+
+  // State for tracking file upload drop
+  const [isFileDropping, setIsFileDropping] = useState(false);
+  const [fileUploadProgress, setFileUploadProgress] = useState<{ name: string; percentage: number } | null>(null);
 
   // Replace the loading state management with context
   const {
@@ -683,6 +843,7 @@ const Timeline: React.FC<TimelineProps> = ({
             onClick={onTimelineClick}
             onDrop={handleTimelineDrop}
             onDragOver={handleTimelineDragOver}
+            onDragLeave={handleTimelineDragLeave}
           >
             <div className="relative h-full">
               {/* Timeline header with frame markers */}
@@ -731,6 +892,27 @@ const Timeline: React.FC<TimelineProps> = ({
                 onAssetLoadingChange={handleAssetLoadingChange}
                 alignmentLines={alignmentLines}
               />
+
+              {/* File drop zone indicator */}
+              {isFileDropping && (
+                <div className="absolute inset-0 bg-primarioLogo/10 border-2 border-dashed border-primarioLogo rounded-md flex items-center justify-center z-50 pointer-events-none">
+                  <span className="text-xs font-medium text-primarioLogo bg-darkBox/80 px-3 py-1.5 rounded-md">
+                    Drop files to upload and add to timeline
+                  </span>
+                </div>
+              )}
+
+              {/* File upload progress indicator */}
+              {fileUploadProgress && (
+                <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px] flex items-center justify-center z-50">
+                  <div className="flex flex-col items-center gap-2 px-4 py-3 bg-darkBox/90 rounded-lg shadow-sm ring-1 ring-white/10">
+                    <Loader2 className="w-4 h-4 animate-spin text-primarioLogo" />
+                    <span className="text-xs font-medium text-gray-300">
+                      Uploading {fileUploadProgress.name}... {fileUploadProgress.percentage}%
+                    </span>
+                  </div>
+                </div>
+              )}
 
               {/* Loading Indicator - Only shows during initial project load */}
               {SHOW_LOADING_PROJECT_ALERT &&

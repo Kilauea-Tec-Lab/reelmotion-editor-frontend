@@ -5,6 +5,7 @@ import { useTimelinePositioning } from "../../../hooks/use-timeline-positioning"
 import { useAspectRatio } from "../../../hooks/use-aspect-ratio";
 import { useTimeline } from "../../../contexts/timeline-context";
 import { Overlay, OverlayType } from "../../../types";
+import { FPS } from "../../../constants";
 import { LocalMediaGallery } from "../../local-media/local-media-gallery";
 
 /**
@@ -16,27 +17,54 @@ import { LocalMediaGallery } from "../../local-media/local-media-gallery";
  * 3. Add uploaded media to the timeline
  */
 export const LocalMediaPanel: React.FC = () => {
-  const { addOverlay, overlays, durationInFrames } = useEditorContext();
+  const { addOverlay, overlays, durationInFrames, currentFrame } = useEditorContext();
   const { findNextAvailablePosition } = useTimelinePositioning();
   const { getAspectRatioDimensions } = useAspectRatio();
   const { visibleRows } = useTimeline();
 
   /**
+   * Probe media duration from a URL when it's not available in file metadata.
+   */
+  const probeDurationFromUrl = (url: string, mediaType: "video" | "audio"): Promise<number | undefined> => {
+    return new Promise((resolve) => {
+      const el = document.createElement(mediaType === "video" ? "video" : "audio");
+      el.preload = "metadata";
+
+      const timeout = setTimeout(() => {
+        resolve(undefined);
+      }, 5000);
+
+      el.onloadedmetadata = () => {
+        clearTimeout(timeout);
+        const dur = isFinite(el.duration) ? el.duration : undefined;
+        resolve(dur);
+      };
+      el.onerror = () => {
+        clearTimeout(timeout);
+        resolve(undefined);
+      };
+
+      el.src = url;
+    });
+  };
+
+  /**
    * Add a media file to the timeline
    */
-  const handleAddToTimeline = (file: any) => {
+  const handleAddToTimeline = async (file: any) => {
     const { width, height } = getAspectRatioDimensions();
     const { from, row } = findNextAvailablePosition(
       overlays,
       visibleRows,
-      durationInFrames
-      /**
-       * Pass the current playhead position.
-       * This way, we can place the new overlay next to the playhead
-       * instead of always placing it at the start of the timeline
-       * and having to drag it to the playhead.
-       */
+      durationInFrames,
+      currentFrame
     );
+
+    // Resolve duration: use stored value, or probe from URL as fallback
+    let fileDuration: number | undefined = file.duration;
+    if (!fileDuration && (file.type === "video" || file.type === "audio")) {
+      fileDuration = await probeDurationFromUrl(file.path, file.type);
+    }
 
     let newOverlay: Overlay;
 
@@ -46,7 +74,7 @@ export const LocalMediaPanel: React.FC = () => {
         top: 0,
         width,
         height,
-        durationInFrames: file.duration ? Math.round(file.duration * 30) : 200, // Convert seconds to frames (assuming 30fps)
+        durationInFrames: fileDuration ? Math.round(fileDuration * FPS) : 200,
         from,
         id: Date.now(),
         rotation: 0,
@@ -92,7 +120,7 @@ export const LocalMediaPanel: React.FC = () => {
         top: 0,
         width: 0,
         height: 0,
-        durationInFrames: file.duration ? Math.round(file.duration * 30) : 200,
+        durationInFrames: fileDuration ? Math.round(fileDuration * FPS) : 200,
         from,
         id: Date.now(),
         rotation: 0,

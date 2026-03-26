@@ -43,6 +43,7 @@ export const ImageOverlayPanel: React.FC = () => {
     durationInFrames,
     selectedOverlayId,
     changeOverlay,
+    currentFrame,
   } = useEditorContext();
   const { findNextAvailablePosition } = useTimelinePositioning();
   const { getAspectRatioDimensions } = useAspectRatio();
@@ -85,7 +86,8 @@ export const ImageOverlayPanel: React.FC = () => {
     const { from, row } = findNextAvailablePosition(
       overlays,
       visibleRows,
-      durationInFrames
+      durationInFrames,
+      currentFrame
     );
 
     const newOverlay: Overlay = {

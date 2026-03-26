@@ -47,6 +47,7 @@ const SoundsPanel: React.FC = () => {
     durationInFrames,
     selectedOverlayId,
     changeOverlay,
+    currentFrame,
   } = useEditorContext();
   const { findNextAvailablePosition } = useTimelinePositioning();
   const { visibleRows } = useTimeline();
@@ -272,7 +273,8 @@ const SoundsPanel: React.FC = () => {
       const { from, row } = findNextAvailablePosition(
         overlays,
         visibleRows,
-        durationInFrames
+        durationInFrames,
+        currentFrame
       );
 
       // Create the sound overlay configuration with real duration

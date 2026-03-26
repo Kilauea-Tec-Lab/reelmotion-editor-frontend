@@ -126,7 +126,8 @@ export const CaptionsPanel: React.FC = () => {
     const position = findNextAvailablePosition(
       overlays,
       visibleRows,
-      durationInFrames
+      durationInFrames,
+      currentFrame
     );
 
     const newCaptionOverlay: CaptionOverlay = {
