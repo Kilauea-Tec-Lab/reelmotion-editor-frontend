@@ -10,7 +10,8 @@
       "Bash(xargs sed:*)",
       "Bash(find C:\\\\Users\\\\Victor\\\\Documents\\\\Proyectos\\\\reelmotion-editor-frontend\\\\components:*)",
       "Bash(node:*)",
-      "Bash(powershell:*)"
+      "Bash(powershell:*)",
+      "Bash(gcloud compute ssh reelmotion-pro-server:*)"
     ]
   }
 }
