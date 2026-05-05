@@ -553,12 +553,11 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            className="w-60 bg-white dark:bg-darkBox border border-gray-200 dark:border-gray-700"
+            className="w-60 bg-white dark:bg-darkBox border border-gray-200 dark:border-gray-700 max-h-[var(--radix-dropdown-menu-content-available-height)] overflow-y-auto"
             side="top"
             align="end"
             sideOffset={8}
             collisionPadding={16}
-            avoidCollisions={false}
           >
             <DropdownMenuLabel className="text-xs text-gray-900 dark:text-zinc-200">
               {t("timeline.settings")}
