@@ -1,5 +1,6 @@
 import React from "react";
 import { ClipOverlay, ImageOverlay } from "../../../types";
+import { useTranslation } from "@/lib/i18n";
 
 /**
  * Props for the MediaPaddingControls component
@@ -28,6 +29,7 @@ export const MediaPaddingControls: React.FC<MediaPaddingControlsProps> = ({
   localOverlay,
   handleStyleChange,
 }) => {
+  const { t } = useTranslation();
   // Extract current padding value or set default
   const paddingValue = localOverlay?.styles?.padding || "0px";
   const paddingMatch = paddingValue.match(/^(\d+)px$/);
@@ -43,7 +45,7 @@ export const MediaPaddingControls: React.FC<MediaPaddingControlsProps> = ({
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <label className="text-xs text-gray-600 dark:text-gray-400">
-            Padding
+            {t("mediaStyle.padding")}
           </label>
           <span className="text-xs text-gray-600 dark:text-gray-400 min-w-[40px] text-right">
             {paddingValue}
@@ -65,7 +67,7 @@ export const MediaPaddingControls: React.FC<MediaPaddingControlsProps> = ({
       {/* Padding Background Color */}
       <div className="space-y-2">
         <label className="text-xs text-gray-600 dark:text-gray-400">
-          Padding Background
+          {t("mediaStyle.paddingBackground")}
         </label>
         <div className="flex items-center gap-2">
           <input
@@ -86,7 +88,7 @@ export const MediaPaddingControls: React.FC<MediaPaddingControlsProps> = ({
             onChange={(e) =>
               handleStyleChange({ paddingBackgroundColor: e.target.value })
             }
-            placeholder="transparent"
+            placeholder={t("mediaStyle.transparent")}
             className="flex-1 bg-white dark:bg-darkBoxSub  border border-gray-200 dark:border-gray-700 rounded-md text-xs p-2 hover:border-gray-300 dark:hover:border-gray-600 transition-colors text-gray-900 dark:text-gray-100"
           />
           {paddingBackgroundColor !== "transparent" && (
@@ -96,7 +98,7 @@ export const MediaPaddingControls: React.FC<MediaPaddingControlsProps> = ({
               }
               className="text-xs text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
             >
-              Clear
+              {t("mediaStyle.clear")}
             </button>
           )}
         </div>

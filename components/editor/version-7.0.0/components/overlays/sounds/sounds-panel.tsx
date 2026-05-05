@@ -20,6 +20,7 @@ import { useTimeline } from "../../../contexts/timeline-context";
 import { SoundDetails } from "./sound-details";
 import { useEditorAuth } from "../../../hooks/use-editor-auth";
 import { getOptimizedMediaUrl } from "../../../utils/url-helper";
+import { useTranslation } from "@/lib/i18n";
 
 /**
  * SoundsPanel Component
@@ -53,6 +54,7 @@ const SoundsPanel: React.FC = () => {
   const { visibleRows } = useTimeline();
   const [localOverlay, setLocalOverlay] = useState<SoundOverlay | null>(null);
   const { editorData, updateAudioName } = useEditorAuth();
+  const { t } = useTranslation();
   
   // Rename state
   const [soundToRename, setSoundToRename] = useState<LocalSound | null>(null);
@@ -66,12 +68,12 @@ const SoundsPanel: React.FC = () => {
     return editorData.project_voices.map((voice) => ({
       id: voice.id,
       title: voice.name,
-      artist: voice.description || "Project Voice",
+      artist: voice.description || t("soundPanel.projectVoice"),
       duration: 0, // Will be extracted from audio file
       // Use optimized URL (CDN if available, direct GCS otherwise)
       file: getOptimizedMediaUrl(voice.audio_url),
     }));
-  }, [editorData?.project_voices]);
+  }, [editorData?.project_voices, t]);
 
   useEffect(() => {
     if (selectedOverlayId === null) {
@@ -129,14 +131,14 @@ const SoundsPanel: React.FC = () => {
       setNewName("");
       
       toast({
-        title: "Success",
-        description: "Audio name updated successfully",
+        title: t("common.success"),
+        description: t("soundPanel.audioNameUpdated"),
       });
     } catch (error) {
       console.error("Error updating audio name:", error);
       toast({
-        title: "Error",
-        description: "Failed to update audio name",
+        title: t("common.error"),
+        description: t("soundPanel.audioNameUpdateFailed"),
         variant: "destructive",
       });
     } finally {
@@ -373,7 +375,7 @@ const SoundsPanel: React.FC = () => {
             {sound.title}
           </p>
           <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-            {isLoading ? "Adding to timeline..." : sound.artist}
+            {isLoading ? t("soundPanel.addingToTimeline") : sound.artist}
           </p>
         </div>
 
@@ -399,7 +401,7 @@ const SoundsPanel: React.FC = () => {
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
                   className="h-8 text-xs"
-                  placeholder="Rename audio..."
+                  placeholder={t("soundPanel.renamePlaceholder")}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') handleRename();
                   }}

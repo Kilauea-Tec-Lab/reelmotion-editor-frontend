@@ -48,6 +48,7 @@ import { StickersPanel } from "../overlays/stickers/stickers-panel";
 import { TemplateOverlayPanel } from "../overlays/templates/template-overlay-panel";
 import { useEditorContext } from "../../contexts/editor-context";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "@/lib/i18n";
 
 /**
  * AppSidebar Component
@@ -63,6 +64,7 @@ import { Button } from "@/components/ui/button";
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { activePanel, setActivePanel, setIsOpen } = useSidebar();
   const { setSelectedOverlayId, selectedOverlayId, overlays } = useEditorContext();
+  const { t } = useTranslation();
 
   React.useEffect(() => {
     if (selectedOverlayId !== null) {
@@ -77,25 +79,25 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const getPanelTitle = (type: OverlayType): string => {
     switch (type) {
       case OverlayType.VIDEO:
-        return "Video";
+        return t("sidebar.video");
       case OverlayType.TEXT:
-        return "Text";
+        return t("sidebar.text");
       case OverlayType.SOUND:
-        return "Audio";
+        return t("sidebar.audio");
       case OverlayType.CAPTION:
-        return "Caption";
+        return t("sidebar.caption");
       case OverlayType.IMAGE:
-        return "Image";
+        return t("sidebar.image");
       case OverlayType.LIBRARY:
-        return "Library";
+        return t("sidebar.library");
       case OverlayType.LOCAL_DIR:
-        return "Uploads";
+        return t("sidebar.uploads");
       case OverlayType.STICKER:
-        return "Stickers";
+        return t("sidebar.stickers");
       case OverlayType.TEMPLATE:
-        return "Template";
+        return t("sidebar.template");
       default:
-        return "Unknown";
+        return t("sidebar.unknown");
     }
   };
 
@@ -286,7 +288,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                         strokeWidth={1.25}
                       />
                       <span className="text-[8px] font-medium leading-none">
-                        Return
+                        {t("sidebar.return")}
                       </span>
                     </a>
                   </SidebarMenuButton>
@@ -295,7 +297,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   side="right"
                   className="border dark:bg-darkBox  text-foreground"
                 >
-                  Return
+                  {t("sidebar.return")}
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -317,7 +319,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   size="icon"
                   className="h-6 w-6"
                   onClick={() => setSelectedOverlayId(null)}
-                  aria-label="Back"
+                  aria-label={t("common.back")}
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>

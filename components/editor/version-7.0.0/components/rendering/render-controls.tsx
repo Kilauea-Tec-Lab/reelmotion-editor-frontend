@@ -21,6 +21,7 @@ import { LoadEditDialog } from "./load-edit-dialog";
 import { SaveRenderDialog } from "./save-render-dialog";
 import { useEditorContext } from "../../contexts/editor-context";
 import { SubscriptionModal } from "../shared/subscription-modal";
+import { useTranslation } from "@/lib/i18n";
 
 /**
  * Interface representing a single video render attempt
@@ -83,9 +84,10 @@ const RenderControls: React.FC<RenderControlsProps> = ({
   const [renders, setRenders] = React.useState<RenderItem[]>([]);
   // Track if there are new renders
   const [hasNewRender, setHasNewRender] = React.useState(false);
-  
+  const { t } = useTranslation();
+
   // Use EditorContext to get subscription info, dimensions, overlays and export count
-  const { subscriptionPlan, isPro, getAspectRatioDimensions, overlays, exportNumber } = useEditorContext();
+  const { subscriptionPlan, isPro, getAspectRatioDimensions, getRenderDimensions, overlays, exportNumber } = useEditorContext();
 
   // Check if timeline has elements
   const isTimelineEmpty = !overlays || overlays.length === 0;
@@ -108,16 +110,17 @@ const RenderControls: React.FC<RenderControlsProps> = ({
   const isRenderDisabled = process.env.NEXT_PUBLIC_DISABLE_RENDER === "true";
 
   const handleExport = (resolution: '720p' | '1080p' | '4k') => {
-    const { width: compositionWidth, height: compositionHeight } = getAspectRatioDimensions();
+    // Use the ACTUAL render dimensions (after free-tier downscale) so the
+    // scale factor produces clean integer output dimensions. Using the raw
+    // aspect-ratio dimensions here would double-scale and yield fractional
+    // sizes that h264 pads with gray pixels on the right/bottom edges.
+    const { width: renderW, height: renderH } = getRenderDimensions();
 
     // Target long side based on resolution
     // 720p = 1280, 1080p = 1920, 4K = 3840
     const targetLongSide = resolution === '4k' ? 3840 : resolution === '1080p' ? 1920 : 1280;
 
-    // Calculate scale factor based on the composition's longest side
-    // Remotion's scale parameter uniformly upscales the entire render output
-    // This guarantees all overlays, positions, and content scale perfectly
-    const currentLongSide = Math.max(compositionWidth, compositionHeight);
+    const currentLongSide = Math.max(renderW, renderH);
     const renderScale = targetLongSide / currentLongSide;
 
     // Call render with scale factor — Remotion handles the uniform upscaling
@@ -196,7 +199,7 @@ const RenderControls: React.FC<RenderControlsProps> = ({
           id: crypto.randomUUID(),
           status: "error",
           error:
-            state.error?.message || "Failed to render video. Please try again.",
+            state.error?.message || t("header.renderFailedDefault"),
         },
         ...prev,
       ]);
@@ -279,9 +282,9 @@ const RenderControls: React.FC<RenderControlsProps> = ({
         className="relative hover:bg-accent"
         onClick={() => setIsLoadDialogOpen(true)}
         disabled={!onLoadEdit}
-        title={!onLoadEdit ? "Load functionality not available" : "Load edit"}
+        title={!onLoadEdit ? t("header.loadFunctionalityUnavailable") : t("header.loadEdit")}
       >
-        <FolderOpen className="w-3.5 h-3.5" />&nbsp;Load
+        <FolderOpen className="w-3.5 h-3.5" />&nbsp;{t("header.load")}
       </Button>
 
       <Button
@@ -290,9 +293,9 @@ const RenderControls: React.FC<RenderControlsProps> = ({
         className="relative hover:bg-accent"
         onClick={() => setIsSaveDialogOpen(true)}
         disabled={!editionData}
-        title={!editionData ? "No edition data available" : "Save edit"}
+        title={!editionData ? t("header.noEditionData") : t("header.saveEdit")}
       >
-        <Save className="w-3.5 h-3.5" />&nbsp;Save
+        <Save className="w-3.5 h-3.5" />&nbsp;{t("header.save")}
       </Button>
       <Popover onOpenChange={() => setHasNewRender(false)}>
         <PopoverTrigger asChild>
@@ -309,9 +312,9 @@ const RenderControls: React.FC<RenderControlsProps> = ({
         </PopoverTrigger>
         <PopoverContent className="w-60 p-3">
           <div className="space-y-1.5">
-            <h4 className="text-sm font-medium">Recent Renders</h4>
+            <h4 className="text-sm font-medium">{t("header.recentRenders")}</h4>
             {renders.length === 0 ? (
-              <p className="text-xs text-muted-foreground">No renders yet</p>
+              <p className="text-xs text-muted-foreground">{t("header.noRenders")}</p>
             ) : (
               renders.map((render) => (
                 <div
@@ -323,10 +326,10 @@ const RenderControls: React.FC<RenderControlsProps> = ({
                   }`}
                 >
                   <div className="flex flex-col min-w-0 flex-1 mr-2">
-                    <div className="text-xs text-zinc-200 truncate max-w-[160px]" title={render.status === "error" ? "Render Failed" : getDisplayFileName(render.url!)}>
+                    <div className="text-xs text-zinc-200 truncate max-w-[160px]" title={render.status === "error" ? t("header.renderFailed") : getDisplayFileName(render.url!)}>
                       {render.status === "error" ? (
                         <span className="text-red-400 font-medium">
-                          Render Failed
+                          {t("header.renderFailed")}
                         </span>
                       ) : (
                         getDisplayFileName(render.url!)
@@ -352,7 +355,7 @@ const RenderControls: React.FC<RenderControlsProps> = ({
                       variant="ghost"
                       className="text-zinc-200 hover:text-gray-800 h-6 w-6"
                       onClick={() => handleSaveClick(render.url!)}
-                      title="Save video"
+                      title={t("header.saveVideo")}
                     >
                       <Save className="w-3.5 h-3.5" />
                     </Button>
@@ -365,12 +368,12 @@ const RenderControls: React.FC<RenderControlsProps> = ({
       </Popover>
 
       <Button
-        onClick={handleRender as any} // Fallback to default render if clicked directly? Actually, default logic below
+        onClick={handleRender as any}
         size="sm"
         variant="outline"
         disabled={state.status === "rendering" || state.status === "invoking" || isRenderDisabled}
         className={`hidden bg-gray-800 text-white border-gray-700 hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-50 ${isRenderDisabled ? "cursor-not-allowed" : ""}`}
-        title={isRenderDisabled ? "Rendering is currently disabled" : undefined}
+        title={isRenderDisabled ? t("header.renderDisabledTitle") : undefined}
       >
         Legacy Button
       </Button>
@@ -380,9 +383,9 @@ const RenderControls: React.FC<RenderControlsProps> = ({
         <Button disabled variant="secondary" size="sm">
           <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
           {renderType === "cloudrun" ? (
-            state.status === "invoking" ? "Starting..." : "Rendering..."
+            state.status === "invoking" ? t("header.starting") : t("header.rendering")
           ) : (
-            `Rendering ${
+            `${t("header.renderingProgress")} ${
               state.progress > 0 ? `(${Math.round(state.progress * 100)}%)` : ""
             }`
           )}
@@ -395,47 +398,47 @@ const RenderControls: React.FC<RenderControlsProps> = ({
                 disabled={isRenderDisabled || isTimelineEmpty || isFreeExportBlocked}
                 size="sm"
                 className="bg-primarioLogo hover:bg-primarioLogo/90 text-white"
-                title={isTimelineEmpty ? "Add elements to the timeline before exporting" : isFreeExportBlocked ? "You have reached the free export limit. Upgrade your plan to continue exporting." : isRenderDisabled ? "Rendering is currently disabled" : undefined}
+                title={isTimelineEmpty ? t("header.timelineEmptyTitle") : isFreeExportBlocked ? t("header.freeExportBlockedTitle") : isRenderDisabled ? t("header.renderDisabledTitle") : undefined}
               >
-                {isRenderDisabled ? "Disabled" : isTimelineEmpty ? "Export Video" : isFreeExportBlocked ? "Export Limit Reached" : "Export Video"}
+                {isRenderDisabled ? t("header.exportDisabled") : isTimelineEmpty ? t("header.export") : isFreeExportBlocked ? t("header.exportLimitReached") : t("header.export")}
                 <ChevronDown className="w-3.5 h-3.5 ml-2" />
               </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-[220px]">
-             <DropdownMenuLabel>Select Resolution</DropdownMenuLabel>
+             <DropdownMenuLabel>{t("header.selectResolution")}</DropdownMenuLabel>
              <DropdownMenuSeparator />
-             
+
              {/* 720p - Always Available */}
              <DropdownMenuItem onClick={() => handleExport('720p')} className="cursor-pointer">
                  <div className="flex flex-col">
-                   <span className="font-medium">Standard (720p)</span>
-                   <span className="text-xs text-muted-foreground">Basic Quality</span>
+                   <span className="font-medium">{t("header.standard720p")}</span>
+                   <span className="text-xs text-muted-foreground">{t("header.basicQuality")}</span>
                  </div>
              </DropdownMenuItem>
 
              {/* 1080p - Pro+ */}
-             <DropdownMenuItem 
+             <DropdownMenuItem
                onClick={() => can1080p ? handleExport('1080p') : setShowSubscriptionModal(true)}
                className={`cursor-pointer ${!can1080p ? "bg-gray-50 dark:bg-gray-900" : ""}`}
              >
                  <div className="flex items-center justify-between w-full">
                    <div className="flex flex-col text-left">
-                     <span className="font-medium">HD (1080p)</span>
-                     <span className="text-xs text-muted-foreground">Pro Quality</span>
+                     <span className="font-medium">{t("header.hd1080p")}</span>
+                     <span className="text-xs text-muted-foreground">{t("header.proQuality")}</span>
                    </div>
                    {!can1080p && <Crown className="w-4 h-4 text-yellow-500 ml-2" />}
                  </div>
              </DropdownMenuItem>
 
              {/* 4K - Elite Only */}
-             <DropdownMenuItem 
+             <DropdownMenuItem
                onClick={() => can4k ? handleExport('4k') : setShowSubscriptionModal(true)}
                className={`cursor-pointer ${!can4k ? "bg-gray-50 dark:bg-gray-900" : ""}`}
              >
                  <div className="flex items-center justify-between w-full">
                    <div className="flex flex-col text-left">
-                     <span className="font-medium">Ultra HD (4K)</span>
-                     <span className="text-xs text-muted-foreground">Elite Quality</span>
+                     <span className="font-medium">{t("header.ultraHd4k")}</span>
+                     <span className="text-xs text-muted-foreground">{t("header.eliteQuality")}</span>
                    </div>
                    {!can4k && <Crown className="w-4 h-4 text-purple-500 ml-2" />}
                  </div>

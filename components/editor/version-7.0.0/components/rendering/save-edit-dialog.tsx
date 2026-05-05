@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import Cookies from "js-cookie";
+import { useTranslation } from "@/lib/i18n";
 
 interface SaveEditDialogProps {
   open: boolean;
@@ -37,6 +38,7 @@ export const SaveEditDialog: React.FC<SaveEditDialogProps> = ({
   const [name, setName] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   // Load the edit name when dialog opens if editing an existing edit
   useEffect(() => {
@@ -49,8 +51,8 @@ export const SaveEditDialog: React.FC<SaveEditDialogProps> = ({
     if (!name.trim()) {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Please enter a name for your edit",
+        title: t("common.error"),
+        description: t("renderDialog.nameRequired"),
       });
       return;
     }
@@ -93,25 +95,25 @@ export const SaveEditDialog: React.FC<SaveEditDialogProps> = ({
       const data = await response.json();
 
       if (data.code === 200) {
-        const successMessage = editionData.editId 
-          ? "Your edit has been updated successfully!" 
-          : "Your edit has been saved successfully!";
-          
+        const successMessage = editionData.editId
+          ? t("renderDialog.updateSuccess")
+          : t("renderDialog.saveSuccess");
+
         toast({
-          title: "Success",
+          title: t("common.success"),
           description: successMessage,
           className: "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800",
         });
         onOpenChange(false);
       } else {
-        throw new Error(data.message || "Failed to save edit");
+        throw new Error(data.message || t("renderDialog.saveFailed"));
       }
     } catch (error) {
       console.error("Error saving edit:", error);
       toast({
         variant: "destructive",
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to save edit. Please try again.",
+        title: t("common.error"),
+        description: error instanceof Error ? error.message : t("renderDialog.saveFailed"),
       });
     } finally {
       setIsSaving(false);
@@ -124,20 +126,20 @@ export const SaveEditDialog: React.FC<SaveEditDialogProps> = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Save className="w-5 h-5" />
-            {editionData.editId ? "Update Edit" : "Save Edit"}
+            {editionData.editId ? t("renderDialog.updateTitle") : t("renderDialog.saveTitle")}
           </DialogTitle>
           <DialogDescription>
-            {editionData.editId 
-              ? "Update the name or save changes to your edit."
-              : "Give your edit a name to save it to your projects."}
+            {editionData.editId
+              ? t("renderDialog.updateDescription")
+              : t("renderDialog.saveDescription")}
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label htmlFor="name">Edit Name</Label>
+            <Label htmlFor="name">{t("renderDialog.editNameLabel")}</Label>
             <Input
               id="name"
-              placeholder="My awesome video edit"
+              placeholder={t("renderDialog.namePlaceholder")}
               value={name}
               onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => {
@@ -158,7 +160,7 @@ export const SaveEditDialog: React.FC<SaveEditDialogProps> = ({
             onClick={() => onOpenChange(false)}
             disabled={isSaving}
           >
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button
             type="button"
@@ -168,12 +170,12 @@ export const SaveEditDialog: React.FC<SaveEditDialogProps> = ({
             {isSaving ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                {editionData.editId ? "Updating..." : "Saving..."}
+                {editionData.editId ? t("renderDialog.updating") : t("renderDialog.saving")}
               </>
             ) : (
               <>
                 <Save className="w-4 h-4 mr-2" />
-                {editionData.editId ? "Update Edit" : "Save Edit"}
+                {editionData.editId ? t("renderDialog.updateTitle") : t("renderDialog.saveTitle")}
               </>
             )}
           </Button>

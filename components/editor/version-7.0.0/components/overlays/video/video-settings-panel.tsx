@@ -9,19 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-const SPEED_OPTIONS = [
-  { value: 0.25, label: "0.25x" },
-  { value: 0.5, label: "0.5x" },
-  { value: 0.75, label: "0.75x" },
-  { value: 1, label: "1x (Normal)" },
-  { value: 1.25, label: "1.25x" },
-  { value: 1.5, label: "1.5x" },
-  { value: 1.75, label: "1.75x" },
-  { value: 2, label: "2x" },
-  { value: 3, label: "3x" },
-  { value: 4, label: "4x" },
-];
+import { useTranslation } from "@/lib/i18n";
 
 /**
  * Props for the VideoSettingsPanel component
@@ -55,8 +43,22 @@ export const VideoSettingsPanel: React.FC<VideoSettingsPanelProps> = ({
   handleStyleChange,
   onSpeedChange,
 }) => {
+  const { t } = useTranslation();
   // Add state to control select open state
   const [isSelectOpen, setIsSelectOpen] = React.useState(false);
+
+  const SPEED_OPTIONS = [
+    { value: 0.25, label: "0.25x" },
+    { value: 0.5, label: "0.5x" },
+    { value: 0.75, label: "0.75x" },
+    { value: 1, label: `1x (${t("videoSettings.normal")})` },
+    { value: 1.25, label: "1.25x" },
+    { value: 1.5, label: "1.5x" },
+    { value: 1.75, label: "1.75x" },
+    { value: 2, label: "2x" },
+    { value: 3, label: "3x" },
+    { value: 4, label: "4x" },
+  ];
 
   // Cleanup effect for unmounting
   React.useEffect(() => {
@@ -111,7 +113,7 @@ export const VideoSettingsPanel: React.FC<VideoSettingsPanelProps> = ({
       <div className="space-y-4 rounded-md bg-gray-100/50 dark:bg-darkBoxSub /50 p-4 border border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            Volume
+            {t("videoSettings.volume")}
           </h3>
           <button
             onClick={() =>
@@ -125,7 +127,9 @@ export const VideoSettingsPanel: React.FC<VideoSettingsPanelProps> = ({
                 : "bg-gray-200/50 dark:bg-gray-700/50 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-700"
             }`}
           >
-            {(localOverlay?.styles?.volume ?? 1) === 0 ? "Unmute" : "Mute"}
+            {(localOverlay?.styles?.volume ?? 1) === 0
+              ? t("videoSettings.unmute")
+              : t("videoSettings.mute")}
           </button>
         </div>
 
@@ -151,7 +155,7 @@ export const VideoSettingsPanel: React.FC<VideoSettingsPanelProps> = ({
       <div className="space-y-4 rounded-md bg-gray-100/50 dark:bg-darkBoxSub /50 p-4 border border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            Playback Speed
+            {t("videoSettings.playbackSpeed")}
           </h3>
           <button
             onClick={() => {
@@ -164,7 +168,7 @@ export const VideoSettingsPanel: React.FC<VideoSettingsPanelProps> = ({
                 : "bg-gray-200/50 dark:bg-gray-700/50 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-700"
             }`}
           >
-            Reset
+            {t("videoSettings.reset")}
           </button>
         </div>
 
@@ -176,7 +180,7 @@ export const VideoSettingsPanel: React.FC<VideoSettingsPanelProps> = ({
             onValueChange={(value) => handleSpeedChange(parseFloat(value))}
           >
             <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select speed" />
+              <SelectValue placeholder={t("videoSettings.selectSpeed")} />
             </SelectTrigger>
             <SelectContent>
               {SPEED_OPTIONS.map((option) => (

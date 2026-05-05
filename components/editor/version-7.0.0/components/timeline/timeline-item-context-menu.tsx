@@ -6,6 +6,7 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import { Trash2, Copy, Scissors } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
 
 /**
  * Props for the TimelineItemContextMenu component
@@ -52,6 +53,7 @@ export const TimelineItemContextMenu: React.FC<
   onSplitItem,
   itemId,
 }) => {
+  const { t } = useTranslation();
   return (
     <ContextMenu onOpenChange={onOpenChange}>
       <ContextMenuTrigger className="z-[100]">{children}</ContextMenuTrigger>
@@ -61,21 +63,21 @@ export const TimelineItemContextMenu: React.FC<
           onClick={() => onDeleteItem(itemId)}
         >
           <Trash2 className="mr-4 h-4 w-4" />
-          Delete
+          {t("common.delete")}
         </ContextMenuItem>
         <ContextMenuItem
           className="dark:hover:bg-slate-800 dark:focus:bg-slate-800 dark:text-slate-200"
           onClick={() => onDuplicateItem(itemId)}
         >
           <Copy className="mr-4 h-4 w-4" />
-          Duplicate
+          {t("common.duplicate")}
         </ContextMenuItem>
         <ContextMenuItem
           className="dark:hover:bg-slate-800 dark:focus:bg-slate-800 dark:text-slate-200"
           onClick={() => onSplitItem(itemId)}
         >
           <Scissors className="mr-4 h-4 w-4" />
-          Split
+          {t("common.split")}
         </ContextMenuItem>
       </ContextMenuContent>
     </ContextMenu>

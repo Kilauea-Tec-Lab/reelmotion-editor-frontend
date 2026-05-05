@@ -5,6 +5,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "../../../../ui/collapsible";
+import { useTranslation } from "@/lib/i18n";
 
 /**
  * AnimationPreviewProps interface defines the required props for the AnimationPreview component
@@ -81,7 +82,7 @@ export const AnimationPreview: React.FC<AnimationPreviewProps> = ({
             }}
           />
           {/* Animated circle with fade in */}
-          {animation.name !== "None" && (
+          {animation.name !== "None" && animation.name !== "Ninguna" && (
             <div
               className="absolute inset-0 rounded-full border-2 border-dashed border-foreground/30 dark:border-foreground/50 transition-all duration-500 h-6"
               style={{
@@ -208,6 +209,7 @@ export const AnimationSettings: React.FC<AnimationSettingsProps> = ({
   onExitAnimationSelect,
   className = "",
 }) => {
+  const { t } = useTranslation();
   // State to track which sections are open - Enter is open by default, Exit is closed
   const [openSections, setOpenSections] = useState({
     enter: true,
@@ -227,8 +229,8 @@ export const AnimationSettings: React.FC<AnimationSettingsProps> = ({
 
   // Create the "None" animation option
   const noneAnimation: AnimationTemplate = {
-    name: "None",
-    preview: "No animation",
+    name: t("animation.noneShort"),
+    preview: t("animation.noneDescription"),
     enter: () => ({}),
     exit: () => ({}),
   };
@@ -237,12 +239,12 @@ export const AnimationSettings: React.FC<AnimationSettingsProps> = ({
     <div className={`space-y-3 ${className}`}>
       <div className="rounded-md bg-gray-100/50 dark:bg-darkBoxSub /50 p-4 border border-gray-200 dark:border-gray-700">
         <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3.5">
-          Animations
+          {t("animation.title")}
         </h3>
 
         {/* Enter Animation Section */}
         <AnimationSection
-          title="Enter Animation"
+          title={t("animation.in")}
           count={animationCount}
           isOpen={openSections.enter}
           onToggle={() => toggleSection("enter")}
@@ -266,7 +268,7 @@ export const AnimationSettings: React.FC<AnimationSettingsProps> = ({
 
         {/* Exit Animation Section */}
         <AnimationSection
-          title="Exit Animation"
+          title={t("animation.out")}
           count={animationCount}
           isOpen={openSections.exit}
           onToggle={() => toggleSection("exit")}

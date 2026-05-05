@@ -43,6 +43,7 @@ import { AutosaveStatus } from "./components/autosave/autosave-status";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useAutosave } from "./hooks/use-autosave";
 import { toast } from "@/hooks/use-toast";
+import { useTranslation } from "@/lib/i18n";
 import { LocalMediaProvider } from "./contexts/local-media-context";
 import { KeyframeProvider } from "./contexts/keyframe-context";
 import { AssetLoadingProvider } from "./contexts/asset-loading-context";
@@ -97,6 +98,7 @@ function ZoomKeyboardShortcuts() {
 export default function ReactVideoEditor({ projectId }: { projectId: string }) {
   // Authentication check
   const { isLoading, isAuthorized, editorData } = useEditorAuth();
+  const { t } = useTranslation();
   
   const subscriptionPlan = editorData?.suscription?.suscription || "free";
   const isPro = subscriptionPlan !== "free";
@@ -189,11 +191,11 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
     if (brokenIds.length > 0) {
       setOverlays((prev) => prev.filter((o) => !brokenIds.includes(o.id)));
       toast({
-        title: "Removed missing media",
-        description: `${brokenIds.length} item(s) were removed from the timeline because their files no longer exist.`,
+        title: t("toast.removedMissingMedia.title"),
+        description: t("toast.removedMissingMedia.body", { count: brokenIds.length }),
       });
     }
-  }, [setOverlays]);
+  }, [setOverlays, t]);
 
   // Run URL validation when overlays change (debounced, only for new overlays)
   useEffect(() => {
@@ -547,6 +549,7 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
     playerDimensions,
     updatePlayerDimensions,
     getAspectRatioDimensions,
+    getRenderDimensions: () => ({ width: renderWidth, height: renderHeight }),
     durationInFrames,
     contentDurationInFrames, // Added contentDurationInFrames
     durationInSeconds,

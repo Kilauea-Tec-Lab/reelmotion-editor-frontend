@@ -6,6 +6,7 @@ import debounce from "lodash/debounce";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TextSettingsPanel } from "./text-settings-panel";
 import { TextStylePanel } from "./text-style-panel";
+import { useTranslation } from "@/lib/i18n";
 
 /**
  * Props for the TextDetails component
@@ -32,6 +33,7 @@ export const TextDetails: React.FC<TextDetailsProps> = ({
   setLocalOverlay,
 }) => {
   const { changeOverlay, selectedOverlayId, overlays } = useEditorContext();
+  const { t } = useTranslation();
 
   /**
    * Debounced function to update the overlay in the global state
@@ -117,7 +119,7 @@ export const TextDetails: React.FC<TextDetailsProps> = ({
                 textAlign: localOverlay.styles.textAlign as any,
               }}
             >
-              {localOverlay.content || "Text Preview"}
+              {localOverlay.content || t("textPanel.preview")}
             </div>
           </div>
         </div>
@@ -127,7 +129,7 @@ export const TextDetails: React.FC<TextDetailsProps> = ({
           <textarea
             value={localOverlay.content || ""}
             onChange={(e) => handleInputChange("content", e.target.value)}
-            placeholder="Enter your text here..."
+            placeholder={t("textPanel.editorPlaceholder")}
             className="w-full min-h-[60px] bg-transparent p-2 text-foreground placeholder:text-muted-foreground outline-none focus:outline-none"
             spellCheck="false"
           />
@@ -144,17 +146,17 @@ export const TextDetails: React.FC<TextDetailsProps> = ({
           >
             <span className="flex items-center gap-2 text-xs">
               <Settings className="w-3 h-3" />
-              Settings
+              {t("textPanel.settings")}
             </span>
           </TabsTrigger>
           <TabsTrigger
             value="style"
-            className="data-[state=active]:bg-primarioLogo data-[state=active]:text-gray-900 dark:data-[state=active]:text-white 
+            className="data-[state=active]:bg-primarioLogo data-[state=active]:text-gray-900 dark:data-[state=active]:text-white
             rounded-sm transition-all duration-200 text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-200 hover:bg-gray-200/50 dark:hover:bg-gray-700/50"
           >
             <span className="flex items-center gap-2 text-xs">
               <PaintBucket className="w-3 h-3" />
-              Style
+              {t("textPanel.style")}
             </span>
           </TabsTrigger>
         </TabsList>

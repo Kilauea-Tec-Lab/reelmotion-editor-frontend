@@ -1,6 +1,7 @@
 import React from "react";
 import { CaptionOverlay } from "../../../types";
 import { captionTemplates } from "../../../templates/caption-templates";
+import { useTranslation } from "@/lib/i18n";
 
 /**
  * Props for the CaptionStylePanel component
@@ -42,6 +43,7 @@ export const CaptionStylePanel: React.FC<CaptionStylePanelProps> = ({
   localOverlay,
   setLocalOverlay,
 }) => {
+  const { t } = useTranslation();
   return (
     <div className="space-y-4">
       {/* Templates Grid */}
@@ -99,7 +101,7 @@ export const CaptionStylePanel: React.FC<CaptionStylePanelProps> = ({
                 </span>
                 {localOverlay?.template === key && (
                   <span className="text-[10px] text-blue-600 dark:text-blue-400 font-medium bg-blue-100 dark:bg-blue-500/20 px-2 py-0.5 rounded-full">
-                    Active
+                    {t("captionSettings.active")}
                   </span>
                 )}
               </div>

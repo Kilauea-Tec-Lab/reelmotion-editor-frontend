@@ -22,6 +22,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import Cookies from "js-cookie";
 import { formatDistanceToNow } from "date-fns";
+import { useTranslation } from "@/lib/i18n";
 
 interface Edit {
   id: string;
@@ -50,6 +51,7 @@ export const LoadEditDialog: React.FC<LoadEditDialogProps> = ({
   const [editToDelete, setEditToDelete] = useState<Edit | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   // Fetch edits when dialog opens
   useEffect(() => {
@@ -80,17 +82,17 @@ export const LoadEditDialog: React.FC<LoadEditDialogProps> = ({
       if (data.code === 200 && data.edits) {
         setEdits(data.edits);
       } else {
-        throw new Error(data.message || "Failed to fetch edits");
+        throw new Error(data.message || t("renderDialog.fetchEditsFailed"));
       }
     } catch (error) {
       console.error("Error fetching edits:", error);
       toast({
         variant: "destructive",
-        title: "Error",
+        title: t("common.error"),
         description:
           error instanceof Error
             ? error.message
-            : "Failed to fetch edits. Please try again.",
+            : t("renderDialog.fetchEditsFailed"),
       });
     } finally {
       setIsLoading(false);
@@ -111,19 +113,19 @@ export const LoadEditDialog: React.FC<LoadEditDialogProps> = ({
       });
       
       toast({
-        title: "Success",
-        description: `Loaded "${edit.name}" successfully!`,
+        title: t("common.success"),
+        description: t("renderDialog.loadEditSuccess", { name: edit.name }),
         className:
           "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800",
       });
-      
+
       onOpenChange(false);
     } catch (error) {
       console.error("Error loading edit:", error);
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Failed to load edit. The data may be corrupted.",
+        title: t("common.error"),
+        description: t("renderDialog.loadEditFailed"),
       });
     }
   };
@@ -160,25 +162,25 @@ export const LoadEditDialog: React.FC<LoadEditDialogProps> = ({
         setEdits((prevEdits) => prevEdits.filter((e) => e.id !== editToDelete.id));
         
         toast({
-          title: "Success",
-          description: `"${editToDelete.name}" has been deleted successfully!`,
+          title: t("common.success"),
+          description: t("renderDialog.deleteSuccess", { name: editToDelete.name }),
           className:
             "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800",
         });
-        
+
         setEditToDelete(null);
       } else {
-        throw new Error(data.message || "Failed to delete edit");
+        throw new Error(data.message || t("renderDialog.deleteFailed"));
       }
     } catch (error) {
       console.error("Error deleting edit:", error);
       toast({
         variant: "destructive",
-        title: "Error",
+        title: t("common.error"),
         description:
           error instanceof Error
             ? error.message
-            : "Failed to delete edit. Please try again.",
+            : t("renderDialog.deleteFailed"),
       });
     } finally {
       setIsDeleting(false);
@@ -191,13 +193,13 @@ export const LoadEditDialog: React.FC<LoadEditDialogProps> = ({
       <AlertDialog open={!!editToDelete} onOpenChange={(open) => !open && setEditToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Edit</AlertDialogTitle>
+            <AlertDialogTitle>{t("renderDialog.deleteEdit")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{editToDelete?.name}"? This action cannot be undone.
+              {t("renderDialog.deleteConfirm", { name: editToDelete?.name ?? "" })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeleting}>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteEdit}
               disabled={isDeleting}
@@ -206,10 +208,10 @@ export const LoadEditDialog: React.FC<LoadEditDialogProps> = ({
               {isDeleting ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Deleting...
+                  {t("renderDialog.deleting")}
                 </>
               ) : (
-                "Delete"
+                t("common.delete")
               )}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -222,10 +224,10 @@ export const LoadEditDialog: React.FC<LoadEditDialogProps> = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FolderOpen className="w-5 h-5" />
-            Load Edit
+            {t("renderDialog.loadTitle")}
           </DialogTitle>
           <DialogDescription>
-            Select an edit to load into the editor.
+            {t("renderDialog.loadDescriptionShort")}
           </DialogDescription>
         </DialogHeader>
 
@@ -238,7 +240,7 @@ export const LoadEditDialog: React.FC<LoadEditDialogProps> = ({
             <div className="flex flex-col items-center justify-center py-8 text-center">
               <FolderOpen className="w-12 h-12 text-muted-foreground mb-3" />
               <p className="text-sm text-muted-foreground">
-                No saved edits found
+                {t("renderDialog.noEditsFound")}
               </p>
             </div>
           ) : (
@@ -262,9 +264,10 @@ export const LoadEditDialog: React.FC<LoadEditDialogProps> = ({
                       </h4>
                       {edit.created_at && (
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          Created{" "}
-                          {formatDistanceToNow(new Date(edit.created_at), {
-                            addSuffix: true,
+                          {t("renderDialog.createdRelative", {
+                            relative: formatDistanceToNow(new Date(edit.created_at), {
+                              addSuffix: true,
+                            }),
                           })}
                         </p>
                       )}
@@ -275,7 +278,7 @@ export const LoadEditDialog: React.FC<LoadEditDialogProps> = ({
                         variant="ghost"
                         onClick={() => handleLoadEdit(edit)}
                       >
-                        Load
+                        {t("renderDialog.loadEditButton")}
                       </Button>
                       <Button
                         size="sm"

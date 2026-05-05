@@ -15,6 +15,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import ColorPicker from "react-best-gradient-color-picker";
+import { useTranslation } from "@/lib/i18n";
 
 /**
  * Available font options for text overlays
@@ -53,20 +54,21 @@ export const TextStylePanel: React.FC<TextStylePanelProps> = ({
   localOverlay,
   handleStyleChange,
 }) => {
+  const { t } = useTranslation();
   return (
     <div className="space-y-6">
       {/* Typography Settings */}
       <div className="space-y-4 rounded-md dark:bg-darkBox /50 p-4 border">
-        <h3 className="text-sm font-medium">Typography</h3>
+        <h3 className="text-sm font-medium">{t("textStyle.typography")}</h3>
 
         <div className="space-y-2">
-          <label className="text-xs text-muted-foreground">Font Family</label>
+          <label className="text-xs text-muted-foreground">{t("textStyle.fontFamily")}</label>
           <Select
             value={localOverlay.styles.fontFamily}
             onValueChange={(value) => handleStyleChange("fontFamily", value)}
           >
             <SelectTrigger className="w-full text-xs">
-              <SelectValue placeholder="Select a font" />
+              <SelectValue placeholder={t("textStyle.selectFont")} />
             </SelectTrigger>
             <SelectContent>
               {fonts.map((font) => (
@@ -84,7 +86,7 @@ export const TextStylePanel: React.FC<TextStylePanelProps> = ({
 
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <label className="text-xs text-muted-foreground">Alignment</label>
+            <label className="text-xs text-muted-foreground">{t("textStyle.alignment")}</label>
             <ToggleGroup
               type="single"
               className="justify-start gap-1"
@@ -95,21 +97,21 @@ export const TextStylePanel: React.FC<TextStylePanelProps> = ({
             >
               <ToggleGroupItem
                 value="left"
-                aria-label="Align left"
+                aria-label={t("textStyle.alignLeft")}
                 className="h-10 w-10"
               >
                 <AlignLeft className="h-4 w-4" />
               </ToggleGroupItem>
               <ToggleGroupItem
                 value="center"
-                aria-label="Align center"
+                aria-label={t("textStyle.alignCenter")}
                 className="h-10 w-10"
               >
                 <AlignCenter className="h-4 w-4" />
               </ToggleGroupItem>
               <ToggleGroupItem
                 value="right"
-                aria-label="Align right"
+                aria-label={t("textStyle.alignRight")}
                 className="h-10 w-10"
               >
                 <AlignRight className="h-4 w-4" />
@@ -121,14 +123,14 @@ export const TextStylePanel: React.FC<TextStylePanelProps> = ({
 
       {/* Colors */}
       <div className="space-y-4 rounded-md dark:bg-darkBox /50 p-4 border">
-        <h3 className="text-sm font-medium">Colors</h3>
+        <h3 className="text-sm font-medium">{t("textStyle.colors")}</h3>
 
         <div className="grid grid-cols-3 gap-4">
           {!localOverlay.styles.WebkitBackgroundClip ? (
             <>
               <div className="space-y-2">
                 <label className="text-xs text-muted-foreground">
-                  Text Color
+                  {t("textStyle.textColor")}
                 </label>
                 <Popover>
                   <PopoverTrigger asChild>
@@ -159,7 +161,7 @@ export const TextStylePanel: React.FC<TextStylePanelProps> = ({
 
               <div className="space-y-2">
                 <label className="text-xs text-muted-foreground">
-                  Highlight
+                  {t("textStyle.highlight")}
                 </label>
                 <Popover>
                   <PopoverTrigger asChild>
@@ -195,7 +197,7 @@ export const TextStylePanel: React.FC<TextStylePanelProps> = ({
           ) : (
             <div className="col-span-3">
               <p className="text-xs text-muted-foreground">
-                Color settings are not available for gradient text styles
+                {t("textStyle.gradientNote")}
               </p>
             </div>
           )}

@@ -11,6 +11,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "../../../../../ui/tabs";
+import { useTranslation } from "@/lib/i18n";
 
 /**
  * Props for the CaptionSettings component
@@ -78,6 +79,7 @@ export const CaptionSettings: React.FC<CaptionSettingsProps> = ({
   setLocalOverlay,
   currentFrame,
 }) => {
+  const { t } = useTranslation();
   const currentMs = (currentFrame / 30) * 1000;
 
   return (
@@ -92,19 +94,19 @@ export const CaptionSettings: React.FC<CaptionSettingsProps> = ({
         >
           <span className="flex items-center gap-2 text-xs">
             <AlignLeft className="w-3 h-3" />
-            Captions
+            {t("captionSettings.captions")}
           </span>
         </TabsTrigger>
 
         {/* Display Tab */}
         <TabsTrigger
           value="display"
-          className="data-[state=active]:bg-primarioLogo data-[state=active]:text-gray-900 dark:data-[state=active]:text-white 
+          className="data-[state=active]:bg-primarioLogo data-[state=active]:text-gray-900 dark:data-[state=active]:text-white
             rounded-sm transition-all duration-200 text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-200 hover:bg-gray-200/50 dark:hover:bg-gray-700/50"
         >
           <span className="flex items-center gap-2 text-xs">
             <PaintBucket className="w-3 h-3" />
-            Style
+            {t("captionSettings.style")}
           </span>
         </TabsTrigger>
 
@@ -116,9 +118,9 @@ export const CaptionSettings: React.FC<CaptionSettingsProps> = ({
         >
           <span className="flex items-center gap-2 text-xs">
             <Mic className="w-3 h-3" />
-            Voice
+            {t("captionSettings.voice")}
             <span className="text-[9px] ml-2 text-amber-700 dark:text-amber-400 font-medium bg-amber-100/50 dark:bg-yellow-800/50 rounded-sm px-1 py-0.5">
-              SOON
+              {t("captionSettings.soon")}
             </span>
           </span>
         </TabsTrigger>

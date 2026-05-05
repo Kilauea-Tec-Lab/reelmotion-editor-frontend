@@ -8,6 +8,7 @@ import { TimelineControls } from "../timeline/timeline-controls";
 import { DISABLE_MOBILE_LAYOUT, FPS } from "../../constants";
 import Timeline from "../timeline/timeline";
 import { VideoPlayer } from "./video-player";
+import { useTranslation } from "@/lib/i18n";
 
 /**
  * Main Editor Component
@@ -40,6 +41,7 @@ import { VideoPlayer } from "./video-player";
 export const Editor: React.FC = () => {
   /** State to track if the current viewport is mobile-sized */
   const [isMobile, setIsMobile] = React.useState(false);
+  const { t } = useTranslation();
 
   /**
    * Effect to handle mobile detection and window resize events
@@ -113,21 +115,19 @@ export const Editor: React.FC = () => {
     return (
       <div className="flex items-center justify-center h-screen bg-white dark:bg-darkBox  p-6">
         <div className="text-center text-gray-900 dark:text-white">
-          <h2 className="text-xl font-bold mb-3">React Video Editor</h2>
+          <h2 className="text-xl font-bold mb-3">{t("mobile.title")}</h2>
           <p className="text-sm text-gray-600 dark:text-gray-400 font-light mb-4">
-            Currently, React Video Editor is designed as a full-screen desktop
-            experience. We&apos;re actively working on making it
-            mobile-friendly! 👀
+            {t("mobile.body")}
           </p>
           <p className="text-sm text-gray-600 dark:text-gray-400 font-light">
-            Want mobile support? Let us know by voting{" "}
+            {t("mobile.voteCta")}{" "}
             <a
               href="https://reactvideoeditor.featurebase.app/p/bulb-mobile-layout-version-2"
               className="text-blue-600 font-medium dark:text-blue-400 hover:underline"
               target="_blank"
               rel="noopener noreferrer"
             >
-              here
+              {t("mobile.voteHere")}
             </a>
             !
           </p>

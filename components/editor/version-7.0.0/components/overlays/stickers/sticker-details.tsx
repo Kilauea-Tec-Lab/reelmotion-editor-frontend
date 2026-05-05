@@ -16,6 +16,7 @@ import { StickerOverlay } from "../../../types";
 import { Sparkles } from "lucide-react";
 import { AnimationSettings } from "../../shared/animation-preview";
 import { animationTemplates } from "../../../templates/animation-templates";
+import { useTranslation } from "@/lib/i18n";
 
 interface StickerDetailsProps {
   /** The current state of the sticker overlay */
@@ -31,6 +32,7 @@ export const StickerDetails: React.FC<StickerDetailsProps> = ({
   localOverlay,
   setLocalOverlay,
 }) => {
+  const { t } = useTranslation();
   /**
    * Updates the style properties of the sticker overlay
    */
@@ -76,7 +78,7 @@ export const StickerDetails: React.FC<StickerDetailsProps> = ({
         <div className="flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-gray-700 dark:text-gray-300" />
           <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            Sticker Animations
+            {t("stickerDetails.animations")}
           </h3>
         </div>
       </div>

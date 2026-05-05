@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from "next-themes";
+import { LanguageProvider } from "@/lib/i18n";
 
 export const metadata: Metadata = {
   title: "Reelmotion Editor",
@@ -44,10 +45,12 @@ export default function RootLayout({
           enableSystem={false}
           disableTransitionOnChange
         >
-          <main className="bg-gray-900">
-            {children}
-            <Toaster />
-          </main>
+          <LanguageProvider>
+            <main className="bg-gray-900">
+              {children}
+              <Toaster />
+            </main>
+          </LanguageProvider>
         </ThemeProvider>
       </body>
     </html>

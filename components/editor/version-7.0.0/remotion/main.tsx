@@ -46,7 +46,6 @@ const DEFAULT_BG_COLOR = "#222225";
 
 const layerContainer: React.CSSProperties = {
   overflow: "hidden",
-  maxWidth: "3000px",
 };
 
 /**

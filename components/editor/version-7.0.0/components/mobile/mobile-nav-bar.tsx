@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/sheet";
 import { useEffect, useState, useRef, Suspense, useCallback, startTransition } from "react";
 import { Loader2 } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
 
 // Lazy load all panel components - they only load when first accessed
 const VideoOverlayPanel = React.lazy(() => import("../overlays/video/video-overlay-panel").then(m => ({ default: m.VideoOverlayPanel })));
@@ -38,28 +39,28 @@ const LocalMediaPanel = React.lazy(() => import("../overlays/local-media/local-m
 const TemplateOverlayPanel = React.lazy(() => import("../overlays/templates/template-overlay-panel").then(m => ({ default: m.TemplateOverlayPanel })));
 const LibraryPanel = React.lazy(() => import("../overlays/library/library-panel").then(m => ({ default: m.LibraryPanel })));
 
-// Panel title mapping (static, no need to recreate)
-const PANEL_TITLES: Record<string, string> = {
-  [OverlayType.VIDEO]: "Video",
-  [OverlayType.TEXT]: "Text",
-  [OverlayType.SOUND]: "Audio",
-  [OverlayType.CAPTION]: "Caption",
-  [OverlayType.IMAGE]: "Image",
-  [OverlayType.LIBRARY]: "Library",
-  [OverlayType.LOCAL_DIR]: "Media",
-  [OverlayType.STICKER]: "Sticker",
-  [OverlayType.TEMPLATE]: "Template",
+// Panel title mapping — translation keys, resolved at render time.
+const PANEL_TITLE_KEYS: Record<string, string> = {
+  [OverlayType.VIDEO]: "sidebar.video",
+  [OverlayType.TEXT]: "sidebar.text",
+  [OverlayType.SOUND]: "sidebar.audio",
+  [OverlayType.CAPTION]: "sidebar.caption",
+  [OverlayType.IMAGE]: "sidebar.image",
+  [OverlayType.LIBRARY]: "sidebar.library",
+  [OverlayType.LOCAL_DIR]: "sidebar.uploads",
+  [OverlayType.STICKER]: "sidebar.stickers",
+  [OverlayType.TEMPLATE]: "sidebar.template",
 };
 
 const NAVIGATION_ITEMS = [
-  { title: "Video", icon: Film, panel: OverlayType.VIDEO },
-  { title: "Text", icon: Type, panel: OverlayType.TEXT },
-  { title: "Audio", icon: Music, panel: OverlayType.SOUND },
-  { title: "Caption", icon: Subtitles, panel: OverlayType.CAPTION },
-  { title: "Library", icon: Library, panel: OverlayType.LIBRARY },
-  { title: "Sticker", icon: Sticker, panel: OverlayType.STICKER },
-  { title: "Media", icon: FolderOpen, panel: OverlayType.LOCAL_DIR },
-  { title: "Template", icon: Layout, panel: OverlayType.TEMPLATE },
+  { tKey: "sidebar.video", icon: Film, panel: OverlayType.VIDEO },
+  { tKey: "sidebar.text", icon: Type, panel: OverlayType.TEXT },
+  { tKey: "sidebar.audio", icon: Music, panel: OverlayType.SOUND },
+  { tKey: "sidebar.caption", icon: Subtitles, panel: OverlayType.CAPTION },
+  { tKey: "sidebar.library", icon: Library, panel: OverlayType.LIBRARY },
+  { tKey: "sidebar.stickers", icon: Sticker, panel: OverlayType.STICKER },
+  { tKey: "sidebar.uploads", icon: FolderOpen, panel: OverlayType.LOCAL_DIR },
+  { tKey: "sidebar.template", icon: Layout, panel: OverlayType.TEMPLATE },
 ];
 
 /**
@@ -72,6 +73,7 @@ const NAVIGATION_ITEMS = [
 export function MobileNavBar() {
   const { activePanel, setActivePanel } = useSidebar();
   const { selectedOverlayId, setSelectedOverlayId } = useEditorContext();
+  const { t } = useTranslation();
   const scrollableRef = useRef<HTMLDivElement>(null);
   const [showScrollIndicator, setShowScrollIndicator] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -231,16 +233,16 @@ export function MobileNavBar() {
                   <button
                     onClick={() => setSelectedOverlayId(null)}
                     className="h-6 w-6 flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                    aria-label="Back"
+                    aria-label={t("common.back")}
                   >
                     <ChevronLeft className="h-4 w-4" />
                   </button>
                 )}
-                {activePanel && PANEL_TITLES[activePanel]}
+                {activePanel && t(PANEL_TITLE_KEYS[activePanel])}
               </SheetTitle>
               <SheetClose className="rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary">
                 <X className="h-4 w-4" />
-                <span className="sr-only">Close</span>
+                <span className="sr-only">{t("common.close")}</span>
               </SheetClose>
             </SheetHeader>
             <div className="flex-1 overflow-y-auto p-0">

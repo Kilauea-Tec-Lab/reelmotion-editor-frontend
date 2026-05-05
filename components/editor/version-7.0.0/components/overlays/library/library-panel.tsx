@@ -11,6 +11,7 @@ import { useTimelinePositioning } from "../../../hooks/use-timeline-positioning"
 import { useAspectRatio } from "../../../hooks/use-aspect-ratio";
 import { useTimeline } from "../../../contexts/timeline-context";
 import { Overlay, OverlayType } from "../../../types";
+import { useTranslation } from "@/lib/i18n";
 
 /**
  * LibraryPanel Component
@@ -23,33 +24,34 @@ import { Overlay, OverlayType } from "../../../types";
  * 4. Separate tabs for Images and Videos
  */
 
-// Popular categories for images and videos
+// Popular categories for images and videos — labels resolved via translations.
 const IMAGE_CATEGORIES = [
-  { label: "Curated", query: "curated" },
-  { label: "Nature", query: "nature" },
-  { label: "People", query: "people" },
-  { label: "Technology", query: "technology" },
-  { label: "Business", query: "business" },
-  { label: "Fashion", query: "fashion" },
-  { label: "Food", query: "food" },
-  { label: "Travel", query: "travel" },
-  { label: "Animals", query: "animals" },
-  { label: "Abstract", query: "abstract" },
+  { tKey: "libraryPanel.cat.curated", query: "curated" },
+  { tKey: "libraryPanel.cat.nature", query: "nature" },
+  { tKey: "libraryPanel.cat.people", query: "people" },
+  { tKey: "libraryPanel.cat.technology", query: "technology" },
+  { tKey: "libraryPanel.cat.business", query: "business" },
+  { tKey: "libraryPanel.cat.fashion", query: "fashion" },
+  { tKey: "libraryPanel.cat.food", query: "food" },
+  { tKey: "libraryPanel.cat.travel", query: "travel" },
+  { tKey: "libraryPanel.cat.animals", query: "animals" },
+  { tKey: "libraryPanel.cat.abstract", query: "abstract" },
 ];
 
 const VIDEO_CATEGORIES = [
-  { label: "Nature", query: "nature" },
-  { label: "People", query: "people" },
-  { label: "Technology", query: "technology" },
-  { label: "City", query: "city" },
-  { label: "Ocean", query: "ocean" },
-  { label: "Sunset", query: "sunset" },
-  { label: "Forest", query: "forest" },
-  { label: "Sky", query: "sky" },
-  { label: "Abstract", query: "abstract" },
+  { tKey: "libraryPanel.cat.nature", query: "nature" },
+  { tKey: "libraryPanel.cat.people", query: "people" },
+  { tKey: "libraryPanel.cat.technology", query: "technology" },
+  { tKey: "libraryPanel.cat.city", query: "city" },
+  { tKey: "libraryPanel.cat.ocean", query: "ocean" },
+  { tKey: "libraryPanel.cat.sunset", query: "sunset" },
+  { tKey: "libraryPanel.cat.forest", query: "forest" },
+  { tKey: "libraryPanel.cat.sky", query: "sky" },
+  { tKey: "libraryPanel.cat.abstract", query: "abstract" },
 ];
 
 export const LibraryPanel: React.FC = () => {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<"images" | "videos">("images");
   const [selectedImageCategory, setSelectedImageCategory] = useState("curated");
   const [selectedVideoCategory, setSelectedVideoCategory] = useState("nature");
@@ -259,10 +261,10 @@ export const LibraryPanel: React.FC = () => {
         className="flex flex-col h-full"
       >
         <TabsList  className="w-full grid grid-cols-2 bg-gray-100/50 dark:bg-darkBoxSub /50 backdrop-blur-sm rounded-sm border border-gray-200 dark:border-gray-700 gap-1">
-          <TabsTrigger value="images" className="data-[state=active]:bg-primarioLogo data-[state=active]:text-gray-900 dark:data-[state=active]:text-white 
-            rounded-sm transition-all duration-200 text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-200 hover:bg-gray-200/50 dark:hover:bg-gray-700/50">Images</TabsTrigger>
-          <TabsTrigger value="videos" className="data-[state=active]:bg-primarioLogo data-[state=active]:text-gray-900 dark:data-[state=active]:text-white 
-            rounded-sm transition-all duration-200 text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-200 hover:bg-gray-200/50 dark:hover:bg-gray-700/50">Videos</TabsTrigger>
+          <TabsTrigger value="images" className="data-[state=active]:bg-primarioLogo data-[state=active]:text-gray-900 dark:data-[state=active]:text-white
+            rounded-sm transition-all duration-200 text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-200 hover:bg-gray-200/50 dark:hover:bg-gray-700/50">{t("libraryPanel.images")}</TabsTrigger>
+          <TabsTrigger value="videos" className="data-[state=active]:bg-primarioLogo data-[state=active]:text-gray-900 dark:data-[state=active]:text-white
+            rounded-sm transition-all duration-200 text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-200 hover:bg-gray-200/50 dark:hover:bg-gray-700/50">{t("libraryPanel.videos")}</TabsTrigger>
         </TabsList>
 
         {/* Images Tab */}
@@ -280,7 +282,7 @@ export const LibraryPanel: React.FC = () => {
                       : "bg-gray-100 dark:bg-darkBoxSub text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
                   }`}
                 >
-                  {category.label}
+                  {t(category.tKey)}
                 </button>
               ))}
             </div>
@@ -311,7 +313,7 @@ export const LibraryPanel: React.FC = () => {
                       {/* Title badge */}
                       <div className="absolute bottom-0 left-0 right-0 text-[11px] text-white bg-gradient-to-t from-black/80 to-transparent px-2 py-2 pt-6">
                         <div className="line-clamp-1 font-medium">
-                          {image.alt || `Image #${image.id}`}
+                          {image.alt || t("libraryPanel.imageAlt", { id: image.id })}
                         </div>
                       </div>
                     </div>
@@ -326,7 +328,7 @@ export const LibraryPanel: React.FC = () => {
             )}
             {!imagesLoading && images.length === 0 && (
               <div className="text-center text-muted-foreground py-8">
-                No images found. Try a different search term.
+                {t("libraryPanel.noImages")}
               </div>
             )}
           </div>
@@ -347,7 +349,7 @@ export const LibraryPanel: React.FC = () => {
                       : "bg-gray-100 dark:bg-darkBoxSub text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
                   }`}
                 >
-                  {category.label}
+                  {t(category.tKey)}
                 </button>
               ))}
             </div>
@@ -384,9 +386,9 @@ export const LibraryPanel: React.FC = () => {
                       {/* Tags/Title badge */}
                       <div className="absolute bottom-0 left-0 right-0 text-[11px] text-white bg-gradient-to-t from-black/80 to-transparent px-2 py-2 pt-6">
                         <div className="line-clamp-1 font-medium">
-                          {video.tags && video.tags.length > 0 
+                          {video.tags && video.tags.length > 0
                             ? video.tags[0].charAt(0).toUpperCase() + video.tags[0].slice(1)
-                            : `Video ${video.id}`}
+                            : t("libraryPanel.videoLabel", { id: video.id })}
                         </div>
                       </div>
                     </div>
@@ -401,7 +403,7 @@ export const LibraryPanel: React.FC = () => {
             )}
             {!videosLoading && videos.length === 0 && (
               <div className="text-center text-muted-foreground py-8">
-                No videos found. Try a different search term.
+                {t("libraryPanel.noVideos")}
               </div>
             )}
           </div>

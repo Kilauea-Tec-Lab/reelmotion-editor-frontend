@@ -7,6 +7,7 @@ import { useTimeline } from "../../../contexts/timeline-context";
 import { CaptionOverlay, OverlayType, Caption } from "../../../types";
 import { CaptionSettings } from "./caption-settings";
 import { Upload, X } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
 
 /**
  * Interface for word timing data from uploaded files
@@ -58,6 +59,7 @@ interface WordsFileData {
 export const CaptionsPanel: React.FC = () => {
   const [script, setScript] = useState("");
   const [isBannerVisible, setIsBannerVisible] = useState(true);
+  const { t } = useTranslation();
   const {
     addOverlay,
     overlays,
@@ -251,18 +253,17 @@ export const CaptionsPanel: React.FC = () => {
                   </button>
                   <div className="space-y-1.5">
                     <h3 className="text-xs font-medium text-gray-800 dark:text-gray-200">
-                      How would you like this to work?
+                      {t("captionPanel.bannerTitle")}
                     </h3>
                     <p className="text-xs text-gray-600 dark:text-gray-400 pr-4">
-                      We&apos;re actively improving captions support and would
-                      love your feedback!
+                      {t("captionPanel.bannerBody")}
                     </p>
                     <a
                       href="/docs/captions"
-                      className="inline-flex items-center text-xs text-blue-600 dark:text-blue-400 
+                      className="inline-flex items-center text-xs text-blue-600 dark:text-blue-400
                         hover:text-blue-700 dark:hover:text-blue-300 font-medium transition-colors"
                     >
-                      Learn more about captions
+                      {t("captionPanel.learnMore")}
                       <svg
                         className="w-3.5 h-3.5 ml-0.5"
                         viewBox="0 0 16 16"
@@ -298,10 +299,10 @@ export const CaptionsPanel: React.FC = () => {
                   <Upload className="w-4 h-4 text-gray-600 dark:text-gray-400 group-hover:text-blue-500 transition-colors" />
                   <div className="flex flex-col items-center">
                     <span className="text-gray-600 dark:text-gray-300 group-hover:text-gray-800 dark:group-hover:text-gray-200">
-                      Upload Script File
+                      {t("captionPanel.uploadScriptFile")}
                     </span>
                     <span className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                      Supported formats: .json
+                      {t("captionPanel.supportedFormats")}
                     </span>
                   </div>
                 </Button>
@@ -317,17 +318,17 @@ export const CaptionsPanel: React.FC = () => {
               <div className="relative">
                 <div className="absolute inset-x-0 -top-3 flex items-center justify-center">
                   <span
-                    className="px-3 py-1 text-xs text-gray-600 dark:text-gray-500 bg-white dark:bg-darkBox 
+                    className="px-3 py-1 text-xs text-gray-600 dark:text-gray-500 bg-white dark:bg-darkBox
                   rounded-full border border-gray-200 dark:border-gray-100/10"
                   >
-                    or
+                    {t("captionPanel.or")}
                   </span>
                 </div>
                 <div className="pt-2">
                   <Textarea
                     value={script}
                     onChange={(e) => setScript(e.target.value)}
-                    placeholder="Type or paste your script here..."
+                    placeholder={t("captionPanel.scriptPlaceholder")}
                     className="min-h-[200px] bg-white dark:bg-darkBoxSub /50 
                     border-gray-200 dark:border-gray-700 
                     text-gray-900 dark:text-gray-200 
@@ -343,23 +344,23 @@ export const CaptionsPanel: React.FC = () => {
               <Button
                 onClick={generateCaptions}
                 className="flex-1 text-white dark:text-black
-                disabled:bg-gray-200 disabled:text-gray-500 disabled:darkBoxSub 
-                disabled:dark:text-gray-600 disabled:opacity-100 disabled:cursor-not-allowed 
+                disabled:bg-gray-200 disabled:text-gray-500 disabled:darkBoxSub
+                disabled:dark:text-gray-600 disabled:opacity-100 disabled:cursor-not-allowed
                 transition-colors"
                 disabled={!script.trim()}
               >
-                Generate Captions
+                {t("captionPanel.generate")}
               </Button>
               {script && (
                 <Button
                   variant="ghost"
-                  className="text-sm text-gray-600 dark:text-gray-400 
-                  hover:text-gray-700 dark:hover:text-gray-300 
-                  hover:bg-gray-100/80 dark:hover:bg-gray-800/80 
+                  className="text-sm text-gray-600 dark:text-gray-400
+                  hover:text-gray-700 dark:hover:text-gray-300
+                  hover:bg-gray-100/80 dark:hover:bg-gray-800/80
                    transition-colors"
                   onClick={() => setScript("")}
                 >
-                  Clear
+                  {t("captionPanel.clear")}
                 </Button>
               )}
             </div>

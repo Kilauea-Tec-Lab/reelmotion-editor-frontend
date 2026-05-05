@@ -18,6 +18,7 @@ import { useAspectRatio } from "../../../hooks/use-aspect-ratio";
 import { useTimeline } from "../../../contexts/timeline-context";
 import { ClipOverlay, Overlay, OverlayType } from "../../../types";
 import { VideoDetails } from "./video-details";
+import { useTranslation } from "@/lib/i18n";
 
 interface ReelmotionVideo {
   id: string;
@@ -123,6 +124,7 @@ LazyVideoThumbnail.displayName = "LazyVideoThumbnail";
  * ```
  */
 export const VideoOverlayPanel: React.FC = () => {
+  const { t } = useTranslation();
   const {
     videos,
     isLoading,
@@ -227,14 +229,14 @@ export const VideoOverlayPanel: React.FC = () => {
       setNewName("");
       
       toast({
-        title: "Success",
-        description: "Video name updated successfully",
+        title: t("common.success"),
+        description: t("toast.videoNameUpdated"),
       });
     } catch (error) {
       console.error("Error updating video name:", error);
       toast({
-        title: "Error",
-        description: "Failed to update video name",
+        title: t("common.error"),
+        description: t("toast.videoNameUpdateFailed"),
         variant: "destructive",
       });
     } finally {
@@ -330,7 +332,7 @@ export const VideoOverlayPanel: React.FC = () => {
         <>
           <div className="flex gap-2">
             <Input
-              placeholder="Search videos..."
+              placeholder={t("videoPanel.searchPlaceholder")}
               value={searchQuery}
               className="bg-white dark:bg-darkBoxSub  border-gray-200 dark:border-white/5 text-gray-900 dark:text-zinc-200 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus-visible:ring-blue-400"
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -370,7 +372,7 @@ export const VideoOverlayPanel: React.FC = () => {
                       {/* Video name & Options */}
                       <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/70 to-transparent flex items-center justify-between gap-1 group">
                         <p className="text-white text-xs font-medium truncate flex-1 text-left">
-                          {video.name || "Untitled"}
+                          {video.name || t("common.untitled")}
                         </p>
 
                         <div onClick={(e) => e.stopPropagation()}>
@@ -395,7 +397,7 @@ export const VideoOverlayPanel: React.FC = () => {
                                   value={newName}
                                   onChange={(e) => setNewName(e.target.value)}
                                   className="h-8 text-xs"
-                                  placeholder="Rename video..."
+                                  placeholder={t("videoPanel.renamePlaceholder")}
                                   onKeyDown={(e) => {
                                     if (e.key === 'Enter') handleRename();
                                   }}
@@ -436,7 +438,7 @@ export const VideoOverlayPanel: React.FC = () => {
                 </>
               ) : (
                 <div className="col-span-2 flex flex-col items-center justify-center py-8 text-gray-500">
-                  <p>No videos found</p>
+                  <p>{t("videoPanel.noVideosFound")}</p>
                 </div>
               )}
             </div>

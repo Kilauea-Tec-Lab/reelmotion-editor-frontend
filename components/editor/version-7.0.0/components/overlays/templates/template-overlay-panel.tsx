@@ -16,6 +16,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useTranslation } from "@/lib/i18n";
 
 export const TemplateOverlayPanel: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -23,6 +24,7 @@ export const TemplateOverlayPanel: React.FC = () => {
     useState<TemplateOverlay | null>(null);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const { setOverlays, setAspectRatio } = useEditorContext();
+  const { t } = useTranslation();
 
   const { templates, isLoading, error } = useTemplates({
     searchQuery,
@@ -77,7 +79,7 @@ export const TemplateOverlayPanel: React.FC = () => {
         <div className="flex gap-2">
           <form onSubmit={handleSearch} className="flex-1 flex gap-2">
             <Input
-              placeholder="Search templates..."
+              placeholder={t("templates.searchPlaceholder")}
               value={searchQuery}
               className="flex-1 h-8 sm:h-10 text-xs sm:text-sm bg-white dark:bg-darkBoxSub  border-gray-200 dark:border-white/5 text-gray-900 dark:text-zinc-200 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus-visible:ring-blue-400 md:text-base"
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -92,14 +94,14 @@ export const TemplateOverlayPanel: React.FC = () => {
               accept=".json"
               onChange={handleImportTemplate}
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-              title="Import template"
+              title={t("templates.importTitle")}
             />
           </div>
         </div>
 
         {error && (
           <div className="text-red-500 text-xs sm:text-sm p-2">
-            Error loading templates: {error}
+            {t("templates.errorLoading", { error })}
           </div>
         )}
 
@@ -161,7 +163,7 @@ export const TemplateOverlayPanel: React.FC = () => {
               ))
             ) : (
               <div className="col-span-2 sm:col-span-1 flex flex-col items-center justify-center py-4 sm:py-8 text-gray-500 text-xs sm:text-sm">
-                No templates found
+                {t("templates.empty")}
               </div>
             )}
           </div>
@@ -174,16 +176,15 @@ export const TemplateOverlayPanel: React.FC = () => {
           <AlertDialogContent className="w-[90%] max-w-md mx-auto rounded-md p-3 sm:p-6">
             <AlertDialogHeader>
               <AlertDialogTitle className="text-sm sm:text-base">
-                Apply Template
+                {t("templates.applyTitle")}
               </AlertDialogTitle>
               <AlertDialogDescription className="text-xs sm:text-sm">
-                Are you sure you want to add this template to your timeline? It
-                will replace all existing overlays.
+                {t("templates.applyConfirm")}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter className="gap-2 sm:gap-3">
               <AlertDialogCancel className="h-8 sm:h-10 text-xs sm:text-sm">
-                Cancel
+                {t("common.cancel")}
               </AlertDialogCancel>
               <AlertDialogAction
                 className="h-8 sm:h-10 text-xs sm:text-sm"
@@ -191,7 +192,7 @@ export const TemplateOverlayPanel: React.FC = () => {
                   selectedTemplate && handleApplyTemplate(selectedTemplate)
                 }
               >
-                Apply Template
+                {t("templates.applyTitle")}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

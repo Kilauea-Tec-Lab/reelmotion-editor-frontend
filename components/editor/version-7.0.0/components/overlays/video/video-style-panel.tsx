@@ -2,6 +2,7 @@ import React from "react";
 import { ClipOverlay } from "../../../types";
 import { MediaFilterPresetSelector } from "../common/media-filter-preset-selector";
 import { MediaPaddingControls } from "../common/media-padding-controls";
+import { useTranslation } from "@/lib/i18n";
 
 /**
  * Props for the VideoStylePanel component
@@ -35,17 +36,18 @@ export const VideoStylePanel: React.FC<VideoStylePanelProps> = ({
   localOverlay,
   handleStyleChange,
 }) => {
+  const { t } = useTranslation();
   return (
     <div className="space-y-6">
       {/* Appearance Settings */}
       <div className="space-y-4 rounded-md bg-gray-100/50 dark:bg-darkBoxSub /50 p-4 border border-gray-200 dark:border-gray-700">
         <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-          Appearance
+          {t("mediaStyle.appearance")}
         </h3>
 
         <div className="space-y-2">
           <label className="text-xs text-gray-600 dark:text-gray-400">
-            Fit
+            {t("mediaStyle.fit")}
           </label>
           <select
             value={localOverlay?.styles?.objectFit ?? "cover"}
@@ -54,9 +56,9 @@ export const VideoStylePanel: React.FC<VideoStylePanelProps> = ({
             }
             className="w-full bg-white dark:bg-darkBox  border border-gray-200 dark:border-gray-700 rounded-md text-xs p-2 hover:border-gray-300 dark:hover:border-gray-600 transition-colors text-gray-900 dark:text-gray-100"
           >
-            <option value="cover">Cover</option>
-            <option value="contain">Contain</option>
-            <option value="fill">Fill</option>
+            <option value="cover">{t("mediaStyle.fitCover")}</option>
+            <option value="contain">{t("mediaStyle.fitContain")}</option>
+            <option value="fill">{t("mediaStyle.fitFill")}</option>
           </select>
         </div>
 
@@ -70,7 +72,7 @@ export const VideoStylePanel: React.FC<VideoStylePanelProps> = ({
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <label className="text-xs text-gray-600 dark:text-gray-400">
-              Border Radius
+              {t("mediaStyle.borderRadius")}
             </label>
             <span className="text-xs text-gray-600 dark:text-gray-400 min-w-[40px] text-right">
               {localOverlay?.styles?.borderRadius ?? "0px"}
@@ -90,7 +92,7 @@ export const VideoStylePanel: React.FC<VideoStylePanelProps> = ({
         {/* Brightness */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <label className="text-xs text-gray-400">Brightness</label>
+            <label className="text-xs text-gray-400">{t("mediaStyle.brightness")}</label>
             <span className="text-xs text-gray-400 min-w-[40px] text-right">
               {parseInt(
                 localOverlay?.styles?.filter?.match(

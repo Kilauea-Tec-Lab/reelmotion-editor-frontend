@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect } from "react";
 import { SoundOverlay } from "../../../types";
 import { Play, Pause } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "@/lib/i18n";
 
 /**
  * Interface for the props passed to the SoundDetails component
@@ -31,6 +32,7 @@ export const SoundDetails: React.FC<SoundDetailsProps> = ({
   localOverlay,
   setLocalOverlay,
 }) => {
+  const { t } = useTranslation();
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -106,7 +108,7 @@ export const SoundDetails: React.FC<SoundDetailsProps> = ({
           {/* Volume Settings */}
           <div className="space-y-4 rounded-md dark:bg-darkBox /50 p-4 border">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-medium text-foreground">Volume</h3>
+              <h3 className="text-sm font-medium text-foreground">{t("videoSettings.volume")}</h3>
               <button
                 onClick={() =>
                   handleStyleChange({
@@ -119,7 +121,9 @@ export const SoundDetails: React.FC<SoundDetailsProps> = ({
                     : "bg-muted text-muted-foreground hover:bg-muted/70"
                 }`}
               >
-                {(localOverlay?.styles?.volume ?? 1) === 0 ? "Unmute" : "Mute"}
+                {(localOverlay?.styles?.volume ?? 1) === 0
+                  ? t("videoSettings.unmute")
+                  : t("videoSettings.mute")}
               </button>
             </div>
 

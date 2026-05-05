@@ -25,6 +25,7 @@ import { VideoStylePanel } from "./video-style-panel";
 import { VideoSettingsPanel } from "./video-settings-panel";
 import { useOverlayOverlapCheck } from "../../../hooks/use-overlay-overlap-check";
 import { useEditorContext } from "../../../contexts/editor-context";
+import { useTranslation } from "@/lib/i18n";
 
 interface VideoDetailsProps {
   /** The current state of the video overlay */
@@ -42,6 +43,7 @@ export const VideoDetails: React.FC<VideoDetailsProps> = ({
 }) => {
   const { checkAndAdjustOverlaps } = useOverlayOverlapCheck();
   const { overlays, setOverlays } = useEditorContext();
+  const { t } = useTranslation();
 
   /**
    * Updates the style properties of the video overlay
@@ -118,17 +120,17 @@ export const VideoDetails: React.FC<VideoDetailsProps> = ({
           >
             <span className="flex items-center gap-2 text-xs">
               <Settings className="w-3 h-3" />
-              Settings
+              {t("panel.settings")}
             </span>
           </TabsTrigger>
           <TabsTrigger
             value="style"
-            className="data-[state=active]:bg-primarioLogo data-[state=active]:text-gray-900 dark:data-[state=active]:text-white 
+            className="data-[state=active]:bg-primarioLogo data-[state=active]:text-gray-900 dark:data-[state=active]:text-white
             rounded-sm transition-all duration-200 text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-200 hover:bg-gray-200/50 dark:hover:bg-gray-700/50"
           >
             <span className="flex items-center gap-2 text-xs">
               <PaintBucket className="w-3 h-3" />
-              Style
+              {t("panel.style")}
             </span>
           </TabsTrigger>
         </TabsList>

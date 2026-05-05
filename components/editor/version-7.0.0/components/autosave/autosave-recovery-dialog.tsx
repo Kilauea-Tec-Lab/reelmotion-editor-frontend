@@ -5,6 +5,7 @@ import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { ToastAction } from "@/components/ui/toast";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "@/lib/i18n";
 
 interface AutosaveRecoveryDialogProps {
   /**
@@ -44,6 +45,7 @@ export const AutosaveRecoveryDialog: React.FC<AutosaveRecoveryDialogProps> = ({
   onClose,
 }) => {
   const { toast, dismiss } = useToast();
+  const { t } = useTranslation();
   const [toastId, setToastId] = React.useState<string>();
   const relativeTime = formatDistanceToNow(new Date(timestamp), {
     addSuffix: true,
@@ -54,30 +56,24 @@ export const AutosaveRecoveryDialog: React.FC<AutosaveRecoveryDialogProps> = ({
       title: (
         <div className="flex items-center gap-2 text-base">
           <div className="h-2 w-2 rounded-full bg-yellow-500 animate-pulse" />
-          Unsaved Changes Found
+          {t("autosave.recoveryTitle")}
         </div>
       ) as any,
       description: (
         <div className="flex flex-col space-y-2">
           <div className="flex items-center space-x-2 mb-4">
             <span className="text-sm font-light mt-1">
-              We found an autosaved version of your project from{" "}
-              <time
-                dateTime={new Date(timestamp).toISOString()}
-                className="font-medium"
-              >
-                {relativeTime}
-              </time>{" "}
+              {t("autosave.recoveryDescription", { time: relativeTime })}{" "}
               ({new Date(timestamp).toLocaleTimeString()})
             </span>
           </div>
           <div className="flex gap-2">
             <ToastAction
-              altText="Discard"
+              altText={t("autosave.discard")}
               onClick={handleDiscard}
               className="border-gray-200 hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-800"
             >
-              Discard
+              {t("autosave.discard")}
             </ToastAction>
             <Button
               variant="default"
@@ -85,7 +81,7 @@ export const AutosaveRecoveryDialog: React.FC<AutosaveRecoveryDialogProps> = ({
               onClick={handleRecover}
               className="bg-primary text-primary-foreground hover:bg-primary/90 dark:bg-primary dark:text-primary-foreground dark:hover:bg-primary/90"
             >
-              Recover Changes
+              {t("autosave.recover")}
             </Button>
           </div>
         </div>
@@ -129,8 +125,8 @@ export const AutosaveRecoveryDialog: React.FC<AutosaveRecoveryDialogProps> = ({
       console.error("Failed to clear autosave:", error);
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Failed to clear autosave data",
+        title: t("common.error"),
+        description: t("error.generic"),
       });
     } finally {
       onClose();

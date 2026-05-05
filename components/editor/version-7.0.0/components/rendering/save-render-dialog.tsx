@@ -23,6 +23,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Download, Save, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import Cookies from "js-cookie";
+import { useTranslation } from "@/lib/i18n";
 
 interface ProjectInfo {
   id: string;
@@ -55,6 +56,7 @@ export const SaveRenderDialog: React.FC<SaveRenderDialogProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isPublic, setIsPublic] = useState<"public" | "private">("private");
+  const { t } = useTranslation();
 
   // Fetch projects when dialog opens
   useEffect(() => {
@@ -95,8 +97,8 @@ export const SaveRenderDialog: React.FC<SaveRenderDialogProps> = ({
     } catch (error) {
       console.error("Error fetching projects:", error);
       toast({
-        title: "Error",
-        description: "Failed to load projects. Please try again.",
+        title: t("common.error"),
+        description: t("saveRender.savingProjects"),
         variant: "destructive",
       });
     } finally {
@@ -108,8 +110,8 @@ export const SaveRenderDialog: React.FC<SaveRenderDialogProps> = ({
     // Validate input
     if (saveMode === "name" && !videoName.trim()) {
       toast({
-        title: "Validation Error",
-        description: "Please enter a video name.",
+        title: t("saveRender.validationError"),
+        description: t("saveRender.enterVideoName"),
         variant: "destructive",
       });
       return;
@@ -117,8 +119,8 @@ export const SaveRenderDialog: React.FC<SaveRenderDialogProps> = ({
 
     if (saveMode === "project" && !selectedProject) {
       toast({
-        title: "Validation Error",
-        description: "Please select a project.",
+        title: t("saveRender.validationError"),
+        description: t("saveRender.selectProject"),
         variant: "destructive",
       });
       return;
@@ -180,18 +182,18 @@ export const SaveRenderDialog: React.FC<SaveRenderDialogProps> = ({
 
       if (data.code === 200 || data.success) {
         toast({
-          title: "Success",
-          description: "Video saved successfully!",
+          title: t("common.success"),
+          description: t("saveRender.success"),
         });
         onOpenChange(false);
       } else {
-        throw new Error(data.message || "Failed to save video");
+        throw new Error(data.message || t("saveRender.failed"));
       }
     } catch (error) {
       console.error("Error saving video:", error);
       toast({
-        title: "Error",
-        description: "Failed to save video. Please try again.",
+        title: t("common.error"),
+        description: t("saveRender.failed"),
         variant: "destructive",
       });
     } finally {
@@ -208,8 +210,8 @@ export const SaveRenderDialog: React.FC<SaveRenderDialogProps> = ({
     document.body.removeChild(a);
 
     toast({
-      title: "Download Started",
-      description: "Your video is being downloaded.",
+      title: t("saveRender.downloadStarted"),
+      description: t("saveRender.downloadingDescription"),
     });
   };
 
@@ -217,34 +219,34 @@ export const SaveRenderDialog: React.FC<SaveRenderDialogProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px] ">
         <DialogHeader>
-          <DialogTitle>Save Rendered Video</DialogTitle>
+          <DialogTitle>{t("saveRender.title")}</DialogTitle>
           <DialogDescription>
-            Choose how you want to save or download your rendered video.
+            {t("saveRender.description")}
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="space-y-4 py-2">
             <div className="space-y-2">
-                <Label>Visibility</Label>
+                <Label>{t("saveRender.visibility")}</Label>
                 <Select
                   value={isPublic}
                   onValueChange={(val) => setIsPublic(val as "public" | "private")}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select visibility" />
+                    <SelectValue placeholder={t("saveRender.visibilityPlaceholder")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="private">Private (Only you)</SelectItem>
-                    <SelectItem value="public">Public (Show in Discover)</SelectItem>
+                    <SelectItem value="private">{t("saveRender.private")}</SelectItem>
+                    <SelectItem value="public">{t("saveRender.public")}</SelectItem>
                   </SelectContent>
                 </Select>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="video-name">Video Name</Label>
+              <Label htmlFor="video-name">{t("saveRender.videoName")}</Label>
               <Input
                 id="video-name"
-                placeholder="Enter video name"
+                placeholder={t("saveRender.videoNamePlaceholder")}
                 value={videoName}
                 onChange={(e) => setVideoName(e.target.value)}
                 disabled={isSaving}
@@ -260,18 +262,18 @@ export const SaveRenderDialog: React.FC<SaveRenderDialogProps> = ({
             disabled={isSaving}
           >
             <Download className="w-4 h-4 mr-2" />
-            Download
+            {t("saveRender.download")}
           </Button>
           <Button type="button" onClick={handleSave} disabled={isSaving}>
             {isSaving ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Saving...
+                {t("renderDialog.saving")}
               </>
             ) : (
               <>
                 <Save className="w-4 h-4 mr-2" />
-                Save
+                {t("common.save")}
               </>
             )}
           </Button>

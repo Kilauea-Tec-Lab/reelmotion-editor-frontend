@@ -10,6 +10,7 @@ import { useTimeline } from "../../../contexts/timeline-context";
 import { ImageOverlay, Overlay, OverlayType } from "../../../types";
 import { ImageDetails } from "./image-details";
 import { usePexelsImages } from "../../../hooks/use-pexels-images";
+import { useTranslation } from "@/lib/i18n";
 
 /**
  * Interface representing an image from the Pexels API
@@ -37,6 +38,7 @@ interface PexelsImage {
 export const ImageOverlayPanel: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const { images, isLoading, fetchImages } = usePexelsImages();
+  const { t } = useTranslation();
   const {
     addOverlay,
     overlays,
@@ -132,7 +134,7 @@ export const ImageOverlayPanel: React.FC = () => {
         <>
           <form onSubmit={handleSearch} className="flex gap-2">
             <Input
-              placeholder="Search images..."
+              placeholder={t("imagePanel.searchPlaceholder")}
               value={searchQuery}
               className="dark:bg-darkBox  border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-blue-400"
               onChange={(e) => setSearchQuery(e.target.value)}

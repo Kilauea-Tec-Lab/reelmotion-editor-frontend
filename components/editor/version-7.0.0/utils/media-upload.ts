@@ -60,8 +60,6 @@ export const uploadMediaFile = async (
     // Extract media duration client-side (fast, uses blob URL)
     const thumbnailUrl = "";
     let duration: number | undefined = undefined;
-    const width = 0;
-    const height = 0;
 
     if (fileType === "video" || fileType === "audio") {
       try {
@@ -74,15 +72,25 @@ export const uploadMediaFile = async (
 
     // Upload file directly to Google Cloud Storage
     let uploadData;
-    let serverPath: string;
-    
+
+    // Phase 1: upload to GCS. If this fails, we cannot recover — the file
+    // never reached storage, so propagate the error to the UI.
+    let gcsUrl: string;
     try {
-      // Upload directly to GCS with progress tracking
-      const gcsUrl = await uploadDirectlyToGCS(file, typeNumber, onProgress);
-      serverPath = gcsUrl;
-      
-      
-      // Send minimal data to backend (fast upload - no metadata)
+      gcsUrl = await uploadDirectlyToGCS(file, typeNumber, onProgress);
+    } catch (gcsError) {
+      console.error("GCS upload failed:", gcsError);
+      throw gcsError instanceof Error
+        ? gcsError
+        : new Error("Failed to upload file to storage");
+    }
+
+    const serverPath = gcsUrl;
+
+    // Phase 2: register metadata with the backend. Even if the file is
+    // already in GCS, without a backend record it won't appear after a
+    // reload — surface the failure so the user can retry.
+    try {
       uploadData = await sendMetadataToBackend({
         type: typeNumber,
         fileName: file.name,
@@ -90,30 +98,11 @@ export const uploadMediaFile = async (
         token: token || "",
         backendUrl,
       });
-      
-      
-    } catch (error) {
-      console.warn("GCS upload failed, using local storage as fallback:", error);
-      
-      // Fallback: Use local blob URL (development mode)
-      const reader = new FileReader();
-      serverPath = await new Promise<string>((resolve) => {
-        reader.onload = (e) => resolve((e.target?.result as string) || "");
-        reader.onerror = () => resolve("");
-        reader.readAsDataURL(file);
-      });
-      
-      // Generate a temporary ID
-      uploadData = {
-        id: `local-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        file_name: file.name,
-        file_url: serverPath,
-        type: typeNumber,
-        width,
-        height,
-        duration: duration || null,
-        thumbnail_url: thumbnailUrl || null,
-      };
+    } catch (metadataError) {
+      console.error("Backend metadata save failed:", metadataError);
+      throw metadataError instanceof Error
+        ? metadataError
+        : new Error("Failed to register upload with the server");
     }
 
     // Create media item for IndexedDB

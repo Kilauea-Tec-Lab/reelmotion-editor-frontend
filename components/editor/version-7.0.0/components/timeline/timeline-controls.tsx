@@ -44,6 +44,7 @@ import { useTimelineShortcuts } from "../../hooks/use-timeline-shortcuts";
 import { useAssetLoading } from "../../contexts/asset-loading-context";
 import { useKeyframeContext } from "../../contexts/keyframe-context";
 import { Separator } from "@/components/ui/separator";
+import { useTranslation } from "@/lib/i18n";
 
 // Types
 type AspectRatioOption = "16:9" | "9:16" | "1:1" | "4:5" | "4:3" | "2:1" | "3:4";
@@ -134,6 +135,7 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
   const { isLoadingAssets } = useAssetLoading();
 
   const { clearAllKeyframes } = useKeyframeContext();
+  const { t } = useTranslation();
 
   // Keep track of previous frame to detect resets
   const prevFrameRef = React.useRef(currentFrame);
@@ -271,7 +273,7 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
               align="start"
             >
               <div className="flex items-center gap-1">
-                <span className="text-gray-700 dark:text-zinc-200">Undo</span>
+                <span className="text-gray-700 dark:text-zinc-200">{t("timeline.undo")}</span>
                 <kbd className="px-1 py-0.5 text-[10px] font-mono bg-gray-800 dark:bg-darkBoxSub  text-white rounded-md border border-gray-700">
                   ⌘Z
                 </kbd>
@@ -298,7 +300,7 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
               align="start"
             >
               <div className="flex items-center gap-1">
-                <span className="text-gray-700 dark:text-zinc-200">Redo</span>
+                <span className="text-gray-700 dark:text-zinc-200">{t("timeline.redo")}</span>
                 <kbd className="px-1 py-0.5 text-[10px] font-mono bg-gray-800 dark:bg-darkBoxSub  text-white rounded-md border border-gray-700">
                   ⌘Y
                 </kbd>
@@ -326,7 +328,7 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
               align="start"
             >
               <span className="text-gray-700 dark:text-zinc-200">
-                {canSplit ? "Split at playhead" : "Select an overlay to split"}
+                {canSplit ? t("timeline.splitAtPlayhead") : t("timeline.selectOverlayToSplit")}
               </span>
             </TooltipContent>
           </Tooltip>
@@ -337,7 +339,7 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
           <div className="flex items-center gap-2 px-2 py-1 bg-blue-50/90 dark:bg-blue-900/20 rounded-md ml-2">
             <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-600 dark:text-blue-400" />
             <span className="text-xs font-medium text-blue-700 dark:text-blue-300">
-              Loading...
+              {t("timeline.loading")}
             </span>
           </div>
         )}
@@ -397,7 +399,7 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
               align="center"
             >
               <span className="text-gray-700 dark:text-zinc-200">
-                Go to start
+                {t("timeline.goToStart")}
               </span>
             </TooltipContent>
           </Tooltip>
@@ -424,7 +426,7 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
             >
               <div className="flex items-center gap-1">
                 <span className="text-gray-700 dark:text-zinc-200">
-                  {isPlaying ? "Pause" : "Play"}
+                  {isPlaying ? t("player.pause") : t("player.play")}
                 </span>
                 <kbd className="px-1 py-0.5 text-[10px] font-mono bg-gray-800 dark:bg-darkBoxSub  text-white rounded-md border border-gray-700">
                   ⌥ Space
@@ -470,7 +472,7 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
                 align="center"
               >
                 <span className="text-gray-700 dark:text-zinc-200">
-                  Zoom Out
+                  {t("timeline.zoomOut")}
                 </span>
               </TooltipContent>
             </Tooltip>
@@ -482,7 +484,7 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
             max={ZOOM_CONSTRAINTS.max * 100}
             step={ZOOM_CONSTRAINTS.step * 100}
             className="w-full"
-            aria-label="Timeline Zoom"
+            aria-label={t("timeline.zoomIn")}
           />
           <TooltipProvider delayDuration={50}>
             <Tooltip>
@@ -504,7 +506,7 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
                 align="center"
               >
                 <span className="text-gray-700 dark:text-zinc-200">
-                  Zoom In
+                  {t("timeline.zoomIn")}
                 </span>
               </TooltipContent>
             </Tooltip>
@@ -531,7 +533,7 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
               align="end"
             >
               <span className="text-gray-700 dark:text-zinc-200">
-                Reset Zoom
+                {t("timeline.resetZoom")}
               </span>
             </TooltipContent>
           </Tooltip>
@@ -559,14 +561,14 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
             avoidCollisions={false}
           >
             <DropdownMenuLabel className="text-xs text-gray-900 dark:text-zinc-200">
-              Timeline Settings
+              {t("timeline.settings")}
             </DropdownMenuLabel>
             <DropdownMenuSeparator className="bg-gray-200 dark:bg-gray-700" />
 
             {/* Row Controls */}
             <div className="px-2 py-2 space-y-1">
               <Label className="text-xs text-gray-400 dark:text-zinc-500">
-                Rows
+                {t("timeline.rows")}
               </Label>
               <div className="flex gap-1 pt-1">
                 <Button
@@ -597,7 +599,7 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
             {/* Aspect Ratio */}
             <div className="px-2 py-2 space-y-1">
               <Label className="text-xs text-gray-400 dark:text-zinc-500">
-                Aspect Ratio
+                {t("timeline.aspectRatio")}
               </Label>
               <div className="grid grid-cols-2 gap-1 pt-1">
                 {["16:9", "9:16", "1:1", "4:5", "4:3", "2:1", "3:4"].map((ratio) => {
@@ -628,7 +630,7 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
             <div className="px-2 py-2 space-y-2">
               <div className="flex items-center justify-between">
                 <Label className="text-xs text-gray-400 dark:text-zinc-500">
-                  Background Color
+                  {t("timeline.backgroundColor")}
                 </Label>
                 <div className="flex items-center gap-1.5">
                   <div
@@ -688,7 +690,7 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
                   bg-white hover:bg-gray-50 dark:bg-darkBoxSub /50 dark:hover:bg-gray-700/80
                   border-gray-200 dark:border-gray-700"
               >
-                Reset Timeline
+                {t("timeline.resetTimeline")}
               </Button>
             </div>
           </DropdownMenuContent>

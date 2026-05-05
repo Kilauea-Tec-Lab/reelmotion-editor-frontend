@@ -10,6 +10,7 @@ import { Loader2, Upload, Trash2, Image, Video, Music, Pencil, Check } from "luc
 import { Input } from "../../../../ui/input";
 import Cookies from "js-cookie";
 import { toast } from "@/hooks/use-toast";
+import { useTranslation } from "@/lib/i18n";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -46,15 +47,18 @@ export function LocalMediaGallery({
   const [previewOpen, setPreviewOpen] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadingType, setUploadingType] = useState<"image" | "video" | "audio" | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const uploadButtonRef = useRef<HTMLButtonElement>(null);
   const dragCounterRef = useRef(0);
   
   // Rename state
   const [fileToRename, setFileToRename] = useState<any>(null);
   const [newName, setNewName] = useState("");
   const [isRenaming, setIsRenaming] = useState(false);
+  const { t } = useTranslation();
 
   const resetDragState = () => {
     dragCounterRef.current = 0;
@@ -108,14 +112,14 @@ export function LocalMediaGallery({
   const getTabUploadLabel = (tab: string) => {
     switch (tab) {
       case "image":
-        return "image";
+        return t("uploads.kindImage");
       case "video":
-        return "video";
+        return t("uploads.kindVideo");
       case "audio":
-        return "audio";
+        return t("uploads.kindAudio");
       case "all":
       default:
-        return "image, video, or audio";
+        return t("uploads.kindAll");
     }
   };
 
@@ -126,17 +130,36 @@ export function LocalMediaGallery({
       return file.type === activeTab;
     });
 
+  // The uploading skeleton should only appear in the tab matching the file
+  // being uploaded (or in "All").
+  const showUploadingSkeleton =
+    isUploading &&
+    (activeTab === "all" ||
+      uploadingType === null ||
+      uploadingType === activeTab);
+
+  // Determine media type from a file's MIME type
+  const getFileMediaType = (file: File): "image" | "video" | "audio" | null => {
+    if (file.type.startsWith("image/")) return "image";
+    if (file.type.startsWith("video/")) return "video";
+    if (file.type.startsWith("audio/")) return "audio";
+    return null;
+  };
+
   // Handle file upload (unified for both button and drag&drop)
   const uploadFile = async (file: File) => {
+    const mediaType = getFileMediaType(file);
     try {
       setUploadError(null);
       setIsUploading(true);
+      setUploadingType(mediaType);
       await addMediaFile(file);
     } catch (error) {
       console.error("Error uploading file:", error);
-      setUploadError("Failed to upload file. Please try again.");
+      setUploadError(t("uploads.uploadFailed"));
     } finally {
       setIsUploading(false);
+      setUploadingType(null);
     }
   };
 
@@ -145,12 +168,16 @@ export function LocalMediaGallery({
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
     const files = event.target.files;
+    // Move focus back to the upload button so subsequent Enter/Space keys
+    // re-trigger upload instead of activating any other focused element.
+    uploadButtonRef.current?.focus();
+
     if (files && files.length > 0) {
       const file = files[0];
 
       if (!isFileAllowedForTab(file, activeTab)) {
         setUploadError(
-          `Invalid file type. Please upload a ${getTabUploadLabel(activeTab)} file.`
+          t("uploads.invalidFileType", { kind: getTabUploadLabel(activeTab) })
         );
         event.target.value = "";
         return;
@@ -194,14 +221,14 @@ export function LocalMediaGallery({
       setNewName("");
       
       toast({
-        title: "Success",
-        description: "File name updated successfully",
+        title: t("common.success"),
+        description: t("uploads.fileNameUpdated"),
       });
     } catch (error) {
       console.error("Error updating file name:", error);
       toast({
-        title: "Error",
-        description: "Failed to update file name",
+        title: t("common.error"),
+        description: t("uploads.fileNameUpdateFailed"),
         variant: "destructive",
       });
     } finally {
@@ -259,7 +286,7 @@ export function LocalMediaGallery({
 
       if (!isFileAllowedForTab(file, activeTab)) {
         setUploadError(
-          `Invalid file type. Please upload a ${getTabUploadLabel(activeTab)} file.`
+          t("uploads.invalidFileType", { kind: getTabUploadLabel(activeTab) })
         );
         return;
       }
@@ -270,7 +297,20 @@ export function LocalMediaGallery({
 
   // Handle upload button click
   const handleUploadClick = () => {
+    if (isLoading || isUploading) return;
     fileInputRef.current?.click();
+  };
+
+  // Handle keyboard activation on the upload button (Enter / Space).
+  // Some focus restorations after the file picker closes can leave focus on
+  // unexpected elements; handling Enter/Space explicitly keeps the upload
+  // shortcut predictable.
+  const handleUploadKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      e.stopPropagation();
+      handleUploadClick();
+    }
   };
 
   // Handle media selection - add directly to timeline
@@ -352,7 +392,7 @@ export function LocalMediaGallery({
       default:
         return (
           <div className="text-sm text-gray-500 dark:text-gray-400">
-            Unsupported file type
+            {t("uploads.unsupportedFile")}
           </div>
         );
     }
@@ -374,7 +414,7 @@ export function LocalMediaGallery({
             <div className="absolute inset-0 bg-black/60 dark:bg-black/80 z-20 flex items-center justify-center">
               <div className="flex flex-col items-center space-y-2">
                 <Loader2 className="w-8 h-8 text-white animate-spin" />
-                <p className="text-white text-xs font-medium">Deleting...</p>
+                <p className="text-white text-xs font-medium">{t("uploads.deleting")}</p>
               </div>
             </div>
           )}
@@ -427,7 +467,7 @@ export function LocalMediaGallery({
           {/* Media Name & Options */}
           <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/70 to-transparent flex items-center justify-between gap-1 z-20">
             <p className="text-white text-xs font-medium truncate flex-1 text-left">
-              {file.name || "Untitled"}
+              {file.name || t("common.untitled")}
             </p>
             
             <div className="flex items-center gap-1 opacity-100 md:opacity-0 group-hover/item:opacity-100 transition-all" onClick={(e) => e.stopPropagation()}>
@@ -452,7 +492,7 @@ export function LocalMediaGallery({
                       value={newName}
                       onChange={(e) => setNewName(e.target.value)}
                       className="h-8 text-xs"
-                      placeholder="Rename file..."
+                      placeholder={t("uploads.renamePlaceholder")}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') handleRename();
                         e.stopPropagation(); // Prevent timeline actions
@@ -506,7 +546,7 @@ export function LocalMediaGallery({
         <div className="aspect-video relative bg-gray-200 dark:bg-gray-800 flex flex-col items-center justify-center">
           <Loader2 className="w-8 h-8 text-pink-500 animate-spin mb-2" />
           <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">
-            Uploading... {percentage}%
+            {t("uploads.uploadingProgress", { percent: percentage })}
           </p>
           
           {/* Progress bar */}
@@ -524,13 +564,16 @@ export function LocalMediaGallery({
   return (
     <div className="h-full flex flex-col">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-sm">Saved Uploads</h2>
+        <h2 className="text-sm">{t("uploads.title")}</h2>
         <div>
           <Button
+            ref={uploadButtonRef}
+            type="button"
             variant="outline"
             size="sm"
             className="gap-1"
             onClick={handleUploadClick}
+            onKeyDown={handleUploadKeyDown}
             disabled={isLoading || isUploading}
           >
             {isUploading ? (
@@ -538,12 +581,14 @@ export function LocalMediaGallery({
             ) : (
               <Upload className="w-4 h-4" />
             )}
-            Upload
+            {t("uploads.uploadButton")}
           </Button>
           <input
             ref={fileInputRef}
             id="file-upload"
             type="file"
+            tabIndex={-1}
+            aria-hidden="true"
             className="hidden"
             onChange={handleFileUpload}
             accept={getAcceptForTab(activeTab)}
@@ -569,36 +614,36 @@ export function LocalMediaGallery({
             className="data-[state=active]:bg-primarioLogo data-[state=active]:text-gray-900 dark:data-[state=active]:text-white 
             rounded-sm transition-all duration-200 text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-200 hover:bg-gray-200/50 dark:hover:bg-gray-700/50"
           >
-            <span className="flex items-center gap-2 text-xs">All</span>
+            <span className="flex items-center gap-2 text-xs">{t("uploads.tabAll")}</span>
           </TabsTrigger>
           <TabsTrigger
             value="image"
-            className="data-[state=active]:bg-primarioLogo data-[state=active]:text-gray-900 dark:data-[state=active]:text-white 
+            className="data-[state=active]:bg-primarioLogo data-[state=active]:text-gray-900 dark:data-[state=active]:text-white
             rounded-sm transition-all duration-200 text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-200 hover:bg-gray-200/50 dark:hover:bg-gray-700/50"
           >
             <span className="flex items-center gap-2 text-xs">
               <Image className="w-3 h-3" />
-              Images
+              {t("uploads.tabImages")}
             </span>
           </TabsTrigger>
           <TabsTrigger
             value="video"
-            className="data-[state=active]:bg-primarioLogo data-[state=active]:text-gray-900 dark:data-[state=active]:text-white 
+            className="data-[state=active]:bg-primarioLogo data-[state=active]:text-gray-900 dark:data-[state=active]:text-white
             rounded-sm transition-all duration-200 text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-200 hover:bg-gray-200/50 dark:hover:bg-gray-700/50"
           >
             <span className="flex items-center gap-2 text-xs">
               <Video className="w-3 h-3" />
-              Videos
+              {t("uploads.tabVideos")}
             </span>
           </TabsTrigger>
           <TabsTrigger
             value="audio"
-            className="data-[state=active]:bg-primarioLogo data-[state=active]:text-gray-900 dark:data-[state=active]:text-white 
+            className="data-[state=active]:bg-primarioLogo data-[state=active]:text-gray-900 dark:data-[state=active]:text-white
             rounded-sm transition-all duration-200 text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-200 hover:bg-gray-200/50 dark:hover:bg-gray-700/50"
           >
             <span className="flex items-center gap-2 text-xs">
               <Music className="w-3 h-3" />
-              Audio
+              {t("uploads.tabAudio")}
             </span>
           </TabsTrigger>
         </TabsList>
@@ -616,11 +661,11 @@ export function LocalMediaGallery({
             <div className="absolute inset-0 z-50 bg-blue-500/10 dark:bg-blue-500/20 border-2 border-dashed border-blue-500 dark:border-blue-400 rounded-lg flex items-center justify-center backdrop-blur-sm pointer-events-none">
               <div className="text-center space-y-2">
                 <Upload className="w-12 h-12 mx-auto text-blue-600 dark:text-blue-400 animate-bounce" />
-                <p className="text-lg font-medium text-blue-600 dark:text-blue-400">Drop files here</p>
+                <p className="text-lg font-medium text-blue-600 dark:text-blue-400">{t("uploads.dragDrop")}</p>
                 <p className="text-sm text-blue-500 dark:text-blue-300">
                   {activeTab === "all"
-                    ? "Images, videos, or audio files"
-                    : `${getTabUploadLabel(activeTab)[0].toUpperCase()}${getTabUploadLabel(activeTab).slice(1)} files`}
+                    ? t("uploads.dropImagesVideosAudio")
+                    : t("uploads.dropKindFiles", { kind: getTabUploadLabel(activeTab) })}
                 </p>
               </div>
             </div>
@@ -629,31 +674,33 @@ export function LocalMediaGallery({
           {isLoading && localMediaFiles.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center space-y-4 text-sm text-gray-500">
               <Loader2 className="w-5 h-5 animate-spin" />
-              <p>Loading media files...</p>
+              <p>{t("uploads.loading")}</p>
             </div>
-          ) : filteredMedia.length === 0 && !isUploading ? (
+          ) : filteredMedia.length === 0 && !showUploadingSkeleton ? (
             <div className="h-full flex flex-col items-center justify-center text-center space-y-3">
               <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-darkBoxSub  flex items-center justify-center">
                 <Upload className="w-4 h-4 text-gray-400" />
               </div>
               <div className="space-y-1">
-                <p className="text-sm font-medium">No media files</p>
+                <p className="text-sm font-medium">{t("uploads.empty")}</p>
                 <p className="text-xs text-gray-500">
-                  Upload or drag & drop your first media file
+                  {t("uploads.uploadCta")}
                 </p>
               </div>
               <Button
+                type="button"
                 variant="outline"
                 size="sm"
                 onClick={handleUploadClick}
+                onKeyDown={handleUploadKeyDown}
                 className="text-xs"
               >
-                Upload Media
+                {t("uploads.uploadMedia")}
               </Button>
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-2 gap-2 ">
-              {isUploading && renderUploadingSkeleton()}
+              {showUploadingSkeleton && renderUploadingSkeleton()}
               {filteredMedia.map(renderMediaItem)}
             </div>
           )}
@@ -672,7 +719,7 @@ export function LocalMediaGallery({
           <div className="flex justify-center">{renderPreviewContent()}</div>
           <div className="flex justify-end mt-4">
             <Button variant="default" size="sm" onClick={handleAddToTimeline}>
-              Add to Timeline
+              {t("uploads.addToTimeline")}
             </Button>
           </div>
         </DialogContent>

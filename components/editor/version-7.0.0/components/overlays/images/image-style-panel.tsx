@@ -2,6 +2,7 @@ import React from "react";
 import { ImageOverlay } from "../../../types";
 import { MediaFilterPresetSelector } from "../common/media-filter-preset-selector";
 import { MediaPaddingControls } from "../common/media-padding-controls";
+import { useTranslation } from "@/lib/i18n";
 
 /**
  * Props for the ImageStylePanel component
@@ -33,15 +34,16 @@ export const ImageStylePanel: React.FC<ImageStylePanelProps> = ({
   localOverlay,
   handleStyleChange,
 }) => {
+  const { t } = useTranslation();
   return (
     <div className="space-y-6">
       {/* Appearance Settings */}
       <div className="space-y-4 rounded-md bg-darkBoxSub p-4 border border-border">
-        <h3 className="text-sm font-medium text-foreground">Appearance</h3>
+        <h3 className="text-sm font-medium text-foreground">{t("mediaStyle.appearance")}</h3>
 
         {/* Object Fit Setting */}
         <div className="space-y-2">
-          <label className="text-xs text-muted-foreground">Fit</label>
+          <label className="text-xs text-muted-foreground">{t("mediaStyle.fit")}</label>
           <select
             value={localOverlay?.styles?.objectFit ?? "cover"}
             onChange={(e) =>
@@ -49,9 +51,9 @@ export const ImageStylePanel: React.FC<ImageStylePanelProps> = ({
             }
             className="w-full dark:bg-darkBox  border border-input rounded-md text-xs p-2 hover:border-accent-foreground transition-colors"
           >
-            <option value="cover">Cover</option>
-            <option value="contain">Contain</option>
-            <option value="fill">Fill</option>
+            <option value="cover">{t("mediaStyle.fitCover")}</option>
+            <option value="contain">{t("mediaStyle.fitContain")}</option>
+            <option value="fill">{t("mediaStyle.fitFill")}</option>
           </select>
         </div>
 
@@ -65,7 +67,7 @@ export const ImageStylePanel: React.FC<ImageStylePanelProps> = ({
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <label className="text-xs text-muted-foreground">
-              Border Radius
+              {t("mediaStyle.borderRadius")}
             </label>
             <span className="text-xs text-muted-foreground min-w-[40px] text-right">
               {localOverlay?.styles?.borderRadius ?? "0px"}
@@ -85,7 +87,7 @@ export const ImageStylePanel: React.FC<ImageStylePanelProps> = ({
         {/* Brightness Control */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <label className="text-xs text-muted-foreground">Brightness</label>
+            <label className="text-xs text-muted-foreground">{t("mediaStyle.brightness")}</label>
             <span className="text-xs text-muted-foreground min-w-[40px] text-right">
               {parseInt(
                 localOverlay?.styles?.filter?.match(

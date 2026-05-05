@@ -3,6 +3,7 @@ import { ChevronDown, Check } from "lucide-react";
 import { MEDIA_FILTER_PRESETS } from "../../../templates/common/media-filter-presets";
 import { ClipOverlay, ImageOverlay } from "../../../types";
 import { resolveVideoUrl } from "../../../utils/url-helper";
+import { useTranslation } from "@/lib/i18n";
 
 interface MediaFilterPresetSelectorProps {
   localOverlay: ClipOverlay | ImageOverlay;
@@ -25,6 +26,7 @@ export const MediaFilterPresetSelector: React.FC<
   MediaFilterPresetSelectorProps
 > = ({ localOverlay, handleStyleChange }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const { t } = useTranslation();
 
   // Determine which preset (if any) is currently active
   const getCurrentPresetId = (): string => {
@@ -47,9 +49,16 @@ export const MediaFilterPresetSelector: React.FC<
   // Get the current preset name for display
   const getCurrentPresetName = (): string => {
     const currentId = getCurrentPresetId();
-    if (currentId === "custom") return "Custom";
+    if (currentId === "custom") return t("mediaStyle.filterPresetCustom");
+    if (currentId === "none") return t("mediaStyle.filterPresetNone");
     const preset = MEDIA_FILTER_PRESETS.find((p) => p.id === currentId);
-    return preset?.name || "None";
+    return preset?.name || t("mediaStyle.filterPresetNone");
+  };
+
+  // Translate the built-in "None" preset name; keep the rest as-is (brand/visual labels)
+  const getPresetDisplayName = (presetId: string, presetName: string): string => {
+    if (presetId === "none") return t("mediaStyle.filterPresetNone");
+    return presetName;
   };
 
   // When a new preset is selected, apply its filter
@@ -100,7 +109,7 @@ export const MediaFilterPresetSelector: React.FC<
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5">
-          <label className="text-xs text-muted-foreground">Filter Preset</label>
+          <label className="text-xs text-muted-foreground">{t("mediaStyle.filterPreset")}</label>
         </div>
       </div>
 
@@ -157,7 +166,7 @@ export const MediaFilterPresetSelector: React.FC<
                   )}
                 </div>
                 <span className="text-[10px] leading-tight text-center">
-                  {preset.name}
+                  {getPresetDisplayName(preset.id, preset.name)}
                 </span>
               </button>
             );

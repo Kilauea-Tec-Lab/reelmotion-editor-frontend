@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 
 import RenderControls from "../rendering/render-controls";
 import { useEditorContext } from "../../contexts/editor-context";
+import { LanguageSelector } from "@/components/language-selector";
 
 /**
  * Dynamic import of the ThemeToggle component to enable client-side rendering only.
@@ -88,6 +89,9 @@ export function EditorHeader() {
 
       {/* Spacer to push rendering controls to the right */}
       <div className="flex-grow" />
+
+      {/* Language selector (EN/ES) */}
+      <LanguageSelector className="hidden sm:flex mr-2" />
 
       {/* Media rendering controls */}
       <RenderControls

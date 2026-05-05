@@ -39,6 +39,7 @@ interface EditorContextProps {
   playerDimensions: { width: number; height: number }; // Current player dimensions
   updatePlayerDimensions: (width: number, height: number) => void; // Update player size
   getAspectRatioDimensions: () => { width: number; height: number }; // Calculate dimensions based on ratio
+  getRenderDimensions: () => { width: number; height: number }; // Actual dimensions used for rendering (after free-tier downscale)
 
   // Video Properties
   durationInFrames: number; // Total number of frames
