@@ -1,6 +1,6 @@
 import React from "react";
 import Cookies from "js-cookie";
-import { Download, Loader2, Bell, Save, FolderOpen, ChevronDown, Lock, Crown } from "lucide-react";
+import { Download, Loader2, Bell, Save, FolderOpen, ChevronDown, Lock, Crown, MoreVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -22,6 +22,7 @@ import { SaveRenderDialog } from "./save-render-dialog";
 import { useEditorContext } from "../../contexts/editor-context";
 import { SubscriptionModal } from "../shared/subscription-modal";
 import { useTranslation } from "@/lib/i18n";
+import { LanguageSelector } from "@/components/language-selector";
 
 /**
  * Interface representing a single video render attempt
@@ -279,7 +280,7 @@ const RenderControls: React.FC<RenderControlsProps> = ({
       <Button
         variant="ghost"
         size="sm"
-        className="relative hover:bg-accent"
+        className="relative hover:bg-accent hidden md:inline-flex"
         onClick={() => setIsLoadDialogOpen(true)}
         disabled={!onLoadEdit}
         title={!onLoadEdit ? t("header.loadFunctionalityUnavailable") : t("header.loadEdit")}
@@ -290,7 +291,7 @@ const RenderControls: React.FC<RenderControlsProps> = ({
       <Button
         variant="ghost"
         size="sm"
-        className="relative hover:bg-accent"
+        className="relative hover:bg-accent hidden md:inline-flex"
         onClick={() => setIsSaveDialogOpen(true)}
         disabled={!editionData}
         title={!editionData ? t("header.noEditionData") : t("header.saveEdit")}
@@ -302,7 +303,7 @@ const RenderControls: React.FC<RenderControlsProps> = ({
           <Button
             variant="ghost"
             size="sm"
-            className="relative hover:bg-accent"
+            className="relative hover:bg-accent hidden md:inline-flex"
           >
             <Bell className="w-3.5 h-3.5" />
             {hasNewRender && (
@@ -447,6 +448,116 @@ const RenderControls: React.FC<RenderControlsProps> = ({
           </DropdownMenuContent>
         </DropdownMenu>
       )}
+
+      {/* Mobile kebab menu — surfaces Cargar / Guardar / Idioma / Notificaciones
+          inline with the same handlers as the desktop buttons. */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="md:hidden relative hover:bg-accent px-2"
+            aria-label={t("header.actions")}
+          >
+            <MoreVertical className="w-4 h-4" />
+            {hasNewRender && (
+              <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-red-500" />
+            )}
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          align="end"
+          className="w-[260px]"
+          onCloseAutoFocus={() => setHasNewRender(false)}
+        >
+          <DropdownMenuLabel className="flex items-center justify-between gap-2">
+            <span>{t("language.label")}</span>
+            <LanguageSelector showLabel={false} className="gap-0" />
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+
+          <DropdownMenuItem
+            onClick={() => setIsLoadDialogOpen(true)}
+            disabled={!onLoadEdit}
+            className="cursor-pointer"
+          >
+            <FolderOpen className="w-4 h-4 mr-2" />
+            {t("header.load")}
+          </DropdownMenuItem>
+
+          <DropdownMenuItem
+            onClick={() => setIsSaveDialogOpen(true)}
+            disabled={!editionData}
+            className="cursor-pointer"
+          >
+            <Save className="w-4 h-4 mr-2" />
+            {t("header.save")}
+          </DropdownMenuItem>
+
+          <DropdownMenuSeparator />
+          <DropdownMenuLabel className="flex items-center gap-2">
+            <Bell className="w-3.5 h-3.5" />
+            {t("header.recentRenders")}
+          </DropdownMenuLabel>
+
+          <div className="max-h-60 overflow-y-auto px-1 pb-1">
+            {renders.length === 0 ? (
+              <p className="text-xs text-muted-foreground px-2 py-1.5">
+                {t("header.noRenders")}
+              </p>
+            ) : (
+              renders.map((render) => (
+                <div
+                  key={render.id}
+                  className={`flex items-center justify-between rounded-md border p-1.5 mb-1 ${
+                    render.status === "error"
+                      ? "border-destructive/50 bg-destructive/10"
+                      : "border-border"
+                  }`}
+                >
+                  <div className="flex flex-col min-w-0 flex-1 mr-2">
+                    <div
+                      className="text-xs text-foreground truncate"
+                      title={
+                        render.status === "error"
+                          ? t("header.renderFailed")
+                          : getDisplayFileName(render.url!)
+                      }
+                    >
+                      {render.status === "error" ? (
+                        <span className="text-red-400 font-medium">
+                          {t("header.renderFailed")}
+                        </span>
+                      ) : (
+                        getDisplayFileName(render.url!)
+                      )}
+                    </div>
+                    <div className="text-[11px] text-muted-foreground">
+                      {formatDistanceToNow(render.timestamp, {
+                        addSuffix: true,
+                      })}
+                    </div>
+                  </div>
+                  {render.status === "success" && (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-6 w-6"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleSaveClick(render.url!);
+                      }}
+                      title={t("header.saveVideo")}
+                    >
+                      <Save className="w-3.5 h-3.5" />
+                    </Button>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </>
   );
 };

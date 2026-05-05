@@ -1,7 +1,12 @@
 import React from "react";
-import { CaptionOverlay, CaptionStyles, Caption } from "../../../types";
+import {
+  CaptionOverlay,
+  CaptionStyles,
+  Caption,
+  CaptionDisplayMode,
+} from "../../../types";
 
-import { AlignLeft, PaintBucket, Mic } from "lucide-react";
+import { AlignLeft, PaintBucket } from "lucide-react";
 
 import { CaptionStylePanel } from "./caption-style-panel";
 import { CaptionTimeline } from "./caption-timeline";
@@ -81,11 +86,51 @@ export const CaptionSettings: React.FC<CaptionSettingsProps> = ({
 }) => {
   const { t } = useTranslation();
   const currentMs = (currentFrame / 30) * 1000;
+  const displayMode: CaptionDisplayMode = localOverlay.displayMode ?? "all";
+
+  const displayModeOptions: {
+    value: CaptionDisplayMode;
+    labelKey: string;
+  }[] = [
+    { value: "sentence", labelKey: "captionSettings.modeSentence" },
+    { value: "word", labelKey: "captionSettings.modeWord" },
+    { value: "all", labelKey: "captionSettings.modeAll" },
+  ];
+
+  const handleDisplayModeChange = (mode: CaptionDisplayMode) => {
+    setLocalOverlay({ ...localOverlay, displayMode: mode });
+  };
 
   return (
     <Tabs defaultValue="captions" className="w-full">
+      {/* Display mode selector */}
+      <div className="mb-3">
+        <p className="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">
+          {t("captionSettings.displayMode")}
+        </p>
+        <div className="grid grid-cols-3 gap-1 p-1 rounded-sm border border-gray-200 dark:border-gray-700 bg-gray-100/50 dark:bg-darkBoxSub/50">
+          {displayModeOptions.map((option) => {
+            const isActive = displayMode === option.value;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => handleDisplayModeChange(option.value)}
+                className={`text-[11px] py-1.5 rounded-sm transition-colors ${
+                  isActive
+                    ? "bg-primarioLogo text-white"
+                    : "text-gray-600 dark:text-zinc-400 hover:bg-gray-200/50 dark:hover:bg-gray-700/50"
+                }`}
+              >
+                {t(option.labelKey)}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Tab Navigation */}
-      <TabsList className="w-full grid grid-cols-3 bg-gray-100/50 dark:bg-darkBoxSub /50 backdrop-blur-sm rounded-sm border border-gray-200 dark:border-gray-700 gap-1">
+      <TabsList className="w-full grid grid-cols-2 bg-gray-100/50 dark:bg-darkBoxSub /50 backdrop-blur-sm rounded-sm border border-gray-200 dark:border-gray-700 gap-1">
         {/* Captions Tab */}
         <TabsTrigger
           value="captions"
@@ -110,20 +155,6 @@ export const CaptionSettings: React.FC<CaptionSettingsProps> = ({
           </span>
         </TabsTrigger>
 
-        {/* Voice Tab (Coming Soon) */}
-        <TabsTrigger
-          value="voice"
-          disabled
-          className="cursor-not-allowed opacity-50 rounded-sm transition-all duration-200 text-gray-600 dark:text-zinc-400"
-        >
-          <span className="flex items-center gap-2 text-xs">
-            <Mic className="w-3 h-3" />
-            {t("captionSettings.voice")}
-            <span className="text-[9px] ml-2 text-amber-700 dark:text-amber-400 font-medium bg-amber-100/50 dark:bg-yellow-800/50 rounded-sm px-1 py-0.5">
-              {t("captionSettings.soon")}
-            </span>
-          </span>
-        </TabsTrigger>
       </TabsList>
 
       {/* Tab Content */}

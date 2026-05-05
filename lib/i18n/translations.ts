@@ -57,6 +57,7 @@ export const translations: Record<Language, TranslationDictionary> = {
     // Header / Render controls
     "header.load": "Load",
     "header.save": "Save",
+    "header.actions": "More actions",
     "header.export": "Export Video",
     "header.exportLimitReached": "Export Limit Reached",
     "header.exportDisabled": "Disabled",
@@ -460,6 +461,10 @@ export const translations: Record<Language, TranslationDictionary> = {
     "captionSettings.voice": "Voice",
     "captionSettings.soon": "SOON",
     "captionSettings.active": "Active",
+    "captionSettings.displayMode": "Display mode",
+    "captionSettings.modeSentence": "Sentence",
+    "captionSettings.modeWord": "Word",
+    "captionSettings.modeAll": "Full",
 
     // Sticker details
     "stickerDetails.animations": "Sticker Animations",
@@ -508,6 +513,7 @@ export const translations: Record<Language, TranslationDictionary> = {
     // Header / Render controls
     "header.load": "Cargar",
     "header.save": "Guardar",
+    "header.actions": "Más acciones",
     "header.export": "Exportar video",
     "header.exportLimitReached": "Límite de exportación alcanzado",
     "header.exportDisabled": "Deshabilitado",
@@ -911,6 +917,10 @@ export const translations: Record<Language, TranslationDictionary> = {
     "captionSettings.voice": "Voz",
     "captionSettings.soon": "PRONTO",
     "captionSettings.active": "Activo",
+    "captionSettings.displayMode": "Modo de visualización",
+    "captionSettings.modeSentence": "Frase",
+    "captionSettings.modeWord": "Palabra",
+    "captionSettings.modeAll": "Completo",
 
     // Sticker details
     "stickerDetails.animations": "Animaciones del sticker",

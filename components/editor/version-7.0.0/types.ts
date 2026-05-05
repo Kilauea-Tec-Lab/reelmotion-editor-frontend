@@ -161,11 +161,18 @@ export interface CaptionStyles {
   };
 }
 
+export type CaptionDisplayMode = "all" | "word" | "sentence";
+
 export interface CaptionOverlay extends BaseOverlay {
   type: OverlayType.CAPTION;
   captions: Caption[];
   styles?: CaptionStyles;
   template?: string;
+  // How to reveal the captions during playback:
+  // - "all": full sentence on screen, current word highlighted
+  // - "word": only the current word
+  // - "sentence": full sentence as one block, no per-word highlight
+  displayMode?: CaptionDisplayMode;
 }
 
 export type StickerCategory =

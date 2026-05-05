@@ -145,6 +145,7 @@ export const CaptionsPanel: React.FC = () => {
       rotation: 0,
       isDragging: false,
       row: position.row,
+      displayMode: "all",
     };
 
     addOverlay(newCaptionOverlay);

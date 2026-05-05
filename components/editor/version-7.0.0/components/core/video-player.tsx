@@ -16,28 +16,36 @@ interface VideoPlayerProps {
   playerRef: React.RefObject<PlayerRef>;
 }
 
+// Real component — hooks live here. Remotion's `errorFallback` is invoked as a
+// plain function (not rendered as JSX), so calling hooks directly inside the
+// fallback violates the Rules of Hooks. Returning <PlayerErrorToast /> lets
+// React mount this as a normal component where hooks work.
+const PlayerErrorToast: React.FC<{ error: Error }> = ({ error }) => {
+  useEffect(() => {
+    if (!error) return;
+    console.error("Remotion Player error:", error);
+    toast({
+      title: "Playback error",
+      description:
+        error instanceof Error
+          ? error.message
+          : "The browser failed to play a media asset.",
+      variant: "destructive",
+    });
+  }, [error]);
+
+  return null;
+};
+
+const playerErrorFallback = ({ error }: { error: Error }) => (
+  <PlayerErrorToast error={error} />
+);
+
 /**
  * VideoPlayer component that renders a responsive video editor with overlay support
  * The player automatically resizes based on its container and maintains the specified aspect ratio
  */
 export const VideoPlayer: React.FC<VideoPlayerProps> = ({ playerRef }) => {
-  const PlayerErrorFallback: React.FC<any> = ({ error }) => {
-    useEffect(() => {
-      if (!error) return;
-      console.error("Remotion Player error:", error);
-      toast({
-        title: "Playback error",
-        description:
-          error instanceof Error
-            ? error.message
-            : "The browser failed to play a media asset.",
-        variant: "destructive",
-      });
-    }, [error]);
-
-    return null;
-  };
-
   const {
     overlays,
     setSelectedOverlayId,
@@ -48,6 +56,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ playerRef }) => {
     updatePlayerDimensions,
     getAspectRatioDimensions,
     durationInFrames,
+    contentDurationInFrames,
     isPlaying,
     backgroundColor,
     setBackgroundColor,
@@ -135,9 +144,17 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ playerRef }) => {
   const { width: compositionWidth, height: compositionHeight } =
     getAspectRatioDimensions();
 
+  // Player composition length should match the actual content end so playback
+  // stops where the last overlay ends. The wider `durationInFrames` (1-min
+  // minimum) is only for the timeline editing UI.
+  const playerDurationInFrames = Math.max(
+    1,
+    Math.round(contentDurationInFrames)
+  );
+
   // Constants for player configuration
   const PLAYER_CONFIG = {
-    durationInFrames: Math.round(durationInFrames),
+    durationInFrames: playerDurationInFrames,
     fps: FPS,
   };
 
@@ -228,7 +245,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ playerRef }) => {
               durationInFrames={PLAYER_CONFIG.durationInFrames}
               fps={PLAYER_CONFIG.fps}
               inputProps={inputProps}
-              errorFallback={PlayerErrorFallback}
+              errorFallback={playerErrorFallback}
               overflowVisible
               numberOfSharedAudioTags={20}
             />

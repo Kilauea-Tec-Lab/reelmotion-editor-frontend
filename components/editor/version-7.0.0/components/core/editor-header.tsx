@@ -90,8 +90,9 @@ export function EditorHeader() {
       {/* Spacer to push rendering controls to the right */}
       <div className="flex-grow" />
 
-      {/* Language selector (EN/ES) */}
-      <LanguageSelector className="hidden sm:flex mr-2" />
+      {/* Language selector (EN/ES) — desktop only; mobile gets it inside the
+          kebab menu in RenderControls. */}
+      <LanguageSelector className="hidden md:flex mr-2" />
 
       {/* Media rendering controls */}
       <RenderControls
