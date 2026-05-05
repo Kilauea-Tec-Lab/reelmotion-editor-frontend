@@ -12,14 +12,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Download, Save, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import Cookies from "js-cookie";
@@ -55,7 +47,6 @@ export const SaveRenderDialog: React.FC<SaveRenderDialogProps> = ({
   const [projects, setProjects] = useState<ProjectInfo[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [isPublic, setIsPublic] = useState<"public" | "private">("private");
   const { t } = useTranslation();
 
   // Fetch projects when dialog opens
@@ -66,7 +57,6 @@ export const SaveRenderDialog: React.FC<SaveRenderDialogProps> = ({
       setVideoName("");
       setSelectedProject("");
       setSaveMode("name");
-      setIsPublic("private");
     }
   }, [open]);
 
@@ -153,10 +143,11 @@ export const SaveRenderDialog: React.FC<SaveRenderDialogProps> = ({
       const { gcsUrl } = await gcsUploadResponse.json();
 
 
-      // 2. Save metadata to backend using the new GCS URL
+      // 2. Save metadata to backend using the new GCS URL.
+      // Saved renders are always private; public sharing is managed elsewhere.
       const payload: { url: string; name?: string; id?: string; isPublic?: boolean } = {
-        url: gcsUrl, // Use the GCS URL!
-        isPublic: isPublic === "public",
+        url: gcsUrl,
+        isPublic: false,
       };
 
       if (saveMode === "name") {
@@ -226,22 +217,6 @@ export const SaveRenderDialog: React.FC<SaveRenderDialogProps> = ({
         </DialogHeader>
 
         <div className="space-y-4 py-2">
-            <div className="space-y-2">
-                <Label>{t("saveRender.visibility")}</Label>
-                <Select
-                  value={isPublic}
-                  onValueChange={(val) => setIsPublic(val as "public" | "private")}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={t("saveRender.visibilityPlaceholder")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="private">{t("saveRender.private")}</SelectItem>
-                    <SelectItem value="public">{t("saveRender.public")}</SelectItem>
-                  </SelectContent>
-                </Select>
-            </div>
-
             <div className="space-y-2">
               <Label htmlFor="video-name">{t("saveRender.videoName")}</Label>
               <Input
