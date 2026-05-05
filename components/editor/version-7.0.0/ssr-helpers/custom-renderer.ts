@@ -59,11 +59,20 @@ async function getCachedBundle(): Promise<string> {
   // Start bundling
   const startTime = Date.now();
 
+  // Mirror the Next.js "@/*" path alias from tsconfig.json so that
+  // editor components imported through the Remotion render tree can
+  // resolve aliases like "@/lib/i18n".
+  const projectRoot = process.cwd();
+
   bundlePromise = bundle(REMOTION_ENTRY, undefined, {
     webpackOverride: (config) => ({
       ...config,
       resolve: {
         ...config.resolve,
+        alias: {
+          ...config.resolve?.alias,
+          "@": projectRoot,
+        },
         fallback: {
           ...config.resolve?.fallback,
           "@remotion/compositor": false,
