@@ -82,12 +82,19 @@ fi
 # Configuration
 echo 'NEXT_PUBLIC_IS_LOCAL_RENDER=true' > .env.local
 
-# Ensure pnpm is available (via corepack) — npm is forbidden in this project.
-echo 'Ensuring pnpm is available...'
-corepack enable >/dev/null 2>&1 || true
+# Ensure pnpm is available (via corepack, installed into a user-writable
+# directory so SSH non-login shells can find it on PATH).
+echo 'Ensuring pnpm is available via corepack...'
+mkdir -p "\$HOME/.local/bin"
+export PATH="\$HOME/.local/bin:\$PATH"
+corepack enable --install-directory "\$HOME/.local/bin" >/dev/null 2>&1 || true
+corepack prepare pnpm@latest --activate >/dev/null 2>&1 || true
+
 if ! command -v pnpm >/dev/null 2>&1; then
-    corepack prepare pnpm@latest --activate
+    echo 'ERROR: pnpm still not available after corepack setup' >&2
+    exit 1
 fi
+echo "Using pnpm: \$(command -v pnpm)"
 
 # Wipe any previously npm-installed node_modules / lockfile so compromised
 # npm-installed packages don't persist across deploys.
@@ -96,7 +103,7 @@ rm -rf node_modules package-lock.json
 
 # Install & Build (pnpm only — npm is compromised in this project)
 echo 'Installing dependencies with pnpm...'
-pnpm install --frozen-lockfile=false
+pnpm install --no-frozen-lockfile
 echo 'Building Next.js app...'
 pnpm run build
 

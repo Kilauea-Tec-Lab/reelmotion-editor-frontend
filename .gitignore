@@ -43,6 +43,9 @@ yarn-error.log*
 gcp-credentials.json
 gcp-credentials.*.json
 
+# transient deploy artifacts written by scripts/deploy-prod.ps1
+/deploy-remote.sh
+
 # vercel
 .vercel
 
