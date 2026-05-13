@@ -88,7 +88,9 @@ echo 'Ensuring pnpm is available via corepack...'
 mkdir -p "`$HOME/.local/bin"
 export PATH="`$HOME/.local/bin:`$PATH"
 corepack enable --install-directory "`$HOME/.local/bin" >/dev/null 2>&1 || true
-corepack prepare pnpm@latest --activate >/dev/null 2>&1 || true
+# Pin pnpm to 9.x — pnpm 10+/11+ trip ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING
+# under the older corepack shipped with the VM's Node.
+corepack prepare pnpm@9 --activate >/dev/null 2>&1 || true
 
 if ! command -v pnpm >/dev/null 2>&1; then
     echo 'ERROR: pnpm still not available after corepack setup' >&2
