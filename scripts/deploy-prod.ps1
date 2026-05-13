@@ -64,8 +64,13 @@ if [ ! -d 'reelmotion-editor-frontend' ]; then
     cd reelmotion-editor-frontend
 else
     cd reelmotion-editor-frontend
-    echo 'Pulling latest changes...'
-    git pull origin main
+    echo 'Fetching latest changes...'
+    git fetch origin main
+    # Hard-reset to origin/main and remove any untracked files (e.g. stray
+    # pnpm-lock.yaml from previous installs). The VM is purely a build target,
+    # so discarding local working-tree state is intentional.
+    git reset --hard origin/main
+    git clean -fd
 fi
 
 # Restore secrets
