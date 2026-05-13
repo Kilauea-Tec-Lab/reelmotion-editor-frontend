@@ -65,13 +65,20 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { activePanel, setActivePanel, setIsOpen } = useSidebar();
   const { setSelectedOverlayId, selectedOverlayId, overlays } = useEditorContext();
   const { t } = useTranslation();
+  const previousPanelRef = React.useRef<OverlayType | null>(null);
 
   React.useEffect(() => {
     if (selectedOverlayId !== null) {
       const selectedOverlay = overlays.find((o) => o.id === selectedOverlayId);
       if (selectedOverlay && selectedOverlay.type !== activePanel) {
+        if (previousPanelRef.current === null) {
+          previousPanelRef.current = activePanel;
+        }
         setActivePanel(selectedOverlay.type);
       }
+    } else if (previousPanelRef.current !== null) {
+      setActivePanel(previousPanelRef.current);
+      previousPanelRef.current = null;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedOverlayId]);
@@ -238,6 +245,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     <TooltipTrigger asChild>
                       <SidebarMenuButton
                         onClick={() => {
+                          previousPanelRef.current = null;
                           setSelectedOverlayId(null);
                           setActivePanel(item.panel);
                           setIsOpen(true);

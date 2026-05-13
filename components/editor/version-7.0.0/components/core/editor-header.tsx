@@ -2,10 +2,12 @@ import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import Image from "next/image";
 import dynamic from "next/dynamic";
+import { ArrowLeft } from "lucide-react";
 
 import RenderControls from "../rendering/render-controls";
 import { useEditorContext } from "../../contexts/editor-context";
 import { LanguageSelector } from "@/components/language-selector";
+import { useTranslation } from "@/lib/i18n";
 
 /**
  * Dynamic import of the ThemeToggle component to enable client-side rendering only.
@@ -56,17 +58,31 @@ export function EditorHeader() {
    * - loadEdit: Function to load an edit from backend
    */
   const { renderMedia, state, saveProject, renderType, editionData, loadEdit } = useEditorContext();
+  const { t } = useTranslation();
 
   return (
     <header
-      className="sticky top-0 flex shrink-0 items-center gap-2.5 
+      className="sticky top-0 flex shrink-0 items-center gap-2.5
       bg-white dark:bg-gray-900/10
-      border-l 
+      border-l
       border-b border-gray-100/10 dark:border-gray-100/10
       p-2.5 px-4.5"
     >
+      {/* Back-to-app button for mobile (hidden on desktop). Same target as the logo. */}
+      <a
+        href={process.env.NEXT_PUBLIC_REELMOTION_URL}
+        className="sm:hidden flex items-center gap-1 rounded-md px-2 py-1 text-xs text-gray-700 dark:text-zinc-200 hover:bg-gray-100 dark:hover:bg-darkBoxSub active:bg-gray-200 dark:active:bg-darkBoxSub transition-colors"
+        aria-label={t("header.back")}
+      >
+        <ArrowLeft className="h-4 w-4" />
+        <span>{t("header.back")}</span>
+      </a>
+
       {/* Logo for mobile (hidden on desktop where sidebar shows it) */}
-      <a href="https://reelmotion.ai" className="sm:hidden flex items-center">
+      <a
+        href={process.env.NEXT_PUBLIC_REELMOTION_URL}
+        className="sm:hidden flex items-center"
+      >
         <Image
           src="/icons/icon_reelmotion_ai.png"
           alt="Logo"

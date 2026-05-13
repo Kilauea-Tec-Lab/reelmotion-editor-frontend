@@ -50,9 +50,17 @@ const VIDEO_CATEGORIES = [
   { tKey: "libraryPanel.cat.abstract", query: "abstract" },
 ];
 
+// Persists the last-selected tab across unmounts (e.g., when returning from
+// a media detail panel after adding a video/image from the library).
+let lastLibraryTab: "images" | "videos" = "images";
+
 export const LibraryPanel: React.FC = () => {
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState<"images" | "videos">("images");
+  const [activeTab, setActiveTabState] = useState<"images" | "videos">(lastLibraryTab);
+  const setActiveTab = (value: "images" | "videos") => {
+    lastLibraryTab = value;
+    setActiveTabState(value);
+  };
   const [selectedImageCategory, setSelectedImageCategory] = useState("curated");
   const [selectedVideoCategory, setSelectedVideoCategory] = useState("nature");
 

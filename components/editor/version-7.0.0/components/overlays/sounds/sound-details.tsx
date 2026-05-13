@@ -81,7 +81,7 @@ export const SoundDetails: React.FC<SoundDetailsProps> = ({
   return (
     <div className="space-y-4 w-full overflow-hidden">
       {/* Sound Info with Play Button */}
-      <div className="flex items-center gap-3 p-4 dark:bg-darkBox /50 rounded-md border w-full">
+      <div className="flex items-center gap-3 p-4 dark:bg-darkBox/50 rounded-md border w-full min-w-0 overflow-hidden">
         <Button
           variant="ghost"
           size="sm"
@@ -94,8 +94,11 @@ export const SoundDetails: React.FC<SoundDetailsProps> = ({
             <Play className="h-4 w-4" />
           )}
         </Button>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-foreground truncate w-full">
+        <div className="flex-1 min-w-0 overflow-hidden">
+          <p
+            className="text-sm font-medium text-foreground truncate"
+            title={localOverlay.content}
+          >
             {localOverlay.content}
           </p>
         </div>
@@ -106,7 +109,7 @@ export const SoundDetails: React.FC<SoundDetailsProps> = ({
       <div className="space-y-4 mt-4">
         <div className="space-y-6">
           {/* Volume Settings */}
-          <div className="space-y-4 rounded-md dark:bg-darkBox /50 p-4 border">
+          <div className="space-y-4 rounded-md dark:bg-darkBox/50 p-4 border">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-medium text-foreground">{t("videoSettings.volume")}</h3>
               <button

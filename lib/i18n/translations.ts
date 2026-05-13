@@ -83,6 +83,7 @@ export const translations: Record<Language, TranslationDictionary> = {
     "header.ultraHd4k": "Ultra HD (4K)",
     "header.eliteQuality": "Elite Quality",
     "header.renderFailedDefault": "Failed to render video. Please try again.",
+    "header.back": "Back",
 
     // Language selector
     "language.label": "Language",
@@ -228,6 +229,8 @@ export const translations: Record<Language, TranslationDictionary> = {
     "uploads.fileNameUpdated": "File name updated successfully",
     "uploads.fileNameUpdateFailed": "Failed to update file name",
     "uploads.renamePlaceholder": "Rename file...",
+    "uploads.maxSizeHint": "Maximum file size: {size}",
+    "uploads.fileTooLarge": "File is too large. Maximum allowed size is {size}.",
 
     // Templates
     "templates.title": "Templates",
@@ -539,6 +542,7 @@ export const translations: Record<Language, TranslationDictionary> = {
     "header.ultraHd4k": "Ultra HD (4K)",
     "header.eliteQuality": "Calidad Elite",
     "header.renderFailedDefault": "Error al renderizar el video. Por favor, inténtalo de nuevo.",
+    "header.back": "Regresar",
 
     // Language selector
     "language.label": "Idioma",
@@ -684,6 +688,8 @@ export const translations: Record<Language, TranslationDictionary> = {
     "uploads.fileNameUpdated": "Nombre del archivo actualizado correctamente",
     "uploads.fileNameUpdateFailed": "Error al actualizar el nombre del archivo",
     "uploads.renamePlaceholder": "Renombrar archivo...",
+    "uploads.maxSizeHint": "Tamaño máximo por archivo: {size}",
+    "uploads.fileTooLarge": "El archivo es demasiado grande. El tamaño máximo permitido es {size}.",
 
     // Templates
     "templates.title": "Plantillas",

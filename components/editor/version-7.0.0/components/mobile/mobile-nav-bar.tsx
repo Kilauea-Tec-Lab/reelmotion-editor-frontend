@@ -60,7 +60,7 @@ const NAVIGATION_ITEMS = [
   { tKey: "sidebar.library", icon: Library, panel: OverlayType.LIBRARY },
   { tKey: "sidebar.stickers", icon: Sticker, panel: OverlayType.STICKER },
   { tKey: "sidebar.uploads", icon: FolderOpen, panel: OverlayType.LOCAL_DIR },
-  { tKey: "sidebar.template", icon: Layout, panel: OverlayType.TEMPLATE },
+  // { tKey: "sidebar.template", icon: Layout, panel: OverlayType.TEMPLATE },
 ];
 
 /**
@@ -93,6 +93,18 @@ export function MobileNavBar() {
     window.addEventListener("resize", checkScrollWidth);
     return () => window.removeEventListener("resize", checkScrollWidth);
   }, []);
+
+  // Keep the rendered panel in sync with activePanel while the sheet is open.
+  // Why: selecting a library/upload item auto-changes activePanel to the
+  // overlay's type (VIDEO/IMAGE/...) so its detail controls can render. Without
+  // this sync, only the sheet title updated and the body kept showing Library.
+  useEffect(() => {
+    if (isSheetOpen && activePanel && activePanel !== renderedPanel) {
+      startTransition(() => {
+        setRenderedPanel(activePanel);
+      });
+    }
+  }, [activePanel, isSheetOpen, renderedPanel]);
 
   // Scroll active item into view when it changes
   useEffect(() => {
