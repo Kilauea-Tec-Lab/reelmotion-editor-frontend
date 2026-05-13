@@ -82,19 +82,28 @@ fi
 # Configuration
 echo 'NEXT_PUBLIC_IS_LOCAL_RENDER=true' > .env.local
 
-# Install & Build
-echo 'Installing dependencies...'
-npm install
-echo 'Building Next.js app...'
-npm run build
-
-# Restart PM2
-echo 'Restarting server...'
-if pm2 list | grep -q 'editor'; then
-    pm2 restart editor
-else
-    pm2 start npm --name 'editor' -- start
+# Ensure pnpm is available (via corepack) — npm is forbidden in this project.
+echo 'Ensuring pnpm is available...'
+corepack enable >/dev/null 2>&1 || true
+if ! command -v pnpm >/dev/null 2>&1; then
+    corepack prepare pnpm@latest --activate
 fi
+
+# Wipe any previously npm-installed node_modules / lockfile so compromised
+# npm-installed packages don't persist across deploys.
+echo 'Cleaning previous node_modules and package-lock.json...'
+rm -rf node_modules package-lock.json
+
+# Install & Build (pnpm only — npm is compromised in this project)
+echo 'Installing dependencies with pnpm...'
+pnpm install --frozen-lockfile=false
+echo 'Building Next.js app...'
+pnpm run build
+
+# Restart PM2 — always recreate so any prior npm-based process definition is replaced.
+echo 'Restarting server...'
+pm2 delete editor >/dev/null 2>&1 || true
+pm2 start pnpm --name 'editor' -- start
 
 # Save PM2 list so it restarts on reboot
 pm2 save
