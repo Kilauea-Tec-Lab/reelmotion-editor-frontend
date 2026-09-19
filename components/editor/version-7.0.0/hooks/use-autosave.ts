@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   saveEditorState,
   loadEditorState,
@@ -45,6 +45,13 @@ export const useAutosave = (
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const lastSavedStateRef = useRef<string>("");
+  // Latest values in refs so the interval effect never restarts on re-render.
+  const stateRef = useRef(state);
+  stateRef.current = state;
+  const onSaveRef = useRef(onSave);
+  onSaveRef.current = onSave;
+  const onLoadRef = useRef(onLoad);
+  onLoadRef.current = onLoad;
   const [hasCheckedForAutosave, setHasCheckedForAutosave] = useState(false);
   const [indexedDBAvailable, setIndexedDBAvailable] = useState(true);
 
@@ -85,20 +92,21 @@ export const useAutosave = (
     checkForAutosave();
   }, [projectId, onAutosaveDetected, hasCheckedForAutosave]);
 
-  // Set up autosave timer
+  // Set up autosave timer (also saves when the tab is hidden/closed)
   useEffect(() => {
     // Don't start autosave if projectId is not valid or IndexedDB is not available
     if (!projectId || !indexedDBAvailable) return;
 
     const saveIfChanged = async () => {
-      const currentStateString = getStateSignature(state);
+      const current = stateRef.current;
+      const currentStateString = getStateSignature(current);
 
       // Only save if state has changed since last save
       if (currentStateString !== lastSavedStateRef.current) {
         try {
-          await saveEditorState(projectId, state);
+          await saveEditorState(projectId, current);
           lastSavedStateRef.current = currentStateString;
-          if (onSave) onSave();
+          onSaveRef.current?.();
         } catch (error) {
           console.warn("Autosave skipped - IndexedDB not available");
           // Disable further autosave attempts
@@ -107,44 +115,50 @@ export const useAutosave = (
       }
     };
 
-    // Set up interval for autosave
-    timerRef.current = setInterval(saveIfChanged, interval);
+    const onHide = () => {
+      if (document.visibilityState === "hidden") saveIfChanged();
+    };
 
-    // Clean up timer on unmount
+    timerRef.current = setInterval(saveIfChanged, interval);
+    document.addEventListener("visibilitychange", onHide);
+    window.addEventListener("beforeunload", saveIfChanged);
+
     return () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
         timerRef.current = null;
       }
+      document.removeEventListener("visibilitychange", onHide);
+      window.removeEventListener("beforeunload", saveIfChanged);
     };
-  }, [projectId, state, interval, onSave, indexedDBAvailable]);
+  }, [projectId, interval, indexedDBAvailable]);
 
   // Function to manually save state
-  const saveState = async () => {
+  const saveState = useCallback(async () => {
     try {
-      await saveEditorState(projectId, state);
-      lastSavedStateRef.current = getStateSignature(state);
-      if (onSave) onSave();
+      await saveEditorState(projectId, stateRef.current);
+      lastSavedStateRef.current = getStateSignature(stateRef.current);
+      onSaveRef.current?.();
       return true;
     } catch (error) {
       console.error("Manual save failed:", error);
       return false;
     }
-  };
+  }, [projectId]);
 
   // Function to manually load state
-  const loadState = async () => {
+  const loadState = useCallback(async () => {
     try {
       const loadedState = await loadEditorState(projectId);
-      if (loadedState && onLoad) {
-        onLoad(loadedState);
+      if (loadedState && onLoadRef.current) {
+        onLoadRef.current(loadedState);
       }
       return loadedState;
     } catch (error) {
       console.error("Load failed:", error);
       return null;
     }
-  };
+  }, [projectId]);
 
   return {
     saveState,

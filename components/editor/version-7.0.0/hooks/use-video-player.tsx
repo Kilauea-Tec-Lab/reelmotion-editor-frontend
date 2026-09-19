@@ -1,75 +1,31 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useRef, useCallback } from "react";
 import { PlayerRef } from "@remotion/player";
 import { FPS } from "../constants";
 
 /**
- * Custom hook for managing video player functionality
- * @returns An object containing video player controls and state
+ * Player controls. Frame/playing state lives in PlaybackContext (driven by
+ * Player events) so nothing here re-renders on every frame.
  */
 export const useVideoPlayer = () => {
-  // State management
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentFrame, setCurrentFrame] = useState(0);
   const playerRef = useRef<PlayerRef>(null);
 
-  // Frame update effect
-  useEffect(() => {
-    let animationFrameId: number;
-    let lastUpdateTime = 0;
-    const frameInterval = 1000 / FPS;
-
-    const updateCurrentFrame = () => {
-      const now = performance.now();
-      if (now - lastUpdateTime >= frameInterval) {
-        if (playerRef.current) {
-          const frame = Math.round(playerRef.current.getCurrentFrame());
-          setCurrentFrame(frame);
-        }
-        lastUpdateTime = now;
-      }
-
-      animationFrameId = requestAnimationFrame(updateCurrentFrame);
-    };
-
-    // Start the animation frame loop
-    animationFrameId = requestAnimationFrame(updateCurrentFrame);
-
-    // Clean up
-    return () => {
-      if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId);
-      }
-    };
-  }, [isPlaying, FPS]);
-
-  /**
-   * Starts playing the video
-   */
   const play = useCallback(() => {
-    if (playerRef.current) {
-      playerRef.current.play();
-    }
-  }, [playerRef]);
+    playerRef.current?.play();
+  }, []);
 
-  /**
-   * Toggles between play and pause states
-   */
   const togglePlayPause = useCallback(() => {
-    if (playerRef.current) {
-      if (!isPlaying) {
-        playerRef.current.play();
-      } else {
-        playerRef.current.pause();
-      }
-      setIsPlaying(!isPlaying);
-    }
-  }, [playerRef, isPlaying]);
+    const player = playerRef.current;
+    if (!player) return;
+    if (player.isPlaying()) player.pause();
+    else player.play();
+  }, []);
 
-  /**
-   * Converts frame count to formatted time string
-   * @param frames - Number of frames to convert
-   * @returns Formatted time string in MM:SS format
-   */
+  /** Read the playhead without subscribing to per-frame updates. */
+  const getCurrentFrame = useCallback(
+    () => playerRef.current?.getCurrentFrame() ?? 0,
+    []
+  );
+
   const formatTime = useCallback((frames: number) => {
     const totalSeconds = frames / FPS;
     const minutes = Math.floor(totalSeconds / 60);
@@ -83,25 +39,14 @@ export const useVideoPlayer = () => {
       .padStart(2, "0")}.${frames2Digits}`;
   }, []);
 
-  /**
-   * Seeks to a specific frame in the video
-   * @param frame - Target frame number
-   */
-  const seekTo = useCallback(
-    (frame: number) => {
-      if (playerRef.current) {
-        setCurrentFrame(frame);
-        playerRef.current.seekTo(frame);
-      }
-    },
-    [playerRef]
-  );
+  const seekTo = useCallback((frame: number) => {
+    playerRef.current?.seekTo(frame);
+  }, []);
 
   return {
-    isPlaying,
-    currentFrame,
     playerRef,
     togglePlayPause,
+    getCurrentFrame,
     formatTime,
     play,
     seekTo,

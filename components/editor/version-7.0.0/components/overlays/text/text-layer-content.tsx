@@ -7,7 +7,7 @@ import { loadFont as loadRobotoMono } from "@remotion/google-fonts/RobotoMono";
 import { loadFont as loadVT323 } from "@remotion/google-fonts/VT323";
 import { loadFont as loadLeagueSpartan } from "@remotion/google-fonts/LeagueSpartan";
 import { loadFont as loadBungeeInline } from "@remotion/google-fonts/BungeeInline";
-import { animationTemplates } from "../../../templates/animation-templates";
+import { getAnimationStyle } from "../../../utils/animation-phase";
 
 // Updated font loading with specific weights and subsets
 const { fontFamily: interFontFamily } = loadInter("normal", {
@@ -67,27 +67,11 @@ export const TextLayerContent: React.FC<TextLayerContentProps> = ({
   overlay,
 }) => {
   const frame = useCurrentFrame();
-
-  // Calculate if we're in the exit phase (last 30 frames)
-  const isExitPhase = frame >= overlay.durationInFrames - 30;
-
-  // Apply enter animation only during entry phase
-  const enterAnimation =
-    !isExitPhase && overlay.styles.animation?.enter
-      ? animationTemplates[overlay.styles.animation.enter]?.enter(
-          frame,
-          overlay.durationInFrames
-        )
-      : {};
-
-  // Apply exit animation only during exit phase
-  const exitAnimation =
-    isExitPhase && overlay.styles.animation?.exit
-      ? animationTemplates[overlay.styles.animation.exit]?.exit(
-          frame,
-          overlay.durationInFrames
-        )
-      : {};
+  const anim = getAnimationStyle(
+    overlay.styles.animation,
+    frame,
+    overlay.durationInFrames
+  );
 
   // Calculate base font size using a more sophisticated approach
   const calculateFontSize = () => {
@@ -134,7 +118,7 @@ export const TextLayerContent: React.FC<TextLayerContentProps> = ({
         ? "flex-end"
         : "flex-start",
     overflow: "hidden",
-    ...(isExitPhase ? exitAnimation : enterAnimation),
+    ...anim,
   };
 
   const { ...restStyles } = overlay.styles;
@@ -148,7 +132,6 @@ export const TextLayerContent: React.FC<TextLayerContentProps> = ({
     whiteSpace: "pre-wrap",
     lineHeight: "1.2",
     padding: "0.1em",
-    ...(isExitPhase ? exitAnimation : enterAnimation),
   };
 
   return (

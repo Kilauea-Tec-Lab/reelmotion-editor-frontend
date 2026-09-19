@@ -1,7 +1,7 @@
 import React from "react";
 import { useCurrentFrame } from "remotion";
 import { ImageOverlay } from "../../../types";
-import { animationTemplates } from "../../../templates/animation-templates";
+import { combineFilters, getAnimationStyle } from "../../../utils/animation-phase";
 import { Img } from "remotion";
 import { toAbsoluteUrl } from "../../../utils/url-helper";
 
@@ -56,29 +56,11 @@ export const ImageLayerContent: React.FC<ImageLayerContentProps> = ({
   baseUrl,
 }) => {
   const frame = useCurrentFrame();
-  const isExitPhase = frame >= overlay.durationInFrames - 30;
-
-  /**
-   * Apply enter animation only during entry phase
-   */
-  const enterAnimation =
-    !isExitPhase && overlay.styles.animation?.enter
-      ? animationTemplates[overlay.styles.animation.enter]?.enter(
-          frame,
-          overlay.durationInFrames
-        )
-      : {};
-
-  /**
-   * Apply exit animation only during exit phase
-   */
-  const exitAnimation =
-    isExitPhase && overlay.styles.animation?.exit
-      ? animationTemplates[overlay.styles.animation.exit]?.exit(
-          frame,
-          overlay.durationInFrames
-        )
-      : {};
+  const anim = getAnimationStyle(
+    overlay.styles.animation,
+    frame,
+    overlay.durationInFrames
+  );
 
   /**
    * Combine base styles with current animation phase
@@ -90,11 +72,11 @@ export const ImageLayerContent: React.FC<ImageLayerContentProps> = ({
     objectPosition: overlay.styles.objectPosition,
     opacity: overlay.styles.opacity,
     transform: overlay.styles.transform || "none",
-    filter: overlay.styles.filter || "none",
     borderRadius: overlay.styles.borderRadius || "0px",
     boxShadow: overlay.styles.boxShadow || "none",
     border: overlay.styles.border || "none",
-    ...(isExitPhase ? exitAnimation : enterAnimation),
+    ...anim,
+    filter: combineFilters(overlay.styles.filter, anim.filter as string | undefined),
   };
 
   /**

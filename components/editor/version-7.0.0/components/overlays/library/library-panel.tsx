@@ -67,7 +67,7 @@ export const LibraryPanel: React.FC = () => {
   const { images, isLoading: imagesLoading, fetchImages, page: imagePage, hasMore: hasMoreImages } = usePexelsImages();
   const { videos, isLoading: videosLoading, fetchVideos, page: videoPage, hasMore: hasMoreVideos } = usePexelsVideos();
 
-  const { addOverlay, overlays, durationInFrames, currentFrame } = useEditorContext();
+  const { addOverlay, overlays, durationInFrames, getCurrentFrame } = useEditorContext();
   const { findNextAvailablePosition } = useTimelinePositioning();
   const { getAspectRatioDimensions } = useAspectRatio();
   const { visibleRows } = useTimeline();
@@ -152,7 +152,7 @@ export const LibraryPanel: React.FC = () => {
       overlays,
       visibleRows,
       durationInFrames,
-      currentFrame
+      getCurrentFrame()
     );
 
     const newOverlay: Overlay = {
@@ -187,7 +187,7 @@ export const LibraryPanel: React.FC = () => {
       overlays,
       visibleRows,
       durationInFrames,
-      currentFrame
+      getCurrentFrame()
     );
 
     // Find best quality video file

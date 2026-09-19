@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Overlay } from "../types";
 
 interface HistoryState {
@@ -6,6 +6,9 @@ interface HistoryState {
   present: Overlay[];
   future: Overlay[][];
 }
+
+/** ponytail: fixed cap; undo beyond 50 steps is not a real need. */
+const MAX_HISTORY = 50;
 
 export function useHistory(
   overlays: Overlay[],
@@ -16,14 +19,22 @@ export function useHistory(
     present: overlays,
     future: [],
   });
+  // Set when undo/redo writes overlays so that write is not recorded again.
+  const skipNextRef = useRef<Overlay[] | null>(null);
 
   useEffect(() => {
-    setHistory((prev) => {
-      // Don't record history if this change was from undo/redo
-      if (prev.present === overlays) return prev;
+    if (skipNextRef.current === overlays) {
+      skipNextRef.current = null;
+      return;
+    }
+    // A canvas drag/resize/rotate writes overlays on every pointermove with
+    // isDragging=true; only the final write (isDragging=false) is one undo step.
+    if (overlays.some((o) => o.isDragging)) return;
 
+    setHistory((prev) => {
+      if (prev.present === overlays) return prev;
       return {
-        past: [...prev.past, prev.present],
+        past: [...prev.past, prev.present].slice(-MAX_HISTORY),
         present: overlays,
         future: [],
       };
@@ -31,40 +42,28 @@ export function useHistory(
   }, [overlays]);
 
   const undo = useCallback(() => {
-    setHistory((prev) => {
-      if (prev.past.length === 0) return prev;
-
-      const newPast = prev.past.slice(0, -1);
-      const newPresent = prev.past[prev.past.length - 1];
-
-      // Update overlays directly
-      setOverlays(newPresent);
-
-      return {
-        past: newPast,
-        present: newPresent,
-        future: [prev.present, ...prev.future],
-      };
+    if (history.past.length === 0) return;
+    const newPresent = history.past[history.past.length - 1];
+    skipNextRef.current = newPresent;
+    setOverlays(newPresent);
+    setHistory({
+      past: history.past.slice(0, -1),
+      present: newPresent,
+      future: [history.present, ...history.future],
     });
-  }, [setOverlays]);
+  }, [history, setOverlays]);
 
   const redo = useCallback(() => {
-    setHistory((prev) => {
-      if (prev.future.length === 0) return prev;
-
-      const newFuture = prev.future.slice(1);
-      const newPresent = prev.future[0];
-
-      // Update overlays directly
-      setOverlays(newPresent);
-
-      return {
-        past: [...prev.past, prev.present],
-        present: newPresent,
-        future: newFuture,
-      };
+    if (history.future.length === 0) return;
+    const newPresent = history.future[0];
+    skipNextRef.current = newPresent;
+    setOverlays(newPresent);
+    setHistory({
+      past: [...history.past, history.present],
+      present: newPresent,
+      future: history.future.slice(1),
     });
-  }, [setOverlays]);
+  }, [history, setOverlays]);
 
   return {
     undo,

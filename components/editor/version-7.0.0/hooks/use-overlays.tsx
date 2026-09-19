@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { Overlay, OverlayType, CaptionStyles, CaptionOverlay } from "../types";
 import { defaultCaptionStyles } from "../components/overlays/captions/caption-settings";
 
@@ -10,6 +10,10 @@ import { defaultCaptionStyles } from "../components/overlays/captions/caption-se
 export const useOverlays = (initialOverlays?: Overlay[]) => {
   // Initialize with provided overlays or default overlays
   const [overlays, setOverlays] = useState<Overlay[]>(initialOverlays || []);
+  // Mirror for stable callbacks that need the latest list without re-creating.
+  const overlaysRef = useRef(overlays);
+  overlaysRef.current = overlays;
+  const nextIdRef = useRef(0);
 
   // Tracks which overlay is currently selected for editing
   const [selectedOverlayId, setSelectedOverlayId] = useState<number | null>(
@@ -48,16 +52,15 @@ export const useOverlays = (initialOverlays?: Overlay[]) => {
    * Deselects any currently selected overlay
    */
   const addOverlay = useCallback((newOverlay: Omit<Overlay, "id">) => {
-    let newId: number;
-    setOverlays((prevOverlays) => {
-      newId =
-        prevOverlays.length > 0
-          ? Math.max(...prevOverlays.map((o) => o.id)) + 1
-          : 0;
-      const overlayWithNewId = { ...newOverlay, id: newId } as Overlay;
-      return [...prevOverlays, overlayWithNewId];
-    });
-    setSelectedOverlayId(newId!);
+    // Updaters run lazily in React 18, so the id must be decided up front.
+    const maxExisting = overlaysRef.current.reduce((m, o) => Math.max(m, o.id), -1);
+    const newId = Math.max(nextIdRef.current, maxExisting + 1);
+    nextIdRef.current = newId + 1;
+    setOverlays((prevOverlays) => [
+      ...prevOverlays,
+      { ...newOverlay, id: newId } as Overlay,
+    ]);
+    setSelectedOverlayId(newId);
   }, []);
 
   /**

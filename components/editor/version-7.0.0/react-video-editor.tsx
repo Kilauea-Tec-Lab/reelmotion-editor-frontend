@@ -9,6 +9,7 @@ import { SidebarProvider as EditorSidebarProvider } from "./contexts/sidebar-con
 
 // Context Providers
 import { EditorProvider } from "./contexts/editor-context";
+import { PlaybackProvider } from "./contexts/playback-context";
 
 // Custom Hooks
 import { useOverlays } from "./hooks/use-overlays";
@@ -19,7 +20,6 @@ import { useAspectRatio } from "./hooks/use-aspect-ratio";
 import { useCompositionDuration } from "./hooks/use-composition-duration";
 import { useHistory } from "./hooks/use-history";
 import { useEditorAuth } from "./hooks/use-editor-auth";
-import { useVideoPrefetch } from "./hooks/use-video-prefetch";
 
 // Types
 import { Overlay, OverlayType } from "./types";
@@ -40,7 +40,7 @@ import { TimelineProvider } from "./contexts/timeline-context";
 // Autosave Components
 import { AutosaveRecoveryDialog } from "./components/autosave/autosave-recovery-dialog";
 import { AutosaveStatus } from "./components/autosave/autosave-status";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useAutosave } from "./hooks/use-autosave";
 import { toast } from "@/hooks/use-toast";
 import { useTranslation } from "@/lib/i18n";
@@ -206,11 +206,8 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
   }, [overlays, validateOverlayUrls]);
 
   // Video player controls and state
-  const { isPlaying, currentFrame, playerRef, togglePlayPause, formatTime } =
+  const { playerRef, togglePlayPause, getCurrentFrame, formatTime } =
     useVideoPlayer();
-
-  // Prefetch all videos in the timeline to prevent black flashes during transitions
-  useVideoPrefetch(overlays);
 
   // Composition duration calculations
   const { durationInFrames, contentDurationInFrames, durationInSeconds } =
@@ -226,9 +223,9 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
   } = useAspectRatio();
 
   // Event handlers
-  const handleOverlayChange = (updatedOverlay: Overlay) => {
+  const handleOverlayChange = useCallback((updatedOverlay: Overlay) => {
     changeOverlay(updatedOverlay.id, () => updatedOverlay);
-  };
+  }, [changeOverlay]);
 
   const { width: compositionWidth, height: compositionHeight } =
     getAspectRatioDimensions();
@@ -266,7 +263,7 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
    * that don't use the local proxy (which only works on Next.js server)
    * And adding watermark if needed relative to render context
    */
-  const prepareOverlaysForRender = (overlays: Overlay[]): Overlay[] => {
+  const prepareOverlaysForRender = useCallback((overlays: Overlay[]): Overlay[] => {
     const processedOverlays = overlays.map((overlay) => {
       // Handle overlays with src property (video, image, sound)
       if ('src' in overlay && typeof overlay.src === 'string') {
@@ -312,9 +309,9 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
     }
 
     return processedOverlays;
-  };
+  }, [isPro, compositionWidth, compositionHeight]);
 
-  const inputProps = {
+  const inputProps = useMemo(() => ({
     overlays: prepareOverlaysForRender(overlays),
     durationInFrames: contentDurationInFrames + (!isPro ? WATERMARK_DURATION_FRAMES : 0), // Add watermark duration for free users
     fps: FPS,
@@ -322,7 +319,7 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
     height: renderHeight,
     src: "",
     backgroundColor,
-  };
+  }), [overlays, prepareOverlaysForRender, contentDurationInFrames, isPro, renderWidth, renderHeight, backgroundColor]);
 
   const { renderMedia, state } = useRendering(
     "TestComponent",
@@ -334,12 +331,12 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
   const { undo, redo, canUndo, canRedo } = useHistory(overlays, setOverlays);
 
   // Create the editor state object to be saved
-  const editorState = {
+  const editorState = useMemo(() => ({
     overlays,
     aspectRatio,
     playerDimensions,
     backgroundColor,
-  };
+  }), [overlays, aspectRatio, playerDimensions, backgroundColor]);
 
   // Implment load state
   const { saveState, loadState } = useAutosave(projectId, editorState, {
@@ -413,7 +410,7 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
   };
 
   // Handle loading an edit from the backend
-  const handleLoadEdit = (loadedEdit: any) => {
+  const handleLoadEdit = useCallback((loadedEdit: any) => {
     
     // Store the edit ID and name for future saves
     if (loadedEdit.id) {
@@ -453,26 +450,13 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
         editionData.backgroundColor ?? editionData.inputProps?.backgroundColor;
       if (savedBgColor) setBackgroundColor(savedBgColor);
     }
-  };
+  }, [setOverlays, setAspectRatio]);
 
   // Manual save function for use in keyboard shortcuts or save button
-  const handleManualSave = async () => {
+  const handleManualSave = useCallback(async () => {
     setIsSaving(true);
     await saveState();
-  };
-
-  // Set up keyboard shortcut for manual save (Ctrl+S)
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
-        e.preventDefault();
-        handleManualSave();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [editorState]);
+  }, [saveState]);
 
   // Set up keyboard shortcut for deleting selected overlay (Backspace / Delete)
   useEffect(() => {
@@ -499,7 +483,7 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
   }, [selectedOverlayId, deleteOverlay]);
 
   // Create edition data for backend save
-  const editionData = {
+  const editionData = useMemo(() => ({
     id: "TestComponent",
     inputProps: {
       overlays,
@@ -516,10 +500,17 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
     // Include current edit info if available
     editId: currentEditId,
     editName: currentEditName,
-  };
+  }), [overlays, durationInFrames, compositionWidth, compositionHeight, aspectRatio, backgroundColor, currentEditId, currentEditName]);
 
-  // Combine all editor context values
-  const editorContextValue = {
+  const getRenderDimensions = useCallback(
+    () => ({ width: renderWidth, height: renderHeight }),
+    [renderWidth, renderHeight]
+  );
+
+  // Combine all editor context values. Memoized: 22 consumers re-render when
+  // this identity changes, so it must only change when a real value does.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const editorContextValue = useMemo(() => ({
     // Overlay management
     overlays,
     setOverlays,
@@ -534,9 +525,8 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
     resetOverlays,
 
     // Player controls
-    isPlaying,
-    currentFrame,
     playerRef,
+    getCurrentFrame,
     togglePlayPause,
     formatTime,
     handleTimelineClick,
@@ -549,7 +539,7 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
     playerDimensions,
     updatePlayerDimensions,
     getAspectRatioDimensions,
-    getRenderDimensions: () => ({ width: renderWidth, height: renderHeight }),
+    getRenderDimensions,
     durationInFrames,
     contentDurationInFrames, // Added contentDurationInFrames
     durationInSeconds,
@@ -589,7 +579,17 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
     // Background color
     backgroundColor,
     setBackgroundColor,
-  };
+  }), [
+    overlays, setOverlays, selectedOverlayId, setSelectedOverlayId, changeOverlay,
+    handleOverlayChange, addOverlay, deleteOverlay, duplicateOverlay, splitOverlay,
+    resetOverlays, playerRef, getCurrentFrame, togglePlayPause, formatTime,
+    handleTimelineClick, playbackRate, aspectRatio, setAspectRatio, playerDimensions,
+    updatePlayerDimensions, getAspectRatioDimensions, getRenderDimensions,
+    durationInFrames, contentDurationInFrames, durationInSeconds, renderMedia, state,
+    deleteOverlaysByRow, undo, redo, canUndo, canRedo, updateOverlayStyles,
+    handleManualSave, editionData, handleLoadEdit, subscriptionPlan, isPro,
+    exportNumber, backgroundColor,
+  ]);
 
   // Show loading state while authenticating
   if (isLoading) {
@@ -613,6 +613,7 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
           <TimelineProvider>
             <ZoomKeyboardShortcuts />
             <EditorProvider value={editorContextValue}>
+              <PlaybackProvider playerRef={playerRef}>
               <TimelineRowAdjuster />
               <LocalMediaProvider backendUploads={editorData?.uploads || []}>
                 <AssetLoadingProvider>
@@ -639,6 +640,7 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
                   )}
                 </AssetLoadingProvider>
               </LocalMediaProvider>
+              </PlaybackProvider>
             </EditorProvider>
           </TimelineProvider>
         </KeyframeProvider>

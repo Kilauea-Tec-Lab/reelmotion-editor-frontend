@@ -2,6 +2,7 @@ import React, { useMemo } from "react";
 import { Sequence } from "remotion";
 import { LayerContent } from "./layer-content";
 import { Overlay, OverlayType } from "../../types";
+import { FPS } from "../../constants";
 
 /**
  * Get the base z-index for an overlay type
@@ -43,7 +44,7 @@ export const Layer: React.FC<{
   overlay: Overlay;
   selectedOverlayId: number | null;
   baseUrl?: string;
-}> = ({ overlay, selectedOverlayId, baseUrl }) => {
+}> = React.memo(function Layer({ overlay, selectedOverlayId, baseUrl }) {
   /**
    * Memoized style calculations for the layer
    * Handles positioning, dimensions, rotation, and z-index based on:
@@ -95,6 +96,7 @@ export const Layer: React.FC<{
         key={overlay.id}
         from={overlay.from}
         durationInFrames={overlay.durationInFrames}
+        premountFor={FPS}
       >
         <LayerContent overlay={overlay} baseUrl={baseUrl} />
       </Sequence>
@@ -111,11 +113,11 @@ export const Layer: React.FC<{
       key={overlay.id}
       from={overlay.from}
       durationInFrames={overlay.durationInFrames}
-      layout="none"
+      premountFor={FPS}
     >
       <div style={style}>
         <LayerContent overlay={overlay} baseUrl={baseUrl} />
       </div>
     </Sequence>
   );
-};
+});

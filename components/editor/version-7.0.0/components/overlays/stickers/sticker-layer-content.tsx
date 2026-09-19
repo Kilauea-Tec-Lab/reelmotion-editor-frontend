@@ -2,7 +2,7 @@ import React, { memo } from "react";
 import { useCurrentFrame } from "remotion";
 import { StickerOverlay } from "../../../types";
 import { templateMap } from "../../../templates/sticker-templates/sticker-helpers";
-import { animationTemplates } from "../../../templates/animation-templates";
+import { getAnimationStyle } from "../../../utils/animation-phase";
 
 interface StickerLayerContentProps {
   overlay: StickerOverlay;
@@ -20,68 +20,32 @@ export const StickerLayerContent: React.FC<StickerLayerContentProps> = memo(
       return null;
     }
 
-    // Calculate if we're in the exit phase (last 30 frames)
-    const isExitPhase = frame >= overlay.durationInFrames - 30;
-
-    // Apply enter animation only during entry phase
-    const enterAnimation =
-      !isExitPhase && overlay.styles?.animation?.enter
-        ? animationTemplates[overlay.styles.animation.enter]?.enter(
-            frame,
-            overlay.durationInFrames
-          )
-        : {};
-
-    // Apply exit animation only during exit phase
-    const exitAnimation =
-      isExitPhase && overlay.styles?.animation?.exit
-        ? animationTemplates[overlay.styles.animation.exit]?.exit(
-            frame,
-            overlay.durationInFrames
-          )
-        : {};
+    const animationStyle = getAnimationStyle(
+      overlay.styles?.animation,
+      frame,
+      overlay.durationInFrames
+    );
 
     const { Component } = template;
-    const MemoizedComponent = memo(Component);
-    
-    // Merge animation styles with overlay styles
-    const animationStyle = isExitPhase ? exitAnimation : enterAnimation;
-    
     const props = {
       ...template.config.defaultProps,
-      overlay: {
-        ...overlay,
-        styles: {
-          ...overlay.styles,
-          // Don't override transform from animations if they exist
-          ...(animationStyle.transform && { transform: animationStyle.transform }),
-          ...(animationStyle.opacity !== undefined && { opacity: animationStyle.opacity }),
-        },
-      },
+      overlay,
       isSelected,
       onUpdate,
-      animationStyle, // Pass animation styles separately if needed
+      animationStyle,
     };
 
+    // Animation applied once, on the wrapper only.
     return (
       <div style={animationStyle}>
-        <MemoizedComponent {...props} />
+        <Component {...props} />
       </div>
     );
   },
-  (prevProps, nextProps) => {
-    // Only re-render if these props change
-    return (
-      prevProps.overlay.content === nextProps.overlay.content &&
-      prevProps.isSelected === nextProps.isSelected &&
-      prevProps.overlay.styles?.opacity === nextProps.overlay.styles?.opacity &&
-      prevProps.overlay.styles?.animation?.enter === nextProps.overlay.styles?.animation?.enter &&
-      prevProps.overlay.styles?.animation?.exit === nextProps.overlay.styles?.animation?.exit &&
-      prevProps.overlay.rotation === nextProps.overlay.rotation &&
-      prevProps.overlay.width === nextProps.overlay.width &&
-      prevProps.overlay.height === nextProps.overlay.height
-    );
-  }
+  (prev, next) =>
+    prev.overlay === next.overlay &&
+    prev.isSelected === next.isSelected &&
+    prev.onUpdate === next.onUpdate
 );
 
 StickerLayerContent.displayName = "StickerLayerContent";

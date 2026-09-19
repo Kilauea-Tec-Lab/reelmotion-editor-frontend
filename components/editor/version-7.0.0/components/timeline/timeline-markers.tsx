@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useMemo } from "react";
 import { FPS } from "../../constants";
 
 /**
@@ -18,11 +18,11 @@ type TimeMarkersProps = {
  * Renders timeline markers with adaptive scaling based on zoom level
  * Displays time indicators and clickable markers for timeline navigation
  */
-const TimeMarkers = ({
+const TimeMarkers = React.memo(function TimeMarkers({
   durationInFrames,
   handleTimelineClick,
   zoomScale,
-}: TimeMarkersProps): JSX.Element => {
+}: TimeMarkersProps): JSX.Element {
   const generateMarkers = (): JSX.Element[] => {
     const markers: JSX.Element[] = [];
     // Calculate total seconds more precisely using frames
@@ -191,13 +191,15 @@ const TimeMarkers = ({
         const { left, width } = event.currentTarget.getBoundingClientRect();
         const clickPosition = (event.clientX - left) / width;
         // Convert click position to frame-accurate position
-        const framePosition =
-          Math.round(clickPosition * durationInFrames) / durationInFrames;
-        handleTimelineClick(framePosition);
+        // Absolute frame (the consumer seeks the player in frames)
+        handleTimelineClick(Math.round(clickPosition * durationInFrames));
       }
     },
     [handleTimelineClick, durationInFrames]
   );
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const markers = useMemo(generateMarkers, [durationInFrames, zoomScale]);
 
   return (
     <div
@@ -207,9 +209,9 @@ const TimeMarkers = ({
       data-timeline-marker="root"
       onClick={handleClick}
     >
-      {generateMarkers()}
+      {markers}
     </div>
   );
-};
+});
 
 export default TimeMarkers;

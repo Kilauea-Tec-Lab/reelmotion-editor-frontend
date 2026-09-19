@@ -66,7 +66,7 @@ export const CaptionsPanel: React.FC = () => {
     selectedOverlayId,
     durationInFrames,
     changeOverlay,
-    currentFrame,
+    getCurrentFrame,
   } = useEditorContext();
 
   const { findNextAvailablePosition } = useTimelinePositioning();
@@ -132,7 +132,7 @@ export const CaptionsPanel: React.FC = () => {
       overlays,
       visibleRows,
       durationInFrames,
-      currentFrame
+      getCurrentFrame()
     );
 
     const newCaptionOverlay: CaptionOverlay = {
@@ -372,7 +372,6 @@ export const CaptionsPanel: React.FC = () => {
         </>
       ) : (
         <CaptionSettings
-          currentFrame={currentFrame}
           localOverlay={localOverlay}
           setLocalOverlay={handleUpdateOverlay}
           startFrame={localOverlay.from}

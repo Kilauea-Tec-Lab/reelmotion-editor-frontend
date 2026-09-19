@@ -2,6 +2,7 @@
  * @jest-environment jsdom
  */
 
+import { ROW_HEIGHT } from "../../components/editor/version-7.0.0/constants";
 import { renderHook, act } from "@testing-library/react";
 import { useTimelineDragAndDrop } from "../../components/editor/version-7.0.0/hooks/use-timeline-drag-and-drop";
 import {
@@ -177,7 +178,7 @@ describe("useTimelineDragAndDrop", () => {
 
       // Move down by one row (100px)
       act(() => {
-        result.current.handleDrag(100, 150);
+        result.current.handleDrag(100, 50 + ROW_HEIGHT); // one row down
       });
 
       expect(mockProps.updateGhostElement).toHaveBeenLastCalledWith(
@@ -201,7 +202,7 @@ describe("useTimelineDragAndDrop", () => {
 
       // Move right and down
       act(() => {
-        result.current.handleDrag(200, 150);
+        result.current.handleDrag(200, 50 + ROW_HEIGHT);
       });
 
       // End drag
@@ -368,7 +369,7 @@ describe("useTimelineDragAndDrop", () => {
 
       // Move to position that would overlap with existing overlay
       act(() => {
-        result.current.handleDrag(200, 150); // Move to row 1 and overlap position
+        result.current.handleDrag(200, 50 + ROW_HEIGHT); // Move to row 1 and overlap position
       });
 
       // End drag

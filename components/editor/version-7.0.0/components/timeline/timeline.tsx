@@ -8,7 +8,7 @@
 
 "use client";
 
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { useTimeline } from "../../contexts/timeline-context";
 import { useTimelineDragAndDrop } from "../../hooks/use-timeline-drag-and-drop";
 import { useTimelineEventHandlers } from "../../hooks/use-timeline-event-handlers";
@@ -21,6 +21,7 @@ import TimeMarkers from "./timeline-markers";
 import { Grip, Loader2, Plus } from "lucide-react";
 import {
   ROW_HEIGHT,
+  TIMELINE_HEADER_PX,
   SHOW_LOADING_PROJECT_ALERT,
   SNAPPING_CONFIG,
   MAX_ROWS,
@@ -49,8 +50,6 @@ interface TimelineProps {
   selectedOverlayId: number | null;
   /** Callback to update the selected overlay */
   setSelectedOverlayId: (id: number | null) => void;
-  /** Current playhead position in frames */
-  currentFrame: number;
   /** Callback when an overlay is modified */
   onOverlayChange: (updatedOverlay: Overlay) => void;
   /** Callback to update the current frame position */
@@ -72,7 +71,6 @@ const Timeline: React.FC<TimelineProps> = ({
   durationInFrames,
   selectedOverlayId,
   setSelectedOverlayId,
-  currentFrame,
   onOverlayChange,
   setCurrentFrame,
   onTimelineClick,
@@ -81,11 +79,20 @@ const Timeline: React.FC<TimelineProps> = ({
   onSplitOverlay,
   setOverlays,
 }) => {
-  // State for tracking hover position during split operations
-  const [lastKnownHoverInfo, setLastKnownHoverInfo] = useState<{
-    itemId: number;
-    position: number;
-  } | null>(null);
+  // Hover position for split-at-cursor. A ref: it is only read on split, and
+  // writing state here would re-render the whole timeline on every mousemove.
+  const lastKnownHoverInfo = useRef<{ itemId: number; position: number } | null>(null);
+  const ghostMarkerRef = useRef<HTMLDivElement>(null);
+  const setGhostMarkerPosition = useCallback((position: number | null) => {
+    const el = ghostMarkerRef.current;
+    if (!el) return;
+    if (position === null) {
+      el.style.display = "none";
+    } else {
+      el.style.display = "block";
+      el.style.left = `calc(${position}% - 1px)`;
+    }
+  }, []);
 
   const {
     visibleRows,
@@ -104,13 +111,11 @@ const Timeline: React.FC<TimelineProps> = ({
     isDragging,
     draggedItem,
     ghostElement, // Raw ghost from hook
-    ghostMarkerPosition,
     livePushOffsets,
     dragInfo,
     handleDragStart: timelineStateHandleDragStart,
     updateGhostElement,
     resetDragState,
-    setGhostMarkerPosition,
   } = useTimelineState(durationInFrames, visibleRows, timelineRef);
 
   const { handleDragStart, handleDrag, handleDragEnd } = useTimelineDragAndDrop(
@@ -126,16 +131,12 @@ const Timeline: React.FC<TimelineProps> = ({
     }
   );
 
-  const { handleMouseMove, handleTouchMove, handleTimelineMouseLeave } =
-    useTimelineEventHandlers({
-      handleDrag,
-      handleDragEnd,
-      isDragging,
-      timelineRef,
-      setGhostMarkerPosition,
-    });
 
-  // Call the new snapping hook
+  const { addOverlay: editorAddOverlay, overlays: editorOverlays, durationInFrames: editorDuration, getCurrentFrame } = useEditorContext();
+  // Read once per drag frame (Timeline re-renders when the ghost moves), no per-frame subscription.
+  const playheadFrame = isDragging ? getCurrentFrame() : 0;
+  const playheadSnap = useMemo(() => [playheadFrame], [playheadFrame]);
+
   const { alignmentLines, snappedGhostElement } = useTimelineSnapping({
     isDragging,
     ghostElement,
@@ -145,7 +146,27 @@ const Timeline: React.FC<TimelineProps> = ({
     durationInFrames,
     visibleRows,
     snapThreshold: SNAPPING_CONFIG.thresholdFrames,
+    extraSnapFrames: playheadSnap,
   });
+
+  // Commit what the user sees: the snapped ghost, not the raw pointer position.
+  const handleDragEndSnapped = useCallback(() => {
+    if (dragInfo.current && snappedGhostElement) {
+      dragInfo.current.ghostLeft = snappedGhostElement.left;
+      dragInfo.current.ghostWidth = snappedGhostElement.width;
+      dragInfo.current.ghostTop = snappedGhostElement.top;
+    }
+    handleDragEnd();
+  }, [dragInfo, snappedGhostElement, handleDragEnd]);
+
+  const { handleMouseMove, handleTouchMove, handleTimelineMouseLeave } =
+    useTimelineEventHandlers({
+      handleDrag,
+      handleDragEnd: handleDragEndSnapped,
+      isDragging,
+      timelineRef,
+      setGhostMarkerPosition,
+    });
 
   // Event Handlers
   const combinedHandleDragStart = useCallback(
@@ -173,21 +194,19 @@ const Timeline: React.FC<TimelineProps> = ({
 
   const handleItemHover = useCallback(
     (itemId: number, hoverPosition: number) => {
-      setLastKnownHoverInfo({
-        itemId,
-        position: Math.round(hoverPosition),
-      });
+      lastKnownHoverInfo.current = { itemId, position: Math.round(hoverPosition) };
     },
     []
   );
 
   const handleSplitItem = useCallback(
     (id: number) => {
-      if (lastKnownHoverInfo?.itemId === id) {
-        onSplitOverlay(id, lastKnownHoverInfo.position);
+      const hover = lastKnownHoverInfo.current;
+      if (hover?.itemId === id) {
+        onSplitOverlay(id, hover.position);
       }
     },
-    [lastKnownHoverInfo, onSplitOverlay]
+    [onSplitOverlay]
   );
 
   const handleContextMenuChange = useCallback(
@@ -311,8 +330,7 @@ const Timeline: React.FC<TimelineProps> = ({
         if (!timelineRect) return;
 
         const dropY = e.clientY - timelineRect.top;
-        const headerHeight = 21;
-        const rowY = dropY - headerHeight;
+        const rowY = dropY - TIMELINE_HEADER_PX;
         const targetRow = Math.max(0, Math.min(visibleRows - 1, Math.floor(rowY / ROW_HEIGHT)));
         const { width: compWidth, height: compHeight } = getAspectRatioDimensions();
 
@@ -339,7 +357,7 @@ const Timeline: React.FC<TimelineProps> = ({
               editorOverlays,
               visibleRows,
               editorDuration,
-              editorCurrentFrame
+              getCurrentFrame()
             );
 
             // Use editorAddOverlay which uses functional state update (no stale closure)
@@ -431,24 +449,24 @@ const Timeline: React.FC<TimelineProps> = ({
       const dropX = e.clientX - timelineRect.left;
       const dropY = e.clientY - timelineRect.top;
       
-      // Calculate frame position from X coordinate
-      const timelineWidth = timelineRect.width * zoomScale;
-      const framePosition = Math.round((dropX / timelineWidth) * durationInFrames);
-      
+      // timelineRect is already the zoomed element, so no extra zoom factor
+      const framePosition = Math.max(
+        0,
+        Math.round((dropX / timelineRect.width) * durationInFrames)
+      );
+
       // Calculate row from Y coordinate (accounting for header)
-      const headerHeight = 21;
-      const rowY = dropY - headerHeight;
+      const rowY = dropY - TIMELINE_HEADER_PX;
       const targetRow = Math.max(0, Math.min(visibleRows - 1, Math.floor(rowY / ROW_HEIGHT)));
-      
-      // Find the last occupied frame in the target row
-      const overlaysInRow = overlays.filter(o => o.row === targetRow);
-      const lastFrameInRow = overlaysInRow.length > 0
-        ? Math.max(...overlaysInRow.map(o => o.from + o.durationInFrames))
-        : 0;
-      
+
+      // Drop where the cursor is; if that frame is inside an existing clip, place right after it.
+      const covering = overlays.find(
+        (o) => o.row === targetRow && o.from <= framePosition && o.from + o.durationInFrames > framePosition
+      );
+
       return {
         targetRow,
-        newOverlayStartFrame: Math.max(lastFrameInRow, 0),
+        newOverlayStartFrame: covering ? covering.from + covering.durationInFrames : framePosition,
       };
     };
     
@@ -478,8 +496,7 @@ const Timeline: React.FC<TimelineProps> = ({
         };
         
         const videoDuration = await getVideoDuration(data.video_url);
-        const fps = 30;
-        const videoDurationInFrames = Math.floor(videoDuration * fps);
+        const videoDurationInFrames = Math.floor(videoDuration * FPS);
         
         const newOverlay: Overlay = {
           left: 0,
@@ -504,8 +521,7 @@ const Timeline: React.FC<TimelineProps> = ({
           },
         };
         
-        setOverlays([...overlays, newOverlay]);
-        setSelectedOverlayId(newOverlay.id);
+        editorAddOverlay(newOverlay);
       } catch (error) {
         console.error("Error dropping video:", error);
       }
@@ -534,8 +550,7 @@ const Timeline: React.FC<TimelineProps> = ({
           },
         };
         
-        setOverlays([...overlays, newOverlay]);
-        setSelectedOverlayId(newOverlay.id);
+        editorAddOverlay(newOverlay);
       } catch (error) {
         console.error("Error dropping sound:", error);
       }
@@ -561,8 +576,7 @@ const Timeline: React.FC<TimelineProps> = ({
           styles: data.styles,
         };
         
-        setOverlays([...overlays, newOverlay]);
-        setSelectedOverlayId(newOverlay.id);
+        editorAddOverlay(newOverlay);
       } catch (error) {
         console.error("Error dropping text:", error);
       }
@@ -593,8 +607,7 @@ const Timeline: React.FC<TimelineProps> = ({
           },
         };
         
-        setOverlays([...overlays, newOverlay]);
-        setSelectedOverlayId(newOverlay.id);
+        editorAddOverlay(newOverlay);
       } catch (error) {
         console.error("Error dropping sticker:", error);
       }
@@ -629,8 +642,7 @@ const Timeline: React.FC<TimelineProps> = ({
           },
         };
         
-        setOverlays([...overlays, newOverlay]);
-        setSelectedOverlayId(newOverlay.id);
+        editorAddOverlay(newOverlay);
       } catch (error) {
         console.error("Error dropping library image:", error);
       }
@@ -665,8 +677,7 @@ const Timeline: React.FC<TimelineProps> = ({
           },
         };
         
-        setOverlays([...overlays, newOverlay]);
-        setSelectedOverlayId(newOverlay.id);
+        editorAddOverlay(newOverlay);
       } catch (error) {
         console.error("Error dropping library video:", error);
       }
@@ -709,7 +720,6 @@ const Timeline: React.FC<TimelineProps> = ({
 
   // Local media context for uploading files dropped from OS
   const { addMediaFile } = useLocalMedia();
-  const { addOverlay: editorAddOverlay, overlays: editorOverlays, durationInFrames: editorDuration, currentFrame: editorCurrentFrame } = useEditorContext();
   const { getAspectRatioDimensions } = useAspectRatio();
   const { findNextAvailablePosition } = useTimelinePositioning();
 
@@ -837,8 +847,8 @@ const Timeline: React.FC<TimelineProps> = ({
             }}
             onMouseMove={handleMouseMove}
             onTouchMove={handleTouchMove}
-            onMouseUp={handleDragEnd}
-            onTouchEnd={handleDragEnd}
+            onMouseUp={handleDragEndSnapped}
+            onTouchEnd={handleDragEndSnapped}
             onMouseLeave={handleTimelineMouseLeave}
             onClick={onTimelineClick}
             onDrop={handleTimelineDrop}
@@ -856,14 +866,11 @@ const Timeline: React.FC<TimelineProps> = ({
               </div>
 
               {/* Current frame indicator */}
-              <TimelineMarker
-                currentFrame={currentFrame}
-                totalDuration={durationInFrames}
-              />
+              <TimelineMarker totalDuration={durationInFrames} />
 
               {/* Drag operation visual feedback */}
               <GhostMarker
-                position={ghostMarkerPosition}
+                markerRef={ghostMarkerRef}
                 isDragging={isDragging}
                 isContextMenuOpen={isContextMenuOpen}
               />
@@ -871,7 +878,6 @@ const Timeline: React.FC<TimelineProps> = ({
               {/* Main timeline grid with overlays */}
               <TimelineGrid
                 overlays={overlays}
-                currentFrame={currentFrame}
                 isDragging={isDragging}
                 draggedItem={draggedItem}
                 selectedOverlayId={selectedOverlayId}

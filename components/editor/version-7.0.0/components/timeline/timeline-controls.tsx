@@ -41,6 +41,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useTimelineShortcuts } from "../../hooks/use-timeline-shortcuts";
+import { usePlayback } from "../../contexts/playback-context";
 import { useAssetLoading } from "../../contexts/asset-loading-context";
 import { useKeyframeContext } from "../../contexts/keyframe-context";
 import { Separator } from "@/components/ui/separator";
@@ -54,12 +55,8 @@ type AspectRatioOption = "16:9" | "9:16" | "1:1" | "4:5" | "4:3" | "2:1" | "3:4"
  * @interface TimelineControlsProps
  */
 interface TimelineControlsProps {
-  /** Indicates whether the timeline is currently playing */
-  isPlaying: boolean;
   /** Function to toggle between play and pause states */
   togglePlayPause: () => void;
-  /** The current frame number in the timeline */
-  currentFrame: number;
   /** The total duration of the timeline in frames */
   totalDuration: number;
   /** Function to format frame numbers into a time string */
@@ -89,12 +86,11 @@ interface TimelineControlsProps {
  * ```
  */
 export const TimelineControls: React.FC<TimelineControlsProps> = ({
-  isPlaying,
   togglePlayPause,
-  currentFrame,
   totalDuration,
   formatTime,
 }) => {
+  const { currentFrame, isPlaying } = usePlayback();
   // Context
   const {
     aspectRatio,
@@ -136,30 +132,6 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
 
   const { clearAllKeyframes } = useKeyframeContext();
   const { t } = useTranslation();
-
-  // Keep track of previous frame to detect resets
-  const prevFrameRef = React.useRef(currentFrame);
-  const isPlayingRef = React.useRef(isPlaying);
-
-  useEffect(() => {
-    // Only update the ref when isPlaying changes
-    isPlayingRef.current = isPlaying;
-  }, [isPlaying]);
-
-  useEffect(() => {
-    // Only run the check if we're actually playing
-    if (isPlayingRef.current) {
-      // Detect when frame drops to 0 or exceeds content (stop at end of content)
-      if (
-        (prevFrameRef.current > totalDuration - 2 && currentFrame === 0) ||
-        currentFrame >= contentDurationInFrames
-      ) {
-        togglePlayPause();
-      }
-    }
-
-    prevFrameRef.current = currentFrame;
-  }, [currentFrame, totalDuration, togglePlayPause, contentDurationInFrames]); // Added contentDurationInFrames to dependencies
 
   // Handlers
   const handlePlayPause = () => {
@@ -219,7 +191,7 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
 
   // Handler for reset zoom button
   const handleResetZoom = () => {
-    setZoomScale(ZOOM_CONSTRAINTS.min);
+    setZoomScale(ZOOM_CONSTRAINTS.default);
   };
 
   // Handler for scissors button - split selected overlay at current frame
@@ -349,7 +321,6 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
       <div className="flex items-center justify-center gap-2 flex-grow">
         {/* Playback Speed Control */}
         <DropdownMenu>
-          {/* 
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
@@ -359,7 +330,6 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
               {playbackRate}x
             </Button>
           </DropdownMenuTrigger>
-          */}
           <DropdownMenuContent
             className="min-w-[100px] bg-white dark:bg-darkBox border border-gray-200 dark:border-gray-700"
             align="center"

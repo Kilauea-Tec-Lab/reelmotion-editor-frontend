@@ -15,7 +15,8 @@ export const VIDEO_WIDTH = 1280; // 720p HD video dimensions
 export const VIDEO_HEIGHT = 720;
 
 // UI configuration
-export const ROW_HEIGHT = 44; // Slightly increased from 48
+export const ROW_HEIGHT = 44; // px per timeline row
+export const TIMELINE_HEADER_PX = 21; // ruler height (h-[1.3rem])
 export const SHOW_LOADING_PROJECT_ALERT = true; // Controls visibility of asset loading indicator
 export const DISABLE_MOBILE_LAYOUT = false;
 
@@ -58,7 +59,7 @@ export const CLOUDRUN_CONFIG = {
 
 // Zoom control configuration
 export const ZOOM_CONSTRAINTS = {
-  min: 0.2, // Minimum zoom level
+  min: 1, // Minimum zoom level (timeline never shrinks below 100% width, so <1 was a no-op)
   max: 10, // Maximum zoom level
   step: 0.1, // Smallest increment for manual zoom controls
   default: 1, // Default zoom level
@@ -70,12 +71,12 @@ export const ZOOM_CONSTRAINTS = {
 
 // Timeline Snapping configuration
 export const SNAPPING_CONFIG = {
-  thresholdFrames: 1, // Default snapping sensitivity in frames
+  thresholdFrames: 5, // Snap when within this many frames of another clip edge / playhead
   enableVerticalSnapping: true, // Enable snapping to items in adjacent rows
 };
 
 // Add new constant for push behavior
-export const ENABLE_PUSH_ON_DRAG = false; // Set to false to disable pushing items on drag
+export const ENABLE_PUSH_ON_DRAG = true; // Push neighbours live during drag so the ghost matches what the drop will do
 
 // Render configuration
 // NOTE: TO CHANGE RENDER TYPE, UPDATE THE RENDER_TYPE CONSTANT

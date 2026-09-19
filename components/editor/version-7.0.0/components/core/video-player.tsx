@@ -57,7 +57,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ playerRef }) => {
     getAspectRatioDimensions,
     durationInFrames,
     contentDurationInFrames,
-    isPlaying,
+    playbackRate,
     backgroundColor,
     setBackgroundColor,
   } = useEditorContext();
@@ -75,70 +75,23 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ playerRef }) => {
     setColorPickerOpen(true);
   }, []);
 
-  // Store previous playing state to restore it after overlay changes
-  const wasPlayingRef = useRef(false);
-  const currentFrameRef = useRef(0);
-  const previousOverlaysLengthRef = useRef(overlays.length);
-
-  // Update current frame reference
-  useEffect(() => {
-    if (playerRef.current) {
-      currentFrameRef.current = playerRef.current.getCurrentFrame();
-    }
-  });
-
-  // Track when overlays change (but not when added/removed)
-  useEffect(() => {
-    const currentLength = overlays.length;
-    const lengthChanged = currentLength !== previousOverlaysLengthRef.current;
-    
-    // Only preserve playback state if overlays were modified (not added/removed)
-    if (!lengthChanged && wasPlayingRef.current && playerRef.current) {
-      const savedFrame = currentFrameRef.current;
-      const shouldPlay = wasPlayingRef.current;
-      
-      // Small delay to ensure the player has finished re-rendering
-      const timer = setTimeout(() => {
-        if (playerRef.current) {
-          // First seek to the saved position
-          playerRef.current.seekTo(savedFrame);
-          
-          // Then resume playback if it was playing
-          if (shouldPlay) {
-            playerRef.current.play();
-          }
-        }
-      }, 100);
-      
-      return () => clearTimeout(timer);
-    }
-    
-    previousOverlaysLengthRef.current = currentLength;
-  }, [overlays, playerRef]);
-
-  // Track playing state
-  useEffect(() => {
-    wasPlayingRef.current = isPlaying;
-  }, [isPlaying]);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   /**
-   * Updates the player dimensions when the container size or aspect ratio changes
+   * Keep player dimensions in sync with the container (also catches sidebar
+   * collapse, which does not fire window.resize).
    */
   useEffect(() => {
-    const handleDimensionUpdate = () => {
-      const videoContainer = document.querySelector(".video-container");
-      if (!videoContainer) return;
-
-      const { width, height } = videoContainer.getBoundingClientRect();
+    const el = containerRef.current;
+    if (!el) return;
+    const update = () => {
+      const { width, height } = el.getBoundingClientRect();
       updatePlayerDimensions(width, height);
     };
-
-    handleDimensionUpdate(); // Initial update
-    window.addEventListener("resize", handleDimensionUpdate);
-
-    return () => {
-      window.removeEventListener("resize", handleDimensionUpdate);
-    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
   }, [aspectRatio, updatePlayerDimensions]);
 
   const { width: compositionWidth, height: compositionHeight } =
@@ -175,6 +128,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ playerRef }) => {
     <div className="w-full h-full overflow-hidden">
       {/* Grid background container */}
       <div
+        ref={containerRef}
         className="z-0 video-container relative w-full h-full
         bg-slate-100/90 dark:bg-darkBoxSub
         bg-[linear-gradient(to_right,#80808015_1px,transparent_1px),linear-gradient(to_bottom,#80808015_1px,transparent_1px)]
@@ -246,6 +200,9 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ playerRef }) => {
               fps={PLAYER_CONFIG.fps}
               inputProps={inputProps}
               errorFallback={playerErrorFallback}
+              playbackRate={playbackRate}
+              moveToBeginningWhenEnded={false}
+              acknowledgeRemotionLicense
               overflowVisible
               numberOfSharedAudioTags={20}
             />

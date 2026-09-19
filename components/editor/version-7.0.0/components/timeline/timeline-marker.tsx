@@ -1,4 +1,5 @@
 import React, { useMemo } from "react";
+import { usePlayback } from "../../contexts/playback-context";
 
 /**
  * Props for the TimelineMarker component.
@@ -8,7 +9,6 @@ import React, { useMemo } from "react";
  * @property {number} zoom - The current zoom level of the timeline.
  */
 interface TimelineMarkerProps {
-  currentFrame: number;
   totalDuration: number;
 }
 
@@ -21,7 +21,8 @@ interface TimelineMarkerProps {
  * @returns {React.ReactElement} A React element representing the timeline marker.
  */
 const TimelineMarker: React.FC<TimelineMarkerProps> = React.memo(
-  ({ currentFrame, totalDuration }) => {
+  ({ totalDuration }) => {
+    const { currentFrame } = usePlayback();
     // Calculate the marker's position with higher precision
     const markerPosition = useMemo(() => {
       // Ensure we're using the same calculation method as timeline items

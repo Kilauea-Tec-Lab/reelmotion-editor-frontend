@@ -115,4 +115,35 @@ describe("useHistory", () => {
     // Future history should be cleared
     expect(result.current.canRedo).toBe(false);
   });
+  it("records one undo step per canvas gesture (isDragging writes are skipped)", () => {
+    const start = [createMockOverlay(1)];
+    const setOverlays = jest.fn();
+    const { result, rerender } = renderHook(
+      ({ overlays }) => useHistory(overlays, setOverlays),
+      { initialProps: { overlays: start } }
+    );
+
+    // 20 pointermove writes while dragging, then the final commit
+    for (let i = 1; i <= 20; i++) {
+      rerender({ overlays: [{ ...start[0], left: i, isDragging: true }] });
+    }
+    rerender({ overlays: [{ ...start[0], left: 20, isDragging: false }] });
+
+    act(() => result.current.undo());
+    expect(setOverlays).toHaveBeenCalledTimes(1);
+    expect(setOverlays).toHaveBeenCalledWith(start);
+    expect(result.current.canUndo).toBe(false);
+  });
+
+  it("caps history at 50 entries", () => {
+    const setOverlays = jest.fn();
+    const { result, rerender } = renderHook(
+      ({ overlays }) => useHistory(overlays, setOverlays),
+      { initialProps: { overlays: [createMockOverlay(1)] } }
+    );
+    for (let i = 0; i < 80; i++) rerender({ overlays: [createMockOverlay(i + 2)] });
+    for (let i = 0; i < 50; i++) act(() => result.current.undo());
+    expect(result.current.canUndo).toBe(false);
+    expect(setOverlays).toHaveBeenCalledTimes(50);
+  });
 });

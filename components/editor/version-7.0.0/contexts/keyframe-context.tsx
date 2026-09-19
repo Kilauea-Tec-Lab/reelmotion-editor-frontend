@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useCallback, useState } from "react";
+import React, { createContext, useContext, useCallback, useMemo, useRef } from "react";
 
 /**
  * Represents the data structure for keyframe information
@@ -65,52 +65,41 @@ export const useKeyframeContext = () => {
 export const KeyframeProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [cache, setCache] = useState<KeyframeCache>({});
+  // ponytail: cache lives in a ref, not state. Consumers keep their own
+  // `frames` state, so a cache write must not re-render every timeline item.
+  const cacheRef = useRef<KeyframeCache>({});
 
   const getKeyframes = useCallback(
-    (overlayId: string) => {
-      return cache[overlayId] || null;
-    },
-    [cache]
+    (overlayId: string) => cacheRef.current[overlayId] || null,
+    []
   );
 
   const updateKeyframes = useCallback(
     (overlayId: string, data: KeyframeData) => {
-      setCache((prev) => {
-        const newCache = {
-          ...prev,
-          [overlayId]: {
-            ...data,
-            lastUpdated: Date.now(),
-          },
-        };
-        return newCache;
-      });
+      cacheRef.current = {
+        ...cacheRef.current,
+        [overlayId]: { ...data, lastUpdated: Date.now() },
+      };
     },
     []
   );
 
   const clearKeyframes = useCallback((overlayId: string) => {
-    setCache((prev) => {
-      const newCache = { ...prev };
-      delete newCache[overlayId];
-      return newCache;
-    });
+    const { [overlayId]: _removed, ...rest } = cacheRef.current;
+    cacheRef.current = rest;
   }, []);
 
   const clearAllKeyframes = useCallback(() => {
-    setCache({});
+    cacheRef.current = {};
   }, []);
 
+  const value = useMemo(
+    () => ({ getKeyframes, updateKeyframes, clearKeyframes, clearAllKeyframes }),
+    [getKeyframes, updateKeyframes, clearKeyframes, clearAllKeyframes]
+  );
+
   return (
-    <KeyframeContext.Provider
-      value={{
-        getKeyframes,
-        updateKeyframes,
-        clearKeyframes,
-        clearAllKeyframes,
-      }}
-    >
+    <KeyframeContext.Provider value={value}>
       {children}
     </KeyframeContext.Provider>
   );

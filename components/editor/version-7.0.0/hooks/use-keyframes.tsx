@@ -2,12 +2,12 @@ import React from "react";
 import { ImageOverlay, OverlayType, ClipOverlay } from "../types";
 import { DISABLE_VIDEO_KEYFRAMES, FPS } from "../constants";
 import { useKeyframeContext } from "../contexts/keyframe-context";
-import { toAbsoluteUrl, getOptimizedMediaUrl, isGcsUrl, isBackendUrl, resolveVideoUrl } from "../utils/url-helper";
+import { resolveVideoUrl } from "../utils/url-helper";
+import { usePlayback } from "../contexts/playback-context";
 
 interface UseKeyframesProps {
   overlay: ClipOverlay | ImageOverlay;
   containerRef: React.RefObject<HTMLDivElement>;
-  currentFrame: number;
   zoomScale: number;
   baseUrl?: string;
 }
@@ -96,8 +96,7 @@ export const useKeyframes = ({
       const video = document.createElement("video");
       video.crossOrigin = "anonymous";
       video.muted = true;
-      video.preload = "auto";
-      video.playbackRate = 16;
+      video.preload = "metadata";
 
       const canvas = document.createElement("canvas");
       const maxWidth = 240;
@@ -186,24 +185,8 @@ export const useKeyframes = ({
         return;
       }
 
-      // Process video source URL consistently with video-layer-content
-      let processedVideoSrc = overlayMeta.src;
-      // If it's a relative URL and baseUrl is provided
-      if (overlayMeta.src.startsWith("/") && baseUrl) {
-        processedVideoSrc = `${baseUrl}${overlayMeta.src}`;
-      }
-      // Otherwise use the toAbsoluteUrl helper for relative URLs
-      else if (overlayMeta.src.startsWith("/")) {
-        processedVideoSrc = toAbsoluteUrl(overlayMeta.src);
-      }
-      // OPTIMIZATION: Use direct GCS URL or CDN for faster loading
-      else if (isGcsUrl(overlayMeta.src)) {
-        processedVideoSrc = getOptimizedMediaUrl(overlayMeta.src);
-      }
-      // Backend URLs need to go through proxy due to CORS
-      else if (isBackendUrl(overlayMeta.src)) {
-        processedVideoSrc = resolveVideoUrl(overlayMeta.src, baseUrl);
-      }
+      // Same URL as the player so the browser HTTP cache is shared
+      const processedVideoSrc = resolveVideoUrl(overlayMeta.src, baseUrl);
 
       // Create a temporary video element to get dimensions
       const tempVideo = document.createElement("video");
@@ -512,12 +495,14 @@ export const useKeyframes = ({
     baseUrl,
   ]);
 
+  // Don't compete with the player for bandwidth/decoder while it is playing.
+  const { isPlaying } = usePlayback();
   React.useEffect(() => {
-    if (!DISABLE_VIDEO_KEYFRAMES) {
+    if (!DISABLE_VIDEO_KEYFRAMES && !isPlaying) {
       performExtraction();
     }
     return () => cleanup();
-  }, [performExtraction, cleanup]);
+  }, [performExtraction, cleanup, isPlaying]);
 
   // Return empty arrays if disabled
   if (DISABLE_VIDEO_KEYFRAMES) {

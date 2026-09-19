@@ -261,4 +261,24 @@ describe("useAutosave", () => {
 
     expect(saveEditorState).not.toHaveBeenCalled();
   });
+  it("still saves when the component re-renders faster than the interval", async () => {
+    // Regression: the interval used to restart on every render (state dep), so it never fired.
+    const { rerender } = renderHook(
+      ({ tick }) => useAutosave("test-project", { overlays: [], tick }, { interval: 1000 }),
+      { initialProps: { tick: 0 } }
+    );
+    await act(async () => {});
+
+    for (let i = 1; i <= 20; i++) {
+      rerender({ tick: i });
+      await act(async () => {
+        jest.advanceTimersByTime(100);
+      });
+    }
+
+    expect(saveEditorState).toHaveBeenCalled();
+    // Latest state is what gets written, not the one captured at mount
+    const lastCall = (saveEditorState as jest.Mock).mock.calls.at(-1);
+    expect(lastCall[1].tick).toBeGreaterThan(0);
+  });
 });

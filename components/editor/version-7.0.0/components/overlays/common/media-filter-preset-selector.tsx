@@ -4,6 +4,7 @@ import { MEDIA_FILTER_PRESETS } from "../../../templates/common/media-filter-pre
 import { ClipOverlay, ImageOverlay } from "../../../types";
 import { resolveVideoUrl } from "../../../utils/url-helper";
 import { useTranslation } from "@/lib/i18n";
+import { useKeyframeContext } from "../../../contexts/keyframe-context";
 
 interface MediaFilterPresetSelectorProps {
   localOverlay: ClipOverlay | ImageOverlay;
@@ -96,14 +97,17 @@ export const MediaFilterPresetSelector: React.FC<
     }
   };
 
-  // Get the content to display in the preview (either video src or image src)
-  const getMediaContent = () => {
-    if (localOverlay.type === "video") {
-      return resolveVideoUrl((localOverlay as ClipOverlay).content);
-    } else {
-      return (localOverlay as ImageOverlay).src;
-    }
-  };
+  // One poster per preset instead of 12 autoplaying videos competing with the
+  // player: reuse the timeline thumbnail when we have one, else a paused video.
+  const { getKeyframes } = useKeyframeContext();
+  const poster =
+    localOverlay.type === "video"
+      ? getKeyframes(String(localOverlay.id))?.frames[0]
+      : (localOverlay as ImageOverlay).src;
+  const videoSrc =
+    localOverlay.type === "video" && !poster
+      ? resolveVideoUrl((localOverlay as ClipOverlay).content)
+      : undefined;
 
   return (
     <div className="space-y-2">
@@ -141,19 +145,18 @@ export const MediaFilterPresetSelector: React.FC<
               >
                 {/* Media thumbnail with filter applied */}
                 <div className="relative h-12 w-full mb-1 rounded overflow-hidden">
-                  {localOverlay.type === "video" ? (
+                  {videoSrc ? (
                     <video
-                      src={getMediaContent()}
+                      src={videoSrc}
                       muted
                       playsInline
-                      loop
-                      autoPlay
+                      preload="metadata"
                       className="w-full h-full object-cover"
                       style={{ filter: preset.filter }}
                     />
                   ) : (
                     <img
-                      src={getMediaContent()}
+                      src={poster}
                       alt={`${preset.name} preview`}
                       className="w-full h-full object-cover"
                       style={{ filter: preset.filter }}

@@ -17,7 +17,7 @@ import { LocalMediaGallery } from "../../local-media/local-media-gallery";
  * 3. Add uploaded media to the timeline
  */
 export const LocalMediaPanel: React.FC = () => {
-  const { addOverlay, overlays, durationInFrames, currentFrame } = useEditorContext();
+  const { addOverlay, overlays, durationInFrames, getCurrentFrame } = useEditorContext();
   const { findNextAvailablePosition } = useTimelinePositioning();
   const { getAspectRatioDimensions } = useAspectRatio();
   const { visibleRows } = useTimeline();
@@ -57,7 +57,7 @@ export const LocalMediaPanel: React.FC = () => {
       overlays,
       visibleRows,
       durationInFrames,
-      currentFrame
+      getCurrentFrame()
     );
 
     // Resolve duration: use stored value, or probe from URL as fallback

@@ -4,7 +4,7 @@
  * Supports drag and drop, resizing, and various item management operations.
  */
 
-import React, { useMemo } from "react";
+import React, { useCallback, useMemo } from "react";
 import { ROW_HEIGHT } from "../../constants";
 import { useTimeline } from "../../contexts/timeline-context";
 import { Overlay } from "../../types";
@@ -56,8 +56,6 @@ interface TimelineGridProps {
   onContextMenuChange: (open: boolean) => void;
   /** Callback to remove gap between items */
   onRemoveGap?: (rowIndex: number, gapStart: number, gapEnd: number) => void; // Revert signature
-  /** Current frame of the timeline */
-  currentFrame: number;
   /** Zoom scale of the timeline */
   zoomScale: number;
   /** Callback when rows are reordered */
@@ -71,6 +69,60 @@ interface TimelineGridProps {
   /** Array of calculated frame positions for alignment lines */
   alignmentLines: number[];
 }
+
+/**
+ * Finds gaps between overlay items in a single timeline row
+ * @param rowItems - Array of Overlay items in the current row
+ * @returns Array of gap objects, each containing start and end times
+ *
+ * @example
+ * // For a row with items: [0-30], [50-80], [100-120]
+ * // Returns: [{start: 30, end: 50}, {start: 80, end: 100}]
+ *
+ * @description
+ * This function identifies empty spaces (gaps) between overlay items in a timeline row:
+ * 1. Converts each item into start and end time points
+ * 2. Sorts all time points chronologically
+ * 3. Identifies three types of gaps:
+ *    - Gaps at the start (if first item doesn't start at 0)
+ *    - Gaps between items
+ *    - Gaps at the end are not included as they're considered infinite
+ */
+const findGapsInRow = (rowItems: Overlay[]) => {
+  if (rowItems.length === 0) return [];
+
+  const timePoints = rowItems
+    .flatMap((item) => [
+      { time: item.from, type: "start" },
+      { time: item.from + item.durationInFrames, type: "end" },
+    ])
+    .sort((a, b) => a.time - b.time);
+
+  // Handle special case: if no items start at 0, add a gap from 0
+  const gaps: { start: number; end: number }[] = [];
+
+  // Handle gap at the start
+  if (timePoints.length > 0 && timePoints[0].time > 0) {
+    gaps.push({ start: 0, end: timePoints[0].time });
+  }
+
+  // Handle gaps between items
+  for (let i = 0; i < timePoints.length - 1; i++) {
+    const currentPoint = timePoints[i];
+    const nextPoint = timePoints[i + 1];
+
+    if (
+      currentPoint.type === "end" &&
+      nextPoint.type === "start" &&
+      nextPoint.time > currentPoint.time
+    ) {
+      gaps.push({ start: currentPoint.time, end: nextPoint.time });
+    }
+  }
+
+  return gaps;
+};
+
 
 /**
  * TimelineGrid component that displays overlay items in a row-based timeline view
@@ -91,7 +143,6 @@ const TimelineGrid: React.FC<TimelineGridProps> = ({
   onHover,
   onContextMenuChange,
   onRemoveGap,
-  currentFrame,
   zoomScale,
   draggedRowIndex,
   dragOverRowIndex,
@@ -100,64 +151,39 @@ const TimelineGrid: React.FC<TimelineGridProps> = ({
 }) => {
   const { visibleRows } = useTimeline();
 
+  // Stable handlers so React.memo(TimelineItem) actually skips renders.
+  const setSelectedItem = useCallback(
+    (item: { id: number }) => setSelectedOverlayId(item.id),
+    [setSelectedOverlayId]
+  );
+  const onItemMouseDown = useCallback(
+    (item: Overlay, action: "move" | "resize-start" | "resize-end", e: React.MouseEvent<HTMLDivElement>) =>
+      handleDragStart(item, e.clientX, e.clientY, action),
+    [handleDragStart]
+  );
+  const onItemTouchStart = useCallback(
+    (item: Overlay, action: "move" | "resize-start" | "resize-end", e: React.TouchEvent<HTMLDivElement>) => {
+      const touch = e.touches[0];
+      handleDragStart(item, touch.clientX, touch.clientY, action);
+    },
+    [handleDragStart]
+  );
+
+  // Per-row items and gaps: recomputed only when overlays/rows change.
+  const rowsData = useMemo(
+    () =>
+      Array.from({ length: visibleRows }, (_, rowIndex) => {
+        const rowItems = overlays.filter((o) => o.row === rowIndex);
+        return { rowItems, gaps: findGapsInRow(rowItems) };
+      }),
+    [overlays, visibleRows]
+  );
+
   // Create a memoized selectedItem object
   const selectedItem = useMemo(
     () => (selectedOverlayId !== null ? { id: selectedOverlayId } : null),
     [selectedOverlayId]
   );
-
-  /**
-   * Finds gaps between overlay items in a single timeline row
-   * @param rowItems - Array of Overlay items in the current row
-   * @returns Array of gap objects, each containing start and end times
-   *
-   * @example
-   * // For a row with items: [0-30], [50-80], [100-120]
-   * // Returns: [{start: 30, end: 50}, {start: 80, end: 100}]
-   *
-   * @description
-   * This function identifies empty spaces (gaps) between overlay items in a timeline row:
-   * 1. Converts each item into start and end time points
-   * 2. Sorts all time points chronologically
-   * 3. Identifies three types of gaps:
-   *    - Gaps at the start (if first item doesn't start at 0)
-   *    - Gaps between items
-   *    - Gaps at the end are not included as they're considered infinite
-   */
-  const findGapsInRow = (rowItems: Overlay[]) => {
-    if (rowItems.length === 0) return [];
-
-    const timePoints = rowItems
-      .flatMap((item) => [
-        { time: item.from, type: "start" },
-        { time: item.from + item.durationInFrames, type: "end" },
-      ])
-      .sort((a, b) => a.time - b.time);
-
-    // Handle special case: if no items start at 0, add a gap from 0
-    const gaps: { start: number; end: number }[] = [];
-
-    // Handle gap at the start
-    if (timePoints.length > 0 && timePoints[0].time > 0) {
-      gaps.push({ start: 0, end: timePoints[0].time });
-    }
-
-    // Handle gaps between items
-    for (let i = 0; i < timePoints.length - 1; i++) {
-      const currentPoint = timePoints[i];
-      const nextPoint = timePoints[i + 1];
-
-      if (
-        currentPoint.type === "end" &&
-        nextPoint.type === "start" &&
-        nextPoint.time > currentPoint.time
-      ) {
-        gaps.push({ start: currentPoint.time, end: nextPoint.time });
-      }
-    }
-
-    return gaps;
-  };
 
   return (
     <div
@@ -182,11 +208,7 @@ const TimelineGrid: React.FC<TimelineGridProps> = ({
           ))}
 
         {/* Render Rows (existing code) */}
-        {Array.from({ length: visibleRows }).map((_, rowIndex) => {
-          const rowItems = overlays.filter(
-            (overlay) => overlay.row === rowIndex
-          );
-          const gaps = findGapsInRow(rowItems);
+        {rowsData.map(({ rowItems, gaps }, rowIndex) => {
 
           return (
             <div
@@ -221,26 +243,15 @@ const TimelineGrid: React.FC<TimelineGridProps> = ({
                     isDragging={isDragging}
                     draggedItem={draggedItem}
                     selectedItem={selectedItem}
-                    setSelectedItem={(item) => setSelectedOverlayId(item.id)}
-                    handleMouseDown={(action, e) =>
-                      handleDragStart(overlay, e.clientX, e.clientY, action)
-                    }
-                    handleTouchStart={(action, e) => {
-                      const touch = e.touches[0];
-                      handleDragStart(
-                        overlay,
-                        touch.clientX,
-                        touch.clientY,
-                        action
-                      );
-                    }}
+                    setSelectedItem={setSelectedItem}
+                    handleMouseDown={onItemMouseDown}
+                    handleTouchStart={onItemTouchStart}
                     totalDuration={totalDuration}
                     onDeleteItem={onDeleteItem}
                     onDuplicateItem={onDuplicateItem}
                     onSplitItem={onSplitItem}
                     onHover={onHover}
                     onContextMenuChange={onContextMenuChange}
-                    currentFrame={currentFrame}
                     zoomScale={zoomScale}
                     onAssetLoadingChange={onAssetLoadingChange}
                     livePushOffsetPercent={livePushOffsetPercent}

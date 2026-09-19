@@ -1,12 +1,12 @@
-import {
-  OffthreadVideo,
-  useCurrentFrame,
-  prefetch,
-} from "remotion";
+import { OffthreadVideo, useCurrentFrame } from "remotion";
 import { ClipOverlay } from "../../../types";
-import { animationTemplates } from "../../../templates/animation-templates";
 import { resolveVideoUrl } from "../../../utils/url-helper";
-import { useEffect, useState } from "react";
+import { memo, useMemo } from "react";
+import {
+  combineFilters,
+  getAnimationStyle,
+  isSameOverlay,
+} from "../../../utils/animation-phase";
 
 /**
  * Interface defining the props for the VideoLayerContent component
@@ -33,63 +33,49 @@ interface VideoLayerContentProps {
  *   - durationInFrames: Total duration of the overlay
  *   - styles: Object containing visual styling properties and animations
  */
-export const VideoLayerContent: React.FC<VideoLayerContentProps> = ({
-  overlay,
-  baseUrl,
-}) => {
+export const VideoLayerContent: React.FC<VideoLayerContentProps> = memo(
+  function VideoLayerContent({ overlay, baseUrl }) {
   const frame = useCurrentFrame();
-  const [isReady, setIsReady] = useState(false);
+  const { styles } = overlay;
 
-  const videoSrc = resolveVideoUrl(overlay.src, baseUrl);
+  const videoSrc = useMemo(
+    () => resolveVideoUrl(overlay.src, baseUrl),
+    [overlay.src, baseUrl]
+  );
 
-  // DEBUGGING: Check what URL is being used
-  useEffect(() => {
-  }, [overlay.id, overlay.src, baseUrl, videoSrc]);
+  const anim = getAnimationStyle(styles.animation, frame, overlay.durationInFrames);
+  const filter = combineFilters(styles.filter, anim.filter as string | undefined);
 
-  // Calculate if we're in the exit phase (last 30 frames)
-  const isExitPhase = frame >= overlay.durationInFrames - 30;
+  // Only reallocated when a style value actually changes, not every frame.
+  const videoStyle: React.CSSProperties = useMemo(
+    () => ({
+      width: "100%",
+      height: "100%",
+      objectFit: styles.objectFit || "cover",
+      opacity: styles.opacity,
+      transform: styles.transform || "none",
+      borderRadius: styles.borderRadius || "0px",
+      boxShadow: styles.boxShadow || "none",
+      border: styles.border || "none",
+      ...anim,
+      filter,
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [styles, anim.opacity, anim.transform, anim.clipPath, filter]
+  );
 
-  // Apply enter animation only during entry phase
-  const enterAnimation =
-    !isExitPhase && overlay.styles.animation?.enter
-      ? animationTemplates[overlay.styles.animation.enter]?.enter(
-          frame,
-          overlay.durationInFrames
-        )
-      : {};
-
-  // Apply exit animation only during exit phase
-  const exitAnimation =
-    isExitPhase && overlay.styles.animation?.exit
-      ? animationTemplates[overlay.styles.animation.exit]?.exit(
-          frame,
-          overlay.durationInFrames
-        )
-      : {};
-
-  const videoStyle: React.CSSProperties = {
-    width: "100%",
-    height: "100%",
-    objectFit: overlay.styles.objectFit || "cover",
-    opacity: overlay.styles.opacity,
-    transform: overlay.styles.transform || "none",
-    borderRadius: overlay.styles.borderRadius || "0px",
-    filter: overlay.styles.filter || "none",
-    boxShadow: overlay.styles.boxShadow || "none",
-    border: overlay.styles.border || "none",
-    ...(isExitPhase ? exitAnimation : enterAnimation),
-  };
-
-  // Create a container style that includes padding and background color
-  const containerStyle: React.CSSProperties = {
-    width: "100%",
-    height: "100%",
-    padding: overlay.styles.padding || "0px",
-    backgroundColor: overlay.styles.paddingBackgroundColor || "transparent",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-  };
+  const containerStyle: React.CSSProperties = useMemo(
+    () => ({
+      width: "100%",
+      height: "100%",
+      padding: styles.padding || "0px",
+      backgroundColor: styles.paddingBackgroundColor || "transparent",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+    }),
+    [styles.padding, styles.paddingBackgroundColor]
+  );
 
   return (
     <div style={containerStyle}>
@@ -104,4 +90,6 @@ export const VideoLayerContent: React.FC<VideoLayerContentProps> = ({
       />
     </div>
   );
-};
+  },
+  isSameOverlay
+);

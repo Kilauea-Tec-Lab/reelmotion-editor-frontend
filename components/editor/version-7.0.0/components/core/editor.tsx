@@ -5,7 +5,7 @@ import { EditorHeader } from "./editor-header";
 
 import { useEditorContext } from "../../contexts/editor-context";
 import { TimelineControls } from "../timeline/timeline-controls";
-import { DISABLE_MOBILE_LAYOUT, FPS } from "../../constants";
+import { DISABLE_MOBILE_LAYOUT } from "../../constants";
 import Timeline from "../timeline/timeline";
 import { VideoPlayer } from "./video-player";
 import { useTranslation } from "@/lib/i18n";
@@ -93,8 +93,6 @@ export const Editor: React.FC = () => {
     overlays, // Array of current overlay objects
     selectedOverlayId, // ID of the currently selected overlay
     setSelectedOverlayId, // Function to update selected overlay
-    isPlaying, // Current playback state
-    currentFrame, // Current frame position
     playerRef, // Reference to video player
     togglePlayPause, // Function to toggle play/pause
     formatTime, // Function to format time display
@@ -158,9 +156,7 @@ export const Editor: React.FC = () => {
       </div>
 
       <TimelineControls
-        isPlaying={isPlaying}
         togglePlayPause={togglePlayPause}
-        currentFrame={currentFrame}
         totalDuration={durationInFrames}
         formatTime={formatTime}
       />
@@ -172,7 +168,6 @@ export const Editor: React.FC = () => {
         for easy access to content creation tools.
       */}
       <Timeline
-        currentFrame={currentFrame}
         overlays={overlays}
         durationInFrames={durationInFrames}
         selectedOverlayId={selectedOverlayId}
@@ -181,15 +176,7 @@ export const Editor: React.FC = () => {
         onOverlayDelete={deleteOverlay}
         onOverlayDuplicate={duplicateOverlay}
         onSplitOverlay={splitOverlay}
-        setCurrentFrame={(frame) => {
-          if (playerRef.current) {
-            try {
-              playerRef.current.seekTo(frame / FPS);
-            } catch (error) {
-              console.error("Failed to seek player:", error);
-            }
-          }
-        }}
+        setCurrentFrame={(frame) => playerRef.current?.seekTo(frame)}
         setOverlays={setOverlays}
         onTimelineClick={handleTimelineClick}
       />

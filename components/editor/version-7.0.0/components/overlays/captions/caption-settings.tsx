@@ -1,4 +1,5 @@
 import React from "react";
+import { usePlayback } from "../../../contexts/playback-context";
 import {
   CaptionOverlay,
   CaptionStyles,
@@ -30,7 +31,6 @@ import { useTranslation } from "@/lib/i18n";
 interface CaptionSettingsProps {
   localOverlay: CaptionOverlay;
   setLocalOverlay: (overlay: CaptionOverlay) => void;
-  currentFrame: number;
   startFrame: number;
   captions: Caption[];
 }
@@ -82,9 +82,9 @@ export const defaultCaptionStyles: CaptionStyles = {
 export const CaptionSettings: React.FC<CaptionSettingsProps> = ({
   localOverlay,
   setLocalOverlay,
-  currentFrame,
 }) => {
   const { t } = useTranslation();
+  const { currentFrame } = usePlayback();
   const currentMs = (currentFrame / 30) * 1000;
   const displayMode: CaptionDisplayMode = localOverlay.displayMode ?? "all";
 

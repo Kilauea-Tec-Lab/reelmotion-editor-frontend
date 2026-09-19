@@ -142,7 +142,7 @@ export const VideoOverlayPanel: React.FC = () => {
     durationInFrames,
     selectedOverlayId,
     changeOverlay,
-    currentFrame,
+    getCurrentFrame,
   } = useEditorContext();
   const { findNextAvailablePosition } = useTimelinePositioning();
   const { getAspectRatioDimensions } = useAspectRatio();
@@ -251,7 +251,7 @@ export const VideoOverlayPanel: React.FC = () => {
       overlays,
       visibleRows,
       durationInFrames,
-      currentFrame
+      getCurrentFrame()
     );
 
     // Get video duration

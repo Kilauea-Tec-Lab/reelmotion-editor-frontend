@@ -1,4 +1,4 @@
-import { interpolate } from "remotion";
+import { interpolate, random } from "remotion";
 
 export type AnimationTemplate = {
   name: string;
@@ -232,9 +232,9 @@ export const animationTemplates: Record<string, AnimationTemplate> = {
       });
       // Create glitchy movements at specific keyframes
       const xOffset =
-        frame % 3 === 0 ? (Math.random() * 10 - 5) * (1 - progress) : 0;
+        frame % 3 === 0 ? (random(`glitch-x-${frame}`) * 10 - 5) * (1 - progress) : 0;
       const yOffset =
-        frame % 4 === 0 ? (Math.random() * 8 - 4) * (1 - progress) : 0;
+        frame % 4 === 0 ? (random(`glitch-y-${frame}`) * 8 - 4) * (1 - progress) : 0;
 
       return {
         transform: `translate(${xOffset}px, ${yOffset}px) scale(${interpolate(
@@ -254,9 +254,9 @@ export const animationTemplates: Record<string, AnimationTemplate> = {
       });
       // Create glitchy movements at specific keyframes
       const xOffset =
-        (duration - frame) % 3 === 0 ? (Math.random() * 10 - 5) * progress : 0;
+        (duration - frame) % 3 === 0 ? (random(`glitch-x-${frame}`) * 10 - 5) * progress : 0;
       const yOffset =
-        (duration - frame) % 4 === 0 ? (Math.random() * 8 - 4) * progress : 0;
+        (duration - frame) % 4 === 0 ? (random(`glitch-y-${frame}`) * 8 - 4) * progress : 0;
 
       return {
         transform: `translate(${xOffset}px, ${yOffset}px) scale(${interpolate(

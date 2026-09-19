@@ -25,6 +25,10 @@ interface DragInfo {
   startPosition: number; // Initial overlay position
   startDuration: number; // Initial overlay duration
   startRow: number; // Initial row number
+  currentRow?: number;
+  ghostLeft?: number; // Final ghost geometry (percent), written by the drag hooks
+  ghostWidth?: number;
+  ghostTop?: number;
   ghostElement: null;
   ghostMarkerPosition: null;
 }

@@ -14,10 +14,9 @@ interface EditorContextProps {
   ) => void;
   setOverlays: (overlays: Overlay[]) => void;
 
-  // Player State
-  isPlaying: boolean; // Current playback state
-  currentFrame: number; // Current frame position in the video
+  // Player State (per-frame values live in PlaybackContext; use usePlayback())
   playerRef: React.RefObject<any>; // Reference to the video player component
+  getCurrentFrame: () => number; // Read the playhead once (no per-frame subscription)
   playbackRate: number; // Current playback speed multiplier
   setPlaybackRate: (rate: number) => void; // Update playback speed
 

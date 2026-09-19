@@ -53,11 +53,13 @@ export interface TimelineItemProps {
   setSelectedItem: (item: { id: number }) => void;
   /** Handler for mouse-based drag and resize operations */
   handleMouseDown: (
+    item: Overlay,
     action: "move" | "resize-start" | "resize-end",
     e: React.MouseEvent<HTMLDivElement>
   ) => void;
   /** Handler for touch-based drag and resize operations */
   handleTouchStart: (
+    item: Overlay,
     action: "move" | "resize-start" | "resize-end",
     e: React.TouchEvent<HTMLDivElement>
   ) => void;
@@ -76,7 +78,6 @@ export interface TimelineItemProps {
   /** Waveform data for audio items */
   waveformData?: WaveformData;
   /** Current Frame of the video */
-  currentFrame?: number;
   /** Zoom scale of the timeline */
   zoomScale: number;
   /** Callback when asset loading state changes */
@@ -102,7 +103,6 @@ const TimelineItem: React.FC<TimelineItemProps> = ({
   onSplitItem,
   onHover,
   onContextMenuChange,
-  currentFrame,
   zoomScale,
   onAssetLoadingChange,
   livePushOffsetPercent = 0, // Default to 0 if not provided
@@ -147,7 +147,7 @@ const TimelineItem: React.FC<TimelineItemProps> = ({
       if (!isSelected) {
         setSelectedItem({ id: item.id });
       }
-      handleMouseDown("move", e as React.MouseEvent<HTMLDivElement>);
+      handleMouseDown(item, "move", e as React.MouseEvent<HTMLDivElement>);
     } else if (action === "touchstart") {
       // Instead of immediately starting drag, we'll delay to distinguish between tap and drag
       const touchEvent = e as React.TouchEvent<HTMLDivElement>;
@@ -200,7 +200,7 @@ const TimelineItem: React.FC<TimelineItemProps> = ({
         }
 
         // Start the actual drag operation
-        handleTouchStart("move", e);
+        handleTouchStart(item, "move", e);
 
         // Reset touch state
         setTouchStartTime(null);
@@ -368,7 +368,6 @@ const TimelineItem: React.FC<TimelineItemProps> = ({
             <TimelineCaptionBlocks
               captions={(item as CaptionOverlay).captions}
               durationInFrames={item.durationInFrames}
-              currentFrame={currentFrame ?? 0}
               startFrame={item.from}
               totalDuration={totalDuration}
             />
@@ -386,7 +385,6 @@ const TimelineItem: React.FC<TimelineItemProps> = ({
         {item.type === OverlayType.VIDEO && (
           <TimelineKeyframes
             overlay={item}
-            currentFrame={currentFrame ?? 0}
             zoomScale={zoomScale}
             onLoadingChange={(isLoading) =>
               onAssetLoadingChange?.(item.id, isLoading)
@@ -467,14 +465,14 @@ const TimelineItem: React.FC<TimelineItemProps> = ({
             if (!isSelected) {
               setSelectedItem({ id: item.id });
             }
-            handleMouseDown("resize-start", e);
+            handleMouseDown(item, "resize-start", e);
           }}
           onTouchStart={(e) => {
             e.stopPropagation();
             if (!isSelected) {
               setSelectedItem({ id: item.id });
             }
-            handleTouchStart("resize-start", e);
+            handleTouchStart(item, "resize-start", e);
           }}
         />
         <TimelineItemHandle
@@ -485,14 +483,14 @@ const TimelineItem: React.FC<TimelineItemProps> = ({
             if (!isSelected) {
               setSelectedItem({ id: item.id });
             }
-            handleMouseDown("resize-end", e);
+            handleMouseDown(item, "resize-end", e);
           }}
           onTouchStart={(e) => {
             e.stopPropagation();
             if (!isSelected) {
               setSelectedItem({ id: item.id });
             }
-            handleTouchStart("resize-end", e);
+            handleTouchStart(item, "resize-end", e);
           }}
         />
       </div>

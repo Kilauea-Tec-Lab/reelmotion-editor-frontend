@@ -11,8 +11,6 @@ import { DISABLE_VIDEO_KEYFRAMES } from "../../constants";
 interface TimelineKeyframesProps {
   /** The overlay object containing video/animation data */
   overlay: ClipOverlay | ImageOverlay;
-  /** The current frame number in the timeline */
-  currentFrame: number;
   /** Scale factor for timeline zoom level */
   zoomScale: number;
   /** Callback when loading state changes */
@@ -40,7 +38,6 @@ interface TimelineKeyframesProps {
  */
 export const TimelineKeyframes: React.FC<TimelineKeyframesProps> = ({
   overlay,
-  currentFrame,
   zoomScale,
   onLoadingChange,
 }) => {
@@ -48,7 +45,6 @@ export const TimelineKeyframes: React.FC<TimelineKeyframesProps> = ({
   const { frames, previewFrames, isLoading } = useKeyframes({
     overlay,
     containerRef,
-    currentFrame,
     zoomScale,
   });
 

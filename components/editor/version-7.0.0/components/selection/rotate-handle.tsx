@@ -60,10 +60,12 @@ export const RotateHandle: React.FC<{
         setOverlay(overlay.id, (o) => ({
           ...o,
           rotation: startRotation + deltaAngle,
+          isDragging: true,
         }));
       };
 
       const onPointerUp = () => {
+        setOverlay(overlay.id, (o) => ({ ...o, isDragging: false }));
         window.removeEventListener("pointermove", onPointerMove);
       };
 
@@ -90,7 +92,7 @@ export const RotateHandle: React.FC<{
         justifyContent: "center",
       }}
     >
-      <RotateCw size={102} strokeWidth={2.5} color="#3B8BF2" />
+      <RotateCw size={24} strokeWidth={2.5} color="#3B8BF2" />
     </div>
   );
 };

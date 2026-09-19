@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import { Overlay, OverlayType } from "../types";
-import { ENABLE_PUSH_ON_DRAG } from "../constants";
+import { ENABLE_PUSH_ON_DRAG, FPS, ROW_HEIGHT } from "../constants";
 
 // Add PushCalculationResult interface back
 interface PushCalculationResult {
@@ -229,8 +229,9 @@ export const useTimelineDragAndDrop = ({
       const deltaY = clientY - dragInfo.current.startY;
 
       const rawDeltaTime = (deltaX / timelineRect.width) * durationInFrames;
-      const rowHeight = timelineRect.height / maxRows;
-      const deltaRow = Math.round(deltaY / rowHeight);
+      // Rows are laid out at ROW_HEIGHT each; the timeline rect also contains
+      // the ruler, so dividing its height by maxRows overshoots the row pitch.
+      const deltaRow = Math.round(deltaY / ROW_HEIGHT);
 
       let newStartFrame: number;
       let newEndFrame: number;
@@ -406,13 +407,15 @@ export const useTimelineDragAndDrop = ({
           0,
           intendedNewFrom - currentDragInfo.startPosition
         );
-        const trimmedMs = (trimmedFrames / 30) * 1000;
+        const trimmedMs = (trimmedFrames / FPS) * 1000;
 
         if (originalOverlay.type === OverlayType.VIDEO) {
+          // Timeline frames -> source frames (a 2x clip consumes 2 source frames per timeline frame)
           additionalUpdates = {
             videoStartTime: Math.max(
               0,
-              (originalOverlay.videoStartTime || 0) + trimmedFrames
+              (originalOverlay.videoStartTime || 0) +
+                trimmedFrames * (originalOverlay.speed ?? 1)
             ),
           };
         } else if (originalOverlay.type === OverlayType.SOUND) {

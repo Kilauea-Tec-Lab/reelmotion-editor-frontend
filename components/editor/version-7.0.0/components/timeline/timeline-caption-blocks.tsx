@@ -1,4 +1,5 @@
 import { useTimeline } from "../../contexts/timeline-context";
+import { usePlayback } from "../../contexts/playback-context";
 import { Caption } from "../../types";
 import { Type } from "lucide-react";
 
@@ -10,8 +11,6 @@ interface TimelineCaptionBlocksProps {
   captions: Caption[];
   /** Total number of frames in the video */
   durationInFrames: number;
-  /** Current frame being displayed */
-  currentFrame: number;
   /** Starting frame of the timeline segment */
   startFrame: number;
   /** Total duration of the video in frames */
@@ -36,11 +35,11 @@ interface TimelineCaptionBlocksProps {
 const TimelineCaptionBlocks: React.FC<TimelineCaptionBlocksProps> = ({
   captions,
   durationInFrames,
-  currentFrame,
   startFrame,
   totalDuration,
 }) => {
   const { zoomScale } = useTimeline();
+  const { currentFrame } = usePlayback();
 
   const relativeFrame = currentFrame - startFrame;
   const currentMs = (relativeFrame / 30) * 1000; // Assuming 30fps

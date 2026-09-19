@@ -47,10 +47,8 @@ interface LayerContentProps {
  * }} />
  * ```
  */
-export const LayerContent: React.FC<LayerContentProps> = ({
-  overlay,
-  baseUrl,
-}) => {
+export const LayerContent: React.FC<LayerContentProps> = React.memo(
+  function LayerContent({ overlay, baseUrl }) {
   /**
    * Common styling applied to all layer types
    * Ensures consistent dimensions across different content types
@@ -109,4 +107,5 @@ export const LayerContent: React.FC<LayerContentProps> = ({
     default:
       return null;
   }
-};
+  }
+);
