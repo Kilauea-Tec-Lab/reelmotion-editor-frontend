@@ -3,7 +3,7 @@ import { useCurrentFrame } from "remotion";
 import { ImageOverlay } from "../../../types";
 import { combineFilters, getAnimationStyle } from "../../../utils/animation-phase";
 import { Img } from "remotion";
-import { toAbsoluteUrl } from "../../../utils/url-helper";
+import { resolveMediaUrl } from "../../../utils/url-helper";
 
 /**
  * Props for the ImageLayerContent component
@@ -92,17 +92,7 @@ export const ImageLayerContent: React.FC<ImageLayerContentProps> = ({
     justifyContent: "center",
   };
 
-  // Determine the image source URL
-  let imageSrc = overlay.src;
-
-  // If it's a relative URL and baseUrl is provided, use baseUrl
-  if (overlay.src.startsWith("/") && baseUrl) {
-    imageSrc = `${baseUrl}${overlay.src}`;
-  }
-  // Otherwise use the toAbsoluteUrl helper for relative URLs
-  else if (overlay.src.startsWith("/")) {
-    imageSrc = toAbsoluteUrl(overlay.src);
-  }
+  const imageSrc = resolveMediaUrl(overlay.src, baseUrl);
 
   return (
     <div style={containerStyle}>

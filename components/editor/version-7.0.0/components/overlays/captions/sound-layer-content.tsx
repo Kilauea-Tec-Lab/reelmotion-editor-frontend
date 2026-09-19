@@ -1,6 +1,6 @@
 import { Audio } from "remotion";
 import { SoundOverlay } from "../../../types";
-import { toAbsoluteUrl } from "../../../utils/url-helper";
+import { resolveMediaUrl } from "../../../utils/url-helper";
 
 interface SoundLayerContentProps {
   overlay: SoundOverlay;
@@ -17,17 +17,7 @@ export const SoundLayerContent: React.FC<SoundLayerContentProps> = ({
     return null;
   }
 
-  // Determine the audio source URL
-  let audioSrc = overlay.src;
-
-  // If it's a relative URL and baseUrl is provided, use baseUrl
-  if (overlay.src.startsWith("/") && baseUrl) {
-    audioSrc = `${baseUrl}${overlay.src}`;
-  }
-  // Otherwise use the toAbsoluteUrl helper for relative URLs
-  else if (overlay.src.startsWith("/")) {
-    audioSrc = toAbsoluteUrl(overlay.src);
-  }
+  const audioSrc = resolveMediaUrl(overlay.src, baseUrl);
 
   return (
     <Audio

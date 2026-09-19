@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { useCallback, useMemo, useState } from "react";
 import { CompositionProps } from "../types";
+import { isLocalSrc } from "../utils/local-file-store";
 import {
   getProgress as ssrGetProgress,
   renderVideo as ssrRenderVideo,
@@ -72,7 +73,21 @@ export const useRendering = (
   });
 
   // Main function to handle the rendering process
-  const renderMedia = useCallback(async (renderOptions?: { scale?: number }) => {
+  const renderMedia = useCallback(async (renderOptions?: {
+    scale?: number;
+    /** Overrides the memoized props (e.g. overlays materialized just before export). */
+    inputProps?: z.infer<typeof CompositionProps>;
+  }) => {
+    const props = renderOptions?.inputProps ?? inputProps;
+    // Render servers cannot read the browser's object URLs.
+    if (props.overlays.some((o: { src?: unknown }) => isLocalSrc(o.src))) {
+      setState({
+        status: "error",
+        renderId: null,
+        error: new Error("Local media must be uploaded before exporting"),
+      });
+      return;
+    }
     setState({
       status: "invoking",
     });
@@ -98,7 +113,7 @@ export const useRendering = (
 
       
       // Start the render (all render types now return a renderId for polling)
-      const response = await renderVideo({ id, inputProps, renderScale });
+      const response = await renderVideo({ id, inputProps: props, renderScale });
       
       // Check if immediate error
       if ('type' in response && response.type === "error") {

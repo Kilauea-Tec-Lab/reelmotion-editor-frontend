@@ -4,10 +4,13 @@
  * Provides functions to interact with IndexedDB for autosaving editor state.
  */
 
+import type { LocalMediaFile } from '../types';
+
 const DB_NAME = 'VideoEditorProDB';
-const DB_VERSION = 3; // Incrementado para forzar actualización
+const DB_VERSION = 4; // v4: localFiles store
 const PROJECTS_STORE = 'projects';
 const AUTOSAVE_STORE = 'autosave';
+const LOCAL_FILES_STORE = 'localFiles';
 
 /**
  * Initialize the IndexedDB database
@@ -61,12 +64,51 @@ export const initDatabase = (): Promise<IDBDatabase> => {
           const autosaveStore = db.createObjectStore(AUTOSAVE_STORE, { keyPath: 'id' });
           autosaveStore.createIndex('timestamp', 'timestamp', { unique: false });
         }
+
+        // Files picked by the user and previewed without upload (see local-file-store.ts)
+        if (!db.objectStoreNames.contains(LOCAL_FILES_STORE)) {
+          db.createObjectStore(LOCAL_FILES_STORE, { keyPath: 'id' });
+        }
       } catch (error) {
         console.error('Error creating object stores:', error);
       }
     };
   });
 };
+
+/** Run one request against a store and close the connection when the transaction settles. */
+const withStore = <T>(
+  storeName: string,
+  mode: IDBTransactionMode,
+  op: (store: IDBObjectStore) => IDBRequest<T>
+): Promise<T> =>
+  initDatabase().then(
+    (db) =>
+      new Promise<T>((resolve, reject) => {
+        const tx = db.transaction([storeName], mode);
+        const request = op(tx.objectStore(storeName));
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+        const close = () => db.close();
+        tx.oncomplete = close;
+        tx.onabort = close;
+      })
+  );
+
+export interface LocalFileRecord {
+  id: string;
+  file: File;
+  meta: LocalMediaFile;
+}
+
+export const putLocalFileRecord = (record: LocalFileRecord): Promise<void> =>
+  withStore(LOCAL_FILES_STORE, 'readwrite', (store) => store.put(record)).then(() => undefined);
+
+export const listLocalFileRecords = (): Promise<LocalFileRecord[]> =>
+  withStore(LOCAL_FILES_STORE, 'readonly', (store) => store.getAll());
+
+export const deleteLocalFileRecord = (id: string): Promise<void> =>
+  withStore(LOCAL_FILES_STORE, 'readwrite', (store) => store.delete(id)).then(() => undefined);
 
 /**
  * Save editor state to autosave store

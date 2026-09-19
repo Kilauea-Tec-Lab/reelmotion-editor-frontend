@@ -16,6 +16,7 @@ import { TimelineItemContextMenu } from "./timeline-item-context-menu";
 import { TimelineItemLabel } from "./timeline-item-label";
 import TimelineCaptionBlocks from "./timeline-caption-blocks";
 import { useKeyframeContext } from "../../contexts/keyframe-context";
+import { resolveMediaUrl } from "../../utils/url-helper";
 
 /**
  * TimelineItem Component
@@ -351,7 +352,7 @@ const TimelineItem: React.FC<TimelineItemProps> = ({
         {item.type === OverlayType.IMAGE ? (
           <div className="h-full w-full flex items-center">
             <img
-              src={item.src}
+              src={resolveMediaUrl(item.src)}
               alt=""
               draggable="false"
               onDragStart={(e) => e.preventDefault()}

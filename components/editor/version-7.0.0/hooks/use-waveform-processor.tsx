@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { resolveMediaUrl } from "../utils/url-helper";
 
 interface WaveformData {
   peaks: number[];
@@ -52,7 +53,7 @@ export function useWaveformProcessor(
 
     const processAudio = async () => {
       try {
-        const response = await fetch(src);
+        const response = await fetch(resolveMediaUrl(src));
         const arrayBuffer = await response.arrayBuffer();
         const audioContext = new AudioContext();
         const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);

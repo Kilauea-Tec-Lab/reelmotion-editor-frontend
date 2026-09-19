@@ -14,6 +14,8 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import Cookies from "js-cookie";
 import { useTranslation } from "@/lib/i18n";
+import { useLocalMedia } from "../../contexts/local-media-context";
+import { useEditorContext } from "../../contexts/editor-context";
 
 interface SaveEditDialogProps {
   open: boolean;
@@ -37,8 +39,11 @@ export const SaveEditDialog: React.FC<SaveEditDialogProps> = ({
 }) => {
   const [name, setName] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState<string | null>(null);
   const { toast } = useToast();
   const { t } = useTranslation();
+  const { materializeOverlays } = useLocalMedia();
+  const { setOverlays } = useEditorContext();
 
   // Load the edit name when dialog opens if editing an existing edit
   useEffect(() => {
@@ -64,12 +69,18 @@ export const SaveEditDialog: React.FC<SaveEditDialogProps> = ({
       const backendUrl =
         process.env.NEXT_PUBLIC_BACKEND_URL || "https://backend.reelmotion.ai";
 
+      // The backend only stores URLs: upload any local file first.
+      const overlays = await materializeOverlays(editionData.inputProps.overlays, (p) =>
+        setUploadStatus(t("header.uploadingMedia", { index: p.index, total: p.total, name: p.name, percent: p.percentage }))
+      ).finally(() => setUploadStatus(null));
+      if (overlays !== editionData.inputProps.overlays) setOverlays(overlays);
+
       // Prepare the request body
       const requestBody: any = {
         name: name.trim(),
         edition_array: JSON.stringify({
           id: editionData.id,
-          inputProps: editionData.inputProps,
+          inputProps: { ...editionData.inputProps, overlays },
           aspectRatio: editionData.aspectRatio,
         }),
       };
@@ -170,7 +181,7 @@ export const SaveEditDialog: React.FC<SaveEditDialogProps> = ({
             {isSaving ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                {editionData.editId ? t("renderDialog.updating") : t("renderDialog.saving")}
+                {uploadStatus ?? (editionData.editId ? t("renderDialog.updating") : t("renderDialog.saving"))}
               </>
             ) : (
               <>

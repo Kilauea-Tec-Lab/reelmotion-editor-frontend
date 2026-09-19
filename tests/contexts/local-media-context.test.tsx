@@ -5,278 +5,167 @@ import {
   useLocalMedia,
 } from "@/components/editor/version-7.0.0/contexts/local-media-context";
 import {
-  getUserMediaItems,
-  deleteMediaItem,
-  clearUserMedia,
-} from "@/components/editor/version-7.0.0/utils/indexdb";
-import {
   uploadMediaFile,
   deleteMediaFile,
+  getMediaDuration,
 } from "@/components/editor/version-7.0.0/utils/media-upload";
-import { LocalMediaFile } from "@/components/editor/version-7.0.0/types";
-
-// Mock all utility functions
-jest.mock("@/components/editor/version-7.0.0/utils/user-id", () => ({
-  getUserId: jest.fn(() => "test-user-id"),
-}));
-
-jest.mock("@/components/editor/version-7.0.0/utils/indexdb", () => ({
-  getUserMediaItems: jest.fn(),
-  deleteMediaItem: jest.fn(),
-  clearUserMedia: jest.fn(),
-}));
+import {
+  registerLocalFile,
+  releaseLocalFile,
+  restoreLocalFiles,
+  getLocalFile,
+} from "@/components/editor/version-7.0.0/utils/local-file-store";
+import { OverlayType } from "@/components/editor/version-7.0.0/types";
 
 jest.mock("@/components/editor/version-7.0.0/utils/media-upload", () => ({
   uploadMediaFile: jest.fn(),
   deleteMediaFile: jest.fn(),
+  getMediaDuration: jest.fn(),
 }));
 
-describe("LocalMediaContext", () => {
-  // Mock data
-  const mockFile = new File(["test"], "test.mp4", { type: "video/mp4" });
-
-  const mockMediaItem: {
-    id: string;
-    name: string;
-    type: "video";
-    serverPath: string;
-    size: number;
-    lastModified: number;
-    thumbnail: string;
-    duration: number;
-  } = {
-    id: "test-id-1",
-    name: "test.mp4",
-    type: "video",
-    serverPath: "/uploads/test.mp4",
-    size: 1024,
-    lastModified: Date.now(),
-    thumbnail: "thumbnail.jpg",
-    duration: 10,
-  };
-
-  const mockLocalMediaFile: LocalMediaFile = {
-    id: mockMediaItem.id,
-    name: mockMediaItem.name,
-    type: mockMediaItem.type,
-    path: mockMediaItem.serverPath,
-    size: mockMediaItem.size,
-    lastModified: mockMediaItem.lastModified,
-    thumbnail: mockMediaItem.thumbnail,
-    duration: mockMediaItem.duration,
-  };
-
-  const wrapper = ({ children }: { children: React.ReactNode }) => (
-    <LocalMediaProvider>{children}</LocalMediaProvider>
+jest.mock("@/components/editor/version-7.0.0/utils/local-file-store", () => {
+  const actual = jest.requireActual(
+    "@/components/editor/version-7.0.0/utils/local-file-store"
   );
+  return {
+    ...actual,
+    registerLocalFile: jest.fn(),
+    releaseLocalFile: jest.fn(),
+    restoreLocalFiles: jest.fn(),
+    getLocalFile: jest.fn(),
+  };
+});
 
-  beforeEach(() => {
-    jest.clearAllMocks();
-    (getUserMediaItems as jest.Mock).mockResolvedValue([mockMediaItem]);
-    (uploadMediaFile as jest.Mock).mockResolvedValue(mockMediaItem);
-    (deleteMediaFile as jest.Mock).mockResolvedValue(undefined);
-    (deleteMediaItem as jest.Mock).mockResolvedValue(undefined);
-    (clearUserMedia as jest.Mock).mockResolvedValue(undefined);
+const mockFile = new File(["test"], "test.mp4", { type: "video/mp4" });
+const localMedia = {
+  id: "local-1",
+  name: "test.mp4",
+  type: "video" as const,
+  path: "local://local-1",
+  size: 4,
+  lastModified: 0,
+  thumbnail: "",
+  duration: 10,
+};
+const backendUpload = {
+  id: "b1",
+  file_name: "old.mp4",
+  file_url: "https://storage.googleapis.com/reelmotion-ai-videos/old.mp4",
+  type: 2,
+  created_at: "2024-01-01T00:00:00Z",
+  thumbnail_url: "",
+  duration: "3",
+} as any;
+
+const wrapper = ({ children }: { children: React.ReactNode }) => (
+  <LocalMediaProvider backendUploads={[backendUpload]}>{children}</LocalMediaProvider>
+);
+
+const renderProvider = async () => {
+  const hook = renderHook(() => useLocalMedia(), { wrapper });
+  // Children are gated until persisted local files are restored.
+  await waitFor(() => expect(hook.result.current).not.toBeNull());
+  return hook;
+};
+
+beforeEach(() => {
+  jest.clearAllMocks();
+  (restoreLocalFiles as jest.Mock).mockResolvedValue([]);
+  (getMediaDuration as jest.Mock).mockResolvedValue(10);
+  (registerLocalFile as jest.Mock).mockReturnValue(localMedia);
+  (getLocalFile as jest.Mock).mockReturnValue(mockFile);
+  (uploadMediaFile as jest.Mock).mockResolvedValue({
+    id: "gcs-1",
+    serverPath: "https://storage.googleapis.com/reelmotion-ai-videos/test.mp4",
+    thumbnail: "thumb.jpg",
+  });
+});
+
+describe("LocalMediaContext", () => {
+  it("throws when used outside provider", () => {
+    expect(() => renderHook(() => useLocalMedia())).toThrow(
+      "useLocalMedia must be used within a LocalMediaProvider"
+    );
   });
 
-  it("should throw error when used outside provider", () => {
-    expect(() => {
-      renderHook(() => useLocalMedia());
-    }).toThrow("useLocalMedia must be used within a LocalMediaProvider");
+  it("lists restored local files before backend uploads", async () => {
+    (restoreLocalFiles as jest.Mock).mockResolvedValue([localMedia]);
+    const { result } = await renderProvider();
+
+    expect(result.current.localMediaFiles.map((f) => f.id)).toEqual(["local-1", "b1"]);
   });
 
-  describe("Initial Loading", () => {
-    it("should load media files on mount", async () => {
-      const { result } = renderHook(() => useLocalMedia(), { wrapper });
+  it("adds a picked file locally without uploading", async () => {
+    const { result } = await renderProvider();
 
-      // Should start with loading state
-      expect(result.current.isLoading).toBe(true);
-
-      // Wait for loading to complete
-      await waitFor(() => {
-        expect(result.current.isLoading).toBe(false);
-      });
-
-      expect(result.current.localMediaFiles).toEqual([mockLocalMediaFile]);
-      expect(getUserMediaItems).toHaveBeenCalledWith("test-user-id");
+    await act(async () => {
+      await result.current.addMediaFile(mockFile);
     });
 
-    it("should handle loading error gracefully", async () => {
-      const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();
-      (getUserMediaItems as jest.Mock).mockRejectedValue(
-        new Error("Load failed")
-      );
-
-      const { result } = renderHook(() => useLocalMedia(), { wrapper });
-
-      await waitFor(() => {
-        expect(result.current.isLoading).toBe(false);
-      });
-
-      expect(result.current.localMediaFiles).toEqual([]);
-      expect(consoleErrorSpy).toHaveBeenCalled();
-      consoleErrorSpy.mockRestore();
-    });
+    expect(uploadMediaFile).not.toHaveBeenCalled();
+    expect(registerLocalFile).toHaveBeenCalledWith(
+      mockFile,
+      expect.objectContaining({ name: "test.mp4", type: "video", duration: 10 })
+    );
+    expect(result.current.localMediaFiles[0]).toEqual(localMedia);
   });
 
-  describe("File Management", () => {
-    it("should add new media file", async () => {
-      const { result } = renderHook(() => useLocalMedia(), { wrapper });
-
-      await waitFor(() => {
-        expect(result.current.isLoading).toBe(false);
-      });
-
-      let addedFile: LocalMediaFile | undefined;
-      await act(async () => {
-        const response = await result.current.addMediaFile(mockFile);
-        addedFile = response || undefined;
-      });
-
-      expect(uploadMediaFile).toHaveBeenCalledWith(mockFile);
-      expect(addedFile).toEqual(mockLocalMediaFile);
-      expect(result.current.localMediaFiles).toContainEqual(mockLocalMediaFile);
-    });
-
-    it("should handle file upload error", async () => {
-      const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();
-      (uploadMediaFile as jest.Mock).mockRejectedValue(
-        new Error("Upload failed")
-      );
-
-      const { result } = renderHook(() => useLocalMedia(), { wrapper });
-
-      await waitFor(() => {
-        expect(result.current.isLoading).toBe(false);
-      });
-
-      await expect(result.current.addMediaFile(mockFile)).rejects.toThrow(
-        "Upload failed"
-      );
-      expect(consoleErrorSpy).toHaveBeenCalled();
-      consoleErrorSpy.mockRestore();
-    });
-
-    it("should remove media file", async () => {
-      const { result } = renderHook(() => useLocalMedia(), { wrapper });
-
-      await waitFor(() => {
-        expect(result.current.localMediaFiles).toHaveLength(1);
-      });
-
-      await act(async () => {
-        await result.current.removeMediaFile(mockLocalMediaFile.id);
-      });
-
-      expect(deleteMediaFile).toHaveBeenCalledWith(
-        "test-user-id",
-        mockLocalMediaFile.id
-      );
-      expect(deleteMediaItem).toHaveBeenCalledWith(mockLocalMediaFile.id);
-      expect(result.current.localMediaFiles).toHaveLength(0);
-    });
-
-    it("should handle file removal error", async () => {
-      const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();
-      (deleteMediaFile as jest.Mock).mockRejectedValue(
-        new Error("Delete failed")
-      );
-
-      const { result } = renderHook(() => useLocalMedia(), { wrapper });
-
-      await waitFor(() => {
-        expect(result.current.localMediaFiles).toHaveLength(1);
-      });
-
-      await act(async () => {
-        await result.current.removeMediaFile(mockLocalMediaFile.id);
-      });
-
-      expect(consoleErrorSpy).toHaveBeenCalled();
-      consoleErrorSpy.mockRestore();
-    });
-
-    it("should clear all media files", async () => {
-      const { result } = renderHook(() => useLocalMedia(), { wrapper });
-
-      await waitFor(() => {
-        expect(result.current.localMediaFiles).toHaveLength(1);
-      });
-
-      await act(async () => {
-        await result.current.clearMediaFiles();
-      });
-
-      expect(deleteMediaFile).toHaveBeenCalledWith(
-        "test-user-id",
-        mockLocalMediaFile.id
-      );
-      expect(clearUserMedia).toHaveBeenCalledWith("test-user-id");
-      expect(result.current.localMediaFiles).toHaveLength(0);
-    });
-
-    it("should handle clear all error", async () => {
-      const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();
-      (clearUserMedia as jest.Mock).mockRejectedValue(
-        new Error("Clear failed")
-      );
-
-      const { result } = renderHook(() => useLocalMedia(), { wrapper });
-
-      await waitFor(() => {
-        expect(result.current.localMediaFiles).toHaveLength(1);
-      });
-
-      await act(async () => {
-        await result.current.clearMediaFiles();
-      });
-
-      expect(consoleErrorSpy).toHaveBeenCalled();
-      consoleErrorSpy.mockRestore();
-    });
-
-    it("should update existing file when adding with same ID", async () => {
-      const { result } = renderHook(() => useLocalMedia(), { wrapper });
-
-      await waitFor(() => {
-        expect(result.current.localMediaFiles).toHaveLength(1);
-      });
-
-      const updatedMediaItem = {
-        ...mockMediaItem,
-        name: "updated.mp4",
-      };
-      (uploadMediaFile as jest.Mock).mockResolvedValueOnce(updatedMediaItem);
-
-      await act(async () => {
-        await result.current.addMediaFile(mockFile);
-      });
-
-      expect(result.current.localMediaFiles).toHaveLength(1);
-      expect(result.current.localMediaFiles[0].name).toBe("updated.mp4");
-    });
+  it("rejects unsupported file types", async () => {
+    const { result } = await renderProvider();
+    await expect(
+      result.current.addMediaFile(new File([""], "a.txt", { type: "text/plain" }))
+    ).rejects.toThrow("Unsupported file type");
   });
 
-  describe("Loading State", () => {
-    it("should set loading state during operations", async () => {
-      const { result } = renderHook(() => useLocalMedia(), { wrapper });
+  it("materializes: uploads each local src once, rewrites src/content, releases the file", async () => {
+    (restoreLocalFiles as jest.Mock).mockResolvedValue([localMedia]);
+    const { result } = await renderProvider();
+    const overlays = [
+      { id: 1, type: OverlayType.VIDEO, src: "local://local-1", content: "local://local-1" },
+      { id: 2, type: OverlayType.VIDEO, src: "local://local-1", content: "local://local-1" },
+      { id: 3, type: OverlayType.SOUND, src: "https://x/a.mp3", content: "a.mp3" },
+    ] as any;
+    const onProgress = jest.fn();
 
-      // Initial loading
-      expect(result.current.isLoading).toBe(true);
-
-      await waitFor(() => {
-        expect(result.current.isLoading).toBe(false);
-      });
-
-      // Loading during file add
-      act(() => {
-        result.current.addMediaFile(mockFile);
-      });
-      expect(result.current.isLoading).toBe(true);
-
-      await waitFor(() => {
-        expect(result.current.isLoading).toBe(false);
-      });
+    let materialized: any[] = [];
+    await act(async () => {
+      materialized = await result.current.materializeOverlays(overlays, onProgress);
     });
+
+    const gcs = "https://storage.googleapis.com/reelmotion-ai-videos/test.mp4";
+    expect(uploadMediaFile).toHaveBeenCalledTimes(1);
+    expect(materialized[0]).toMatchObject({ src: gcs, content: gcs });
+    expect(materialized[1]).toMatchObject({ src: gcs, content: gcs });
+    expect(materialized[2]).toBe(overlays[2]);
+    expect(releaseLocalFile).toHaveBeenCalledWith("local://local-1");
+    // Gallery entry now points at the upload
+    expect(result.current.localMediaFiles[0]).toMatchObject({ id: "gcs-1", path: gcs });
+  });
+
+  it("materialize returns the same array when nothing is local", async () => {
+    const { result } = await renderProvider();
+    const overlays = [{ id: 1, type: OverlayType.TEXT }] as any;
+    expect(await result.current.materializeOverlays(overlays)).toBe(overlays);
+  });
+
+  it("materialize fails when the local file is gone", async () => {
+    (getLocalFile as jest.Mock).mockReturnValue(undefined);
+    const { result } = await renderProvider();
+    await expect(
+      result.current.materializeOverlays([{ id: 1, type: OverlayType.VIDEO, src: "local://gone" }] as any)
+    ).rejects.toThrow("Local file no longer available");
+  });
+
+  it("removes a local file without hitting the network", async () => {
+    (restoreLocalFiles as jest.Mock).mockResolvedValue([localMedia]);
+    const { result } = await renderProvider();
+
+    await act(async () => {
+      await result.current.removeMediaFile("local-1");
+    });
+
+    expect(releaseLocalFile).toHaveBeenCalledWith("local://local-1");
+    expect(deleteMediaFile).not.toHaveBeenCalled();
+    expect(result.current.localMediaFiles.map((f) => f.id)).toEqual(["b1"]);
   });
 });

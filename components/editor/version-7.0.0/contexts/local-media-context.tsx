@@ -7,44 +7,59 @@ import React, {
   useEffect,
   useCallback,
 } from "react";
-import { LocalMediaFile } from "../types";
-import { uploadMediaFile, deleteMediaFile, UploadProgressCallback } from "../utils/media-upload";
+import { LocalMediaFile, Overlay } from "../types";
+import { uploadMediaFile, deleteMediaFile, getMediaDuration } from "../utils/media-upload";
+import {
+  collectLocalSrcs,
+  getLocalFile,
+  isLocalSrc,
+  registerLocalFile,
+  releaseLocalFile,
+  restoreLocalFiles,
+} from "../utils/local-file-store";
 import { BackendUpload } from "../hooks/use-editor-auth";
 import Cookies from "js-cookie";
 
-interface UploadProgress {
-  loaded: number;
+export interface MaterializeProgress {
+  index: number;
   total: number;
+  name: string;
   percentage: number;
 }
 
 interface LocalMediaContextType {
   localMediaFiles: LocalMediaFile[];
-  addMediaFile: (file: File, onProgress?: UploadProgressCallback) => Promise<LocalMediaFile | void>;
+  addMediaFile: (file: File) => Promise<LocalMediaFile>;
   removeMediaFile: (id: string) => Promise<void>;
   updateMediaFileName: (id: string, newName: string) => void;
   clearMediaFiles: () => Promise<void>;
+  /** Upload every `local://` file referenced by the overlays; returns overlays with GCS URLs. */
+  materializeOverlays: (
+    overlays: Overlay[],
+    onProgress?: (progress: MaterializeProgress) => void
+  ) => Promise<Overlay[]>;
   isLoading: boolean;
-  uploadProgress: UploadProgress | null;
 }
 
 const LocalMediaContext = createContext<LocalMediaContextType | undefined>(
   undefined
 );
 
+const mediaTypeOf = (file: File): LocalMediaFile["type"] | null => {
+  if (file.type.startsWith("video/")) return "video";
+  if (file.type.startsWith("image/")) return "image";
+  if (file.type.startsWith("audio/")) return "audio";
+  return null;
+};
+
 /**
  * LocalMediaProvider Component
  *
- * Provides context for managing local media files uploaded by the user.
- * Handles:
- * - Storing and retrieving local media files from IndexedDB and server
- * - Adding new media files
- * - Removing media files
- * - Update media files names
- * - Persisting media files between sessions
- * - Loading backend uploads from the API
+ * Media the user picks is registered locally (object URL + IndexedDB) and
+ * previewed without uploading. Uploads happen in `materializeOverlays`, which
+ * export and backend-save call first. Backend uploads are listed alongside.
  */
-export const LocalMediaProvider: React.FC<{ 
+export const LocalMediaProvider: React.FC<{
   children: React.ReactNode;
   backendUploads?: BackendUpload[];
 }> = ({
@@ -53,106 +68,124 @@ export const LocalMediaProvider: React.FC<{
 }) => {
   const [localMediaFiles, setLocalMediaFiles] = useState<LocalMediaFile[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null);
-  
+  // Layers resolve `local://` synchronously, so nothing renders until the
+  // persisted files are back in memory.
+  const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    restoreLocalFiles().then((restored) => {
+      setLocalMediaFiles((prev) => [...restored, ...prev]);
+      setIsReady(true);
+    });
+  }, []);
+
   const updateMediaFileName = useCallback((id: string, newName: string) => {
-    setLocalMediaFiles(prev => 
-      prev.map(file => 
+    setLocalMediaFiles(prev =>
+      prev.map(file =>
         file.id === id ? { ...file, name: newName } : file
       )
     );
   }, []);
 
-  // Load media files ONLY from backend - no IndexedDB cache
+  // Backend uploads are the source of truth for everything already uploaded;
+  // local (not yet uploaded) entries are kept in front of them.
   useEffect(() => {
-    const loadMediaFiles = async () => {
-      try {
-        setIsLoading(true);
+    const backendFiles: LocalMediaFile[] = backendUploads.map((upload) => {
+      let typeString: "image" | "video" | "audio" = "image";
+      if (upload.type === 2) typeString = "video";
+      else if (upload.type === 3) typeString = "audio";
 
-        // Convert backend uploads to LocalMediaFile format (SINGLE SOURCE OF TRUTH)
-        const backendFiles: LocalMediaFile[] = backendUploads.map((upload) => {
-          // Determine type string from type number
-          let typeString: "image" | "video" | "audio" = "image";
-          if (upload.type === 2) typeString = "video";
-          else if (upload.type === 3) typeString = "audio";
+      return {
+        id: upload.id,
+        name: upload.file_name,
+        type: typeString,
+        path: upload.file_url,
+        size: 0, // Backend doesn't provide size, but it's not critical
+        lastModified: new Date(upload.created_at).getTime(),
+        thumbnail: upload.thumbnail_url || "",
+        duration: upload.duration ? parseFloat(upload.duration) : undefined,
+      };
+    });
 
-          return {
-            id: upload.id,
-            name: upload.file_name,
-            type: typeString,
-            path: upload.file_url,
-            size: 0, // Backend doesn't provide size, but it's not critical
-            lastModified: new Date(upload.created_at).getTime(),
-            thumbnail: upload.thumbnail_url || "",
-            duration: upload.duration ? parseFloat(upload.duration) : undefined,
-          };
-        });
+    // Sort by lastModified: newest first
+    backendFiles.sort((a, b) => b.lastModified - a.lastModified);
 
-        // Sort by lastModified: newest first
-        backendFiles.sort((a, b) => b.lastModified - a.lastModified);
-
-        setLocalMediaFiles(backendFiles);
-      } catch (error) {
-        console.error("Error loading media files:", error);
-        setLocalMediaFiles([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadMediaFiles();
+    setLocalMediaFiles((prev) => [
+      ...prev.filter((f) => isLocalSrc(f.path)),
+      ...backendFiles,
+    ]);
   }, [backendUploads]);
 
   /**
-   * Add a new media file to the collection
-   * OPTIMIZED: Now with progress tracking
+   * Register a picked file locally. No network: the file is uploaded later by
+   * `materializeOverlays`.
    */
-  const addMediaFile = useCallback(
-    async (file: File, onProgress?: UploadProgressCallback): Promise<LocalMediaFile | void> => {
-      setIsLoading(true);
-      setUploadProgress({ loaded: 0, total: file.size, percentage: 0 });
-      
-      try {
-        // Upload file to server with progress tracking
-        const mediaItem = await uploadMediaFile(file, (progress) => {
-          setUploadProgress(progress);
-          if (onProgress) onProgress(progress);
-        });
+  const addMediaFile = useCallback(async (file: File): Promise<LocalMediaFile> => {
+    const type = mediaTypeOf(file);
+    if (!type) throw new Error("Unsupported file type");
+    setIsLoading(true);
+    try {
+      const duration = await getMediaDuration(file);
+      // ponytail: no thumbnail; the gallery renders the object URL directly.
+      const media = registerLocalFile(file, {
+        name: file.name,
+        type,
+        size: file.size,
+        lastModified: file.lastModified,
+        thumbnail: "",
+        duration,
+      });
+      setLocalMediaFiles((prev) => [media, ...prev]);
+      return media;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
-        // Convert to LocalMediaFile format
-        const newMediaFile: LocalMediaFile = {
-          id: mediaItem.id,
-          name: mediaItem.name,
-          type: mediaItem.type,
-          path: mediaItem.serverPath,
-          size: mediaItem.size,
-          lastModified: mediaItem.lastModified,
-          thumbnail: mediaItem.thumbnail || "",
-          duration: mediaItem.duration,
-        };
+  const materializeOverlays = useCallback(
+    async (
+      overlays: Overlay[],
+      onProgress?: (progress: MaterializeProgress) => void
+    ): Promise<Overlay[]> => {
+      const localSrcs = collectLocalSrcs(overlays);
+      if (localSrcs.length === 0) return overlays;
 
-        // Update state with the new media file (add at the beginning - newest first)
-        setLocalMediaFiles((prev) => {
-          // Check if file with same ID already exists
-          const exists = prev.some((item) => item.id === newMediaFile.id);
-          if (exists) {
-            // Replace existing file
-            return prev.map((item) =>
-              item.id === newMediaFile.id ? newMediaFile : item
-            );
-          }
-          // Add new file at the beginning (newest first)
-          return [newMediaFile, ...prev];
-        });
-
-        return newMediaFile;
-      } catch (error) {
-        console.error("Error adding media file:", error);
-        throw error;
-      } finally {
-        setIsLoading(false);
-        setUploadProgress(null);
+      const urlMap = new Map<string, string>();
+      // ponytail: sequential uploads; add a pool of 2 if users stack many clips.
+      for (let i = 0; i < localSrcs.length; i++) {
+        const src = localSrcs[i];
+        const file = getLocalFile(src);
+        if (!file) throw new Error(`Local file no longer available: ${src}`);
+        const uploaded = await uploadMediaFile(file, (p) =>
+          onProgress?.({
+            index: i + 1,
+            total: localSrcs.length,
+            name: file.name,
+            percentage: p.percentage,
+          })
+        );
+        urlMap.set(src, uploaded.serverPath);
+        setLocalMediaFiles((prev) =>
+          prev.map((f) =>
+            f.path === src
+              ? {
+                  ...f,
+                  id: uploaded.id,
+                  path: uploaded.serverPath,
+                  thumbnail: uploaded.thumbnail || f.thumbnail,
+                }
+              : f
+          )
+        );
       }
+      localSrcs.forEach((src) => releaseLocalFile(src));
+
+      return overlays.map((overlay) => {
+        const { src, content } = overlay as { src?: string; content?: string };
+        const url = src && urlMap.get(src);
+        if (!url) return overlay;
+        return { ...overlay, src: url, content: content === src ? url : content } as Overlay;
+      });
     },
     []
   );
@@ -169,12 +202,14 @@ export const LocalMediaProvider: React.FC<{
           // Check if this is a backend upload (from backendUploads list)
           const isBackendUpload = backendUploads.some((upload) => upload.id === id);
 
-          if (isBackendUpload) {
+          if (isLocalSrc(fileToRemove.path)) {
+            releaseLocalFile(fileToRemove.path);
+          } else if (isBackendUpload) {
             // Delete from backend using the delete-upload endpoint
             const token = Cookies.get("token");
 
             const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "https://backend.reelmotion.ai";
-            
+
             const response = await fetch(`${backendUrl}/editor/delete-upload`, {
               method: "POST",
               headers: {
@@ -185,7 +220,7 @@ export const LocalMediaProvider: React.FC<{
             });
 
             const data = await response.json();
-            
+
             // Check if the backend returned success (code: 200)
             if (data.code !== 200) {
               throw new Error(data.message || "Failed to delete backend upload");
@@ -216,6 +251,10 @@ export const LocalMediaProvider: React.FC<{
 
       // Delete all backend files
       for (const file of localMediaFiles) {
+        if (isLocalSrc(file.path)) {
+          releaseLocalFile(file.path);
+          continue;
+        }
         const isBackendUpload = backendUploads.some((upload) => upload.id === file.id);
 
         if (isBackendUpload) {
@@ -230,7 +269,7 @@ export const LocalMediaProvider: React.FC<{
           });
 
           const data = await response.json();
-          
+
           if (data.code !== 200) {
             console.error("Failed to delete upload:", data.message);
           }
@@ -249,14 +288,14 @@ export const LocalMediaProvider: React.FC<{
     addMediaFile,
     removeMediaFile,
     clearMediaFiles,
+    materializeOverlays,
     isLoading,
-    uploadProgress,
     updateMediaFileName
   };
 
   return (
     <LocalMediaContext.Provider value={value}>
-      {children}
+      {isReady ? children : null}
     </LocalMediaContext.Provider>
   );
 };

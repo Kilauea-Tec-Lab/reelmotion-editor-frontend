@@ -343,12 +343,10 @@ const Timeline: React.FC<TimelineProps> = ({
           if (!isVideo && !isImage && !isAudio) continue;
 
           try {
-            setFileUploadProgress({ name: file.name, percentage: 0 });
+            setFileUploadProgress({ name: file.name });
 
-            // Upload to server via local media context (also adds to uploads panel)
-            const mediaFile = await addMediaFile(file, (progress) => {
-              setFileUploadProgress({ name: file.name, percentage: progress.percentage });
-            });
+            // Register locally (also adds to uploads panel); uploaded on export
+            const mediaFile = await addMediaFile(file);
 
             if (!mediaFile) continue;
 
@@ -725,7 +723,7 @@ const Timeline: React.FC<TimelineProps> = ({
 
   // State for tracking file upload drop
   const [isFileDropping, setIsFileDropping] = useState(false);
-  const [fileUploadProgress, setFileUploadProgress] = useState<{ name: string; percentage: number } | null>(null);
+  const [fileUploadProgress, setFileUploadProgress] = useState<{ name: string } | null>(null);
 
   // Replace the loading state management with context
   const {
@@ -914,7 +912,7 @@ const Timeline: React.FC<TimelineProps> = ({
                   <div className="flex flex-col items-center gap-2 px-4 py-3 bg-darkBox/90 rounded-lg shadow-sm ring-1 ring-white/10">
                     <Loader2 className="w-4 h-4 animate-spin text-primarioLogo" />
                     <span className="text-xs font-medium text-gray-300">
-                      Uploading {fileUploadProgress.name}... {fileUploadProgress.percentage}%
+                      Adding {fileUploadProgress.name}...
                     </span>
                   </div>
                 </div>

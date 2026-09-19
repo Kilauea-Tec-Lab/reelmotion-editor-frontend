@@ -26,6 +26,7 @@ import { VideoSettingsPanel } from "./video-settings-panel";
 import { useOverlayOverlapCheck } from "../../../hooks/use-overlay-overlap-check";
 import { useEditorContext } from "../../../contexts/editor-context";
 import { useTranslation } from "@/lib/i18n";
+import { resolveVideoUrl } from "../../../utils/url-helper";
 
 interface VideoDetailsProps {
   /** The current state of the video overlay */
@@ -101,7 +102,7 @@ export const VideoDetails: React.FC<VideoDetailsProps> = ({
       {/* Preview */}
       <div className="relative aspect-[16/7] w-full overflow-hidden rounded-sm border border-gray-200 dark:border-gray-700 bg-gray-100/40 dark:bg-black/40">
         <video
-          src={localOverlay.content}
+          src={resolveVideoUrl(localOverlay.content)}
           muted
           playsInline
           loop

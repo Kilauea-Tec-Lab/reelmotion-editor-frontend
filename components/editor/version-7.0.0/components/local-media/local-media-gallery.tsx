@@ -43,7 +43,7 @@ export function LocalMediaGallery({
 }: {
   onSelectMedia?: (mediaFile: any) => void;
 }) {
-  const { localMediaFiles, addMediaFile, removeMediaFile, isLoading, updateMediaFileName, uploadProgress } =
+  const { localMediaFiles, addMediaFile, removeMediaFile, isLoading, updateMediaFileName } =
     useLocalMedia();
   const [activeTab, setActiveTab] = useState("all");
   const [selectedFile, setSelectedFile] = useState<any>(null);
@@ -551,33 +551,17 @@ export function LocalMediaGallery({
     );
   };
 
-  // Render uploading skeleton with progress bar
-  const renderUploadingSkeleton = () => {
-    const percentage = uploadProgress?.percentage || 0;
-    
-    return (
-      <div
-        key="uploading-skeleton"
-        className="relative rounded-sm overflow-hidden bg-gray-200 dark:bg-darkBoxSub"
-      >
-        {/* Thumbnail skeleton with progress */}
-        <div className="aspect-video relative bg-gray-200 dark:bg-gray-800 flex flex-col items-center justify-center">
-          <Loader2 className="w-8 h-8 text-pink-500 animate-spin mb-2" />
-          <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">
-            {t("uploads.uploadingProgress", { percent: percentage })}
-          </p>
-          
-          {/* Progress bar */}
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-300 dark:bg-gray-700">
-            <div 
-              className="h-full bg-pink-500 transition-all duration-300 ease-out"
-              style={{ width: `${percentage}%` }}
-            />
-          </div>
-        </div>
+  // Skeleton while the picked file is being read (local, no network)
+  const renderUploadingSkeleton = () => (
+    <div
+      key="uploading-skeleton"
+      className="relative rounded-sm overflow-hidden bg-gray-200 dark:bg-darkBoxSub"
+    >
+      <div className="aspect-video relative bg-gray-200 dark:bg-gray-800 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-pink-500 animate-spin" />
       </div>
-    );
-  };
+    </div>
+  );
 
   return (
     <div className="h-full flex flex-col">

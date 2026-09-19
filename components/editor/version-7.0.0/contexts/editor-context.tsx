@@ -44,7 +44,7 @@ interface EditorContextProps {
   durationInFrames: number; // Total number of frames
   contentDurationInFrames: number; // Actual content duration in frames
   durationInSeconds: number; // Total duration in seconds
-  renderMedia: () => void; // Trigger media rendering
+  renderMedia: (options?: { scale?: number; overlays?: Overlay[] }) => void; // Trigger media rendering
   state: any; // General state object with proper typing
 
   // Timeline

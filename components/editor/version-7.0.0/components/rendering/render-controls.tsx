@@ -20,6 +20,9 @@ import { SaveEditDialog } from "./save-edit-dialog";
 import { LoadEditDialog } from "./load-edit-dialog";
 import { SaveRenderDialog } from "./save-render-dialog";
 import { useEditorContext } from "../../contexts/editor-context";
+import { useLocalMedia, MaterializeProgress } from "../../contexts/local-media-context";
+import { toast } from "@/hooks/use-toast";
+import { Overlay } from "../../types";
 import { SubscriptionModal } from "../shared/subscription-modal";
 import { useTranslation } from "@/lib/i18n";
 import { LanguageSelector } from "@/components/language-selector";
@@ -51,7 +54,7 @@ interface RenderItem {
  */
 interface RenderControlsProps {
   state: any;
-  handleRender: () => void;
+  handleRender: (options?: { scale?: number; overlays?: Overlay[] }) => void;
   saveProject?: () => Promise<void>;
   renderType?: "ssr" | "lambda" | "cloudrun";
   editionData?: {
@@ -88,7 +91,10 @@ const RenderControls: React.FC<RenderControlsProps> = ({
   const { t } = useTranslation();
 
   // Use EditorContext to get subscription info, dimensions, overlays and export count
-  const { subscriptionPlan, isPro, getAspectRatioDimensions, getRenderDimensions, overlays, exportNumber } = useEditorContext();
+  const { subscriptionPlan, isPro, getAspectRatioDimensions, getRenderDimensions, overlays, setOverlays, exportNumber } = useEditorContext();
+  const { materializeOverlays } = useLocalMedia();
+  // Local files are uploaded right before export; shown in the export button.
+  const [uploadStatus, setUploadStatus] = React.useState<string | null>(null);
 
   // Check if timeline has elements
   const isTimelineEmpty = !overlays || overlays.length === 0;
@@ -110,7 +116,7 @@ const RenderControls: React.FC<RenderControlsProps> = ({
   // Check if rendering is disabled via environment variable
   const isRenderDisabled = process.env.NEXT_PUBLIC_DISABLE_RENDER === "true";
 
-  const handleExport = (resolution: '720p' | '1080p' | '4k') => {
+  const handleExport = async (resolution: '720p' | '1080p' | '4k') => {
     // Use the ACTUAL render dimensions (after free-tier downscale) so the
     // scale factor produces clean integer output dimensions. Using the raw
     // aspect-ratio dimensions here would double-scale and yield fractional
@@ -124,8 +130,22 @@ const RenderControls: React.FC<RenderControlsProps> = ({
     const currentLongSide = Math.max(renderW, renderH);
     const renderScale = targetLongSide / currentLongSide;
 
+    let exportOverlays: Overlay[];
+    try {
+      exportOverlays = await materializeOverlays(overlays, (p: MaterializeProgress) =>
+        setUploadStatus(t("header.uploadingMedia", { index: p.index, total: p.total, name: p.name, percent: p.percentage }))
+      );
+    } catch (error) {
+      console.error("Error uploading local media:", error);
+      toast({ variant: "destructive", title: t("common.error"), description: t("header.uploadMediaFailed") });
+      return;
+    } finally {
+      setUploadStatus(null);
+    }
+    if (exportOverlays !== overlays) setOverlays(exportOverlays);
+
     // Call render with scale factor — Remotion handles the uniform upscaling
-    (handleRender as any)({ scale: renderScale });
+    handleRender({ scale: renderScale, overlays: exportOverlays });
 
     // Notify backend if subscription is free
     if ((subscriptionPlan || 'free').toLowerCase() === 'free') {
@@ -369,7 +389,7 @@ const RenderControls: React.FC<RenderControlsProps> = ({
       </Popover>
 
       <Button
-        onClick={handleRender as any}
+        onClick={() => handleRender()}
         size="sm"
         variant="outline"
         disabled={state.status === "rendering" || state.status === "invoking" || isRenderDisabled}
@@ -380,10 +400,12 @@ const RenderControls: React.FC<RenderControlsProps> = ({
       </Button>
 
       {/* New Export Button with Dropdown */}
-      {state.status === "invoking" || state.status === "rendering" ? (
+      {uploadStatus || state.status === "invoking" || state.status === "rendering" ? (
         <Button disabled variant="secondary" size="sm">
           <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
-          {renderType === "cloudrun" ? (
+          {uploadStatus ? (
+            uploadStatus
+          ) : renderType === "cloudrun" ? (
             state.status === "invoking" ? t("header.starting") : t("header.rendering")
           ) : (
             `${t("header.renderingProgress")} ${

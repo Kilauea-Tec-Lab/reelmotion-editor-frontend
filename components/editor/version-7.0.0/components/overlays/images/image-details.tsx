@@ -9,6 +9,7 @@ import {
 } from "../../../../../ui/tabs";
 import { ImageStylePanel } from "./image-style-panel";
 import { ImageSettingsPanel } from "./image-settings-panel";
+import { resolveMediaUrl } from "../../../utils/url-helper";
 
 /**
  * Props for the ImageDetails component
@@ -64,7 +65,7 @@ export const ImageDetails: React.FC<ImageDetailsProps> = ({
       {/* Preview */}
       <div className="relative aspect-[16/7] w-full overflow-hidden rounded-sm border border-border bg-muted/40">
         <img
-          src={localOverlay.src}
+          src={resolveMediaUrl(localOverlay.src)}
           alt="Image preview"
           className="h-full w-full object-cover"
         />

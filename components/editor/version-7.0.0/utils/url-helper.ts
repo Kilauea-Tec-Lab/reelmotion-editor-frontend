@@ -14,6 +14,12 @@
  * 
  * For files in other buckets, we use direct GCS URLs instead.
  */
+import { isLocalSrc, resolveLocalSrc } from "./local-file-store";
+
+/** Browser-only srcs (`local://`, `blob:`, `data:`) are never rewritten. */
+const isBrowserOnlySrc = (url: string) =>
+  isLocalSrc(url) || url.startsWith("blob:") || url.startsWith("data:");
+
 const CDN_CONFIG = {
   enabled: process.env.NEXT_PUBLIC_CDN_ENABLED === "true",
   baseUrl: process.env.NEXT_PUBLIC_CDN_URL || "https://cdn.reelmotion.ai",
@@ -196,7 +202,7 @@ export const getOptimizedMediaUrl = (url: string): string => {
  */
 export const toAbsoluteUrl = (url: string): string => {
   // If the URL is already absolute, return it as is
-  if (url.startsWith("http://") || url.startsWith("https://")) {
+  if (url.startsWith("http://") || url.startsWith("https://") || isBrowserOnlySrc(url)) {
     return url;
   }
 
@@ -217,8 +223,9 @@ export const toAbsoluteUrl = (url: string): string => {
  * @returns Properly formatted URL for the current context
  */
 export const resolveMediaUrl = (url: string, baseUrl?: string): string => {
+  if (isLocalSrc(url)) return resolveLocalSrc(url);
   // If the URL is already absolute, return it as is
-  if (url.startsWith("http://") || url.startsWith("https://")) {
+  if (url.startsWith("http://") || url.startsWith("https://") || isBrowserOnlySrc(url)) {
     return url;
   }
 
@@ -309,6 +316,8 @@ export const resolveVideoUrl = (url: string, baseUrl?: string): string => {
  * @returns An absolute URL suitable for server-side rendering
  */
 export const prepareUrlForRender = (url: string): string => {
+  // Kept as-is for the in-browser Player; use-rendering refuses to export them.
+  if (isBrowserOnlySrc(url)) return url;
   // If it's a proxy URL, extract the original URL
   if (url.includes('/api/proxy-video?url=')) {
     const match = url.match(/[?&]url=([^&]+)/);

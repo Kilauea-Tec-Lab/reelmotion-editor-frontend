@@ -7,6 +7,7 @@ import { useTimeline } from "../../../contexts/timeline-context";
 import { Overlay, OverlayType } from "../../../types";
 import { FPS } from "../../../constants";
 import { LocalMediaGallery } from "../../local-media/local-media-gallery";
+import { resolveMediaUrl } from "../../../utils/url-helper";
 
 /**
  * LocalMediaPanel Component
@@ -44,7 +45,7 @@ export const LocalMediaPanel: React.FC = () => {
         resolve(undefined);
       };
 
-      el.src = url;
+      el.src = resolveMediaUrl(url);
     });
   };
 

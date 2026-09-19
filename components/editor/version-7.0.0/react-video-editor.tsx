@@ -26,6 +26,7 @@ import { Overlay, OverlayType } from "./types";
 
 // Utils
 import { prepareUrlForRender } from "./utils/url-helper";
+import { isLocalSrc, resolveLocalSrc, restoreLocalFiles } from "./utils/local-file-store";
 import { useRendering } from "./hooks/use-rendering";
 import {
   AUTO_SAVE_INTERVAL,
@@ -148,11 +149,11 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
   const validateOverlayUrls = useCallback(async (currentOverlays: Overlay[]) => {
     if (isValidatingRef.current || currentOverlays.length === 0) return;
 
-    // Find overlays with remote src URLs that haven't been validated yet
+    // Find overlays with remote or local src URLs that haven't been validated yet
     const overlaysToCheck = currentOverlays.filter((o) => {
       if (!('src' in o) || typeof (o as any).src !== 'string') return false;
       const src = (o as any).src as string;
-      if (!src.startsWith('http')) return false;
+      if (!src.startsWith('http') && !isLocalSrc(src)) return false;
       return !validatedUrlsRef.current.has(src);
     });
 
@@ -160,10 +161,16 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
 
     isValidatingRef.current = true;
     const brokenIds: number[] = [];
+    await restoreLocalFiles();
 
     await Promise.all(
       overlaysToCheck.map(async (overlay) => {
         const src = (overlay as any).src as string;
+        // Local files live only in this browser; gone after a cleared IndexedDB.
+        if (isLocalSrc(src)) {
+          if (!resolveLocalSrc(src)) brokenIds.push(overlay.id);
+          return;
+        }
         try {
           const res = await fetch(src, { method: 'HEAD', mode: 'cors' });
           if (res.status === 404 || res.status === 403) {
@@ -321,10 +328,23 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
     backgroundColor,
   }), [overlays, prepareOverlaysForRender, contentDurationInFrames, isPro, renderWidth, renderHeight, backgroundColor]);
 
-  const { renderMedia, state } = useRendering(
+  const { renderMedia: startRender, state } = useRendering(
     "TestComponent",
     inputProps,
     RENDER_TYPE
+  );
+
+  // Export may pass overlays materialized a moment ago (local files uploaded)
+  // that the memoized inputProps do not contain yet.
+  const renderMedia = useCallback(
+    (options?: { scale?: number; overlays?: Overlay[] }) =>
+      startRender({
+        scale: options?.scale,
+        inputProps: options?.overlays
+          ? { ...inputProps, overlays: prepareOverlaysForRender(options.overlays) }
+          : undefined,
+      }),
+    [startRender, inputProps, prepareOverlaysForRender]
   );
 
   // Replace history management code with hook
