@@ -21,14 +21,39 @@ export const getRenderState = (renderId: string) => {
   return JSON.parse(fs.readFileSync(filePath, "utf-8"));
 };
 
+const PROGRESS_WRITE_INTERVAL_MS = 1000;
+const lastProgressWrite = new Map<string, number>();
+
+// Called once per rendered frame: write at most once a second and never
+// after the render has already finished or failed.
 export const updateRenderProgress = (renderId: string, progress: number) => {
+  const now = Date.now();
+  if (now - (lastProgressWrite.get(renderId) ?? 0) < PROGRESS_WRITE_INTERVAL_MS) return;
   const state = getRenderState(renderId) || {};
+  if (state.status === "done" || state.status === "error") return;
   state.progress = progress;
   state.status = "rendering";
   saveRenderState(renderId, state);
+  lastProgressWrite.set(renderId, now);
+};
+
+const STATE_TTL_MS = 24 * 60 * 60 * 1000;
+
+/** Drop state files older than a day (called when a render starts). */
+export const cleanupOldRenderStates = () => {
+  const cutoff = Date.now() - STATE_TTL_MS;
+  for (const name of fs.readdirSync(RENDER_STATE_DIR)) {
+    const filePath = path.join(RENDER_STATE_DIR, name);
+    try {
+      if (fs.statSync(filePath).mtimeMs < cutoff) fs.unlinkSync(filePath);
+    } catch (error) {
+      console.error("Failed to clean render state:", error);
+    }
+  }
 };
 
 export const completeRender = (renderId: string, url: string, size: number) => {
+  lastProgressWrite.delete(renderId);
   const state = getRenderState(renderId) || {};
   state.status = "done";
   state.url = url;
@@ -37,6 +62,7 @@ export const completeRender = (renderId: string, url: string, size: number) => {
 };
 
 export const failRender = (renderId: string, error: string) => {
+  lastProgressWrite.delete(renderId);
   const state = getRenderState(renderId) || {};
   state.status = "error";
   state.error = error;

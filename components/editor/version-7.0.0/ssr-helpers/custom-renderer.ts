@@ -14,6 +14,7 @@ import {
   updateRenderProgress,
   completeRender,
   failRender,
+  cleanupOldRenderStates,
 } from "./render-state";
 import {
   preloadAssets,
@@ -181,6 +182,7 @@ export async function startRendering(
       
       // Cleanup old cached assets periodically (non-blocking)
       cleanupOldAssets();
+      cleanupOldRenderStates();
 
       const baseUrl = getBaseUrl();
       let optimizedInputProps = { ...inputProps };

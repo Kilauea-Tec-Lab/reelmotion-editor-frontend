@@ -229,7 +229,9 @@ export function replaceUrlsWithLocalPaths(
   // Public URL path where Nginx servers the cache directory
   // Corresponds to ASSETS_CACHE_DIR on the filesystem
   const ASSETS_PUBLIC_PATH = "/_render_assets";
-  const baseUrl = "https://editor.reelmotion.ai"; // Production URL
+  // ponytail: still relies on the nginx alias for /_render_assets; getBaseUrl()
+  // keeps dev/staging from pointing at production.
+  const baseUrl = getBaseUrl();
 
   const toPublicUrl = (localPath: string): string => {
     // Get path relative to cache dir (e.g. "session-id/asset.mp4")

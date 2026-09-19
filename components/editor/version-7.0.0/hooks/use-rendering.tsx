@@ -2,6 +2,7 @@ import { z } from "zod";
 import { useCallback, useMemo, useState } from "react";
 import { CompositionProps } from "../types";
 import { isLocalSrc } from "../utils/local-file-store";
+import { CLOUDRUN_CONFIG } from "../constants";
 import {
   getProgress as ssrGetProgress,
   renderVideo as ssrRenderVideo,
@@ -158,6 +159,9 @@ export const useRendering = (
       });
 
       let pending = true;
+      // Cloud Run renders are fire-and-forget and its progress endpoint never
+      // reports failures, so a wall-clock deadline is the only way out.
+      const deadline = Date.now() + CLOUDRUN_CONFIG.TIMEOUT_SECONDS * 1000;
 
       // Configure polling based on render type
       // OPTIMIZED: Cloud Run uses faster polling since renders are now quicker
@@ -173,6 +177,14 @@ export const useRendering = (
       const maxThrottleBackoffMs = 10000; // Reduced from 15s for faster recovery
 
       while (pending) {
+        if (Date.now() > deadline) {
+          setState({
+            status: "error",
+            renderId,
+            error: new Error("Render timed out. Please try again."),
+          });
+          break;
+        }
         let result: Awaited<ReturnType<typeof getProgress>>;
 
         try {

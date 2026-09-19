@@ -7,6 +7,10 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   const { id } = params;
+  // Render ids are uuids; anything else could walk out of the videos dir.
+  if (!/^[A-Za-z0-9-]{1,64}$/.test(id)) {
+    return new NextResponse("Invalid id", { status: 400 });
+  }
 
   // Construct the path to the video file
   const videoPath = path.join(

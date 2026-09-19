@@ -1,4 +1,5 @@
 import { z } from "zod";
+import Cookies from "js-cookie";
 import {
   RenderRequest,
   ProgressRequest,
@@ -27,6 +28,7 @@ const makeRequest = async <Res>(
     body: JSON.stringify(body),
     headers: {
       "content-type": "application/json",
+      Authorization: `Bearer ${Cookies.get("token") ?? ""}`,
     },
   });
   const json = (await result.json()) as ApiResponse<Res>;

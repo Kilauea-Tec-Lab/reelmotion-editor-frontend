@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { isAllowedUrl } from '@/lib/proxy-allowlist';
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -6,6 +7,9 @@ export async function GET(request: NextRequest) {
 
   if (!videoUrl) {
     return NextResponse.json({ error: 'Video URL is required' }, { status: 400 });
+  }
+  if (!isAllowedUrl(videoUrl)) {
+    return NextResponse.json({ error: 'Host not allowed' }, { status: 403 });
   }
 
   try {
@@ -57,6 +61,9 @@ export async function GET(request: NextRequest) {
     if (!responseHeaders.has('Content-Type')) {
         responseHeaders.set('Content-Type', 'video/mp4');
     }
+
+    // Media is immutable per URL: let the browser/CDN keep it.
+    responseHeaders.set('Cache-Control', 'public, max-age=86400');
 
     // CORS headers
     responseHeaders.set('Access-Control-Allow-Origin', '*');

@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { SignJWT, importPKCS8 } from 'jose';
+import { unauthorizedResponse, verifyEditorToken } from '@/components/editor/version-7.0.0/ssr-helpers/require-auth';
+
+const MAX_UPLOAD_BYTES = 350 * 1024 * 1024; // matches the gallery's limit
 
 // Cache token server-side
 let cachedAccessToken: string | null = null;
@@ -70,6 +73,9 @@ async function getGCSAccessToken(): Promise<string> {
 }
 
 export async function POST(request: NextRequest) {
+  if (!(await verifyEditorToken(request.headers.get('authorization')))) {
+    return unauthorizedResponse();
+  }
   try {
     const formData = await request.formData();
     const file = formData.get('file') as File;
@@ -78,6 +84,13 @@ export async function POST(request: NextRequest) {
 
     if (!file || !type || !userId) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+    // userId is only an object-name prefix (browser-generated uuid): keep it a single safe segment.
+    if (!/^[A-Za-z0-9_-]{1,64}$/.test(userId)) {
+      return NextResponse.json({ error: 'Invalid userId' }, { status: 400 });
+    }
+    if (file.size > MAX_UPLOAD_BYTES) {
+      return NextResponse.json({ error: 'File too large' }, { status: 413 });
     }
 
     // Determine bucket
@@ -95,7 +108,7 @@ export async function POST(request: NextRequest) {
     // Generate unique filename
     const timestamp = Date.now();
     const randomStr = Math.random().toString(36).substring(2, 15);
-    const extension = file.name.split('.').pop();
+    const extension = (file.name.split('.').pop() || 'bin').replace(/[^A-Za-z0-9]/g, '').slice(0, 8) || 'bin';
     const fileName = `${userId}/${timestamp}-${randomStr}.${extension}`;
 
 

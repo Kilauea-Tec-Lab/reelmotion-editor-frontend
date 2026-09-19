@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z, ZodType } from "zod";
+import { unauthorizedResponse, verifyEditorToken } from "../ssr-helpers/require-auth";
 
 export type ApiResponse<Res> =
   | {
@@ -17,6 +18,9 @@ export const executeApi =
     handler: (req: Request, body: z.infer<Req>) => Promise<Res>
   ) =>
   async (req: Request) => {
+    if (!(await verifyEditorToken(req.headers.get("authorization")))) {
+      return unauthorizedResponse();
+    }
     try {
       const payload = await req.json();
       const parsed = schema.parse(payload);

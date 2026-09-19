@@ -217,7 +217,7 @@ describe("useRendering", () => {
     // The hook should be in rendering state even if first progress poll is throttled.
     expect(result.current.state).toEqual({
       status: "rendering",
-      progress: 0,
+      progress: -1, // indeterminate until the first successful poll
       renderId: mockRenderId,
       bucketName,
     });

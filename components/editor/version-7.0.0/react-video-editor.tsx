@@ -195,31 +195,11 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
   const { width: compositionWidth, height: compositionHeight } =
     getAspectRatioDimensions();
 
-  // Calculate render dimensions based on subscription plan
-  let renderWidth = compositionWidth;
-  let renderHeight = compositionHeight;
-
-  if (!isPro) {
-    const MAX_RES = 720;
-    if (compositionWidth > compositionHeight) {
-      // Landscape
-      if (compositionHeight > MAX_RES) {
-        const ratio = compositionWidth / compositionHeight;
-        renderHeight = MAX_RES;
-        renderWidth = Math.round(renderHeight * ratio);
-      }
-    } else {
-      // Portrait or Square
-      if (compositionWidth > MAX_RES) {
-        const ratio = compositionHeight / compositionWidth;
-        renderWidth = MAX_RES;
-        renderHeight = Math.round(renderWidth * ratio);
-      }
-    }
-    // Ensure even dimensions
-    renderWidth = Math.round(renderWidth / 2) * 2;
-    renderHeight = Math.round(renderHeight / 2) * 2;
-  }
+  // Overlays are in composition pixels, so the composition is always rendered
+  // at its own size; the free-tier 720p cap is applied as a uniform
+  // renderScale by the export button (see render-controls.tsx).
+  const renderWidth = compositionWidth;
+  const renderHeight = compositionHeight;
 
   const handleTimelineClick = useTimelineClick(playerRef, durationInFrames);
 

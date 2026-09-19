@@ -28,7 +28,7 @@ export const RemotionRoot: React.FC = () => {
         durationInFrames={DURATION_IN_FRAMES}
         fps={FPS}
         width={1920}
-        height={1920}
+        height={1080}
         /**
          * Dynamically calculates the video metadata based on the composition props.
          * These values will be reflected in the Remotion player/preview.

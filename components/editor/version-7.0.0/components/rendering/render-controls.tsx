@@ -117,10 +117,9 @@ const RenderControls: React.FC<RenderControlsProps> = ({
   const isRenderDisabled = process.env.NEXT_PUBLIC_DISABLE_RENDER === "true";
 
   const handleExport = async (resolution: '720p' | '1080p' | '4k') => {
-    // Use the ACTUAL render dimensions (after free-tier downscale) so the
-    // scale factor produces clean integer output dimensions. Using the raw
-    // aspect-ratio dimensions here would double-scale and yield fractional
-    // sizes that h264 pads with gray pixels on the right/bottom edges.
+    // Output size = composition size × renderScale (uniform, overlays keep
+    // their relative positions). 720p = long side 1280, so free users get a
+    // downscale, never a re-layout.
     const { width: renderW, height: renderH } = getRenderDimensions();
 
     // Target long side based on resolution
