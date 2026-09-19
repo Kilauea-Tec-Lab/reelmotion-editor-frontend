@@ -119,8 +119,10 @@ echo 'Restarting server...'
 pm2 delete editor >/dev/null 2>&1 || true
 pm2 start pnpm --name 'editor' -- start
 
-# Save PM2 list so it restarts on reboot
-pm2 save
+# Save PM2 list so it restarts on reboot. Some PM2 installs reject `save` as
+# "Command not found"; don't fail the whole deploy over that — the editor is
+# already running. Try `dump` as a fallback (older syntax).
+pm2 save >/dev/null 2>&1 || pm2 dump >/dev/null 2>&1 || echo 'WARNING: pm2 save/dump unavailable — process list will not survive reboot'
 "@
 
 # Write script to temp file locally
