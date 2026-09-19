@@ -7,7 +7,19 @@
  */
 
 import { getUserId } from "./user-id";
-import { UserMediaItem, addMediaItem } from "./indexdb";
+
+export interface UserMediaItem {
+  id: string;
+  userId: string;
+  name: string;
+  type: "video" | "image" | "audio";
+  serverPath: string;
+  size: number;
+  lastModified: number;
+  thumbnail?: string;
+  duration?: number;
+  createdAt: number;
+}
 import Cookies from "js-cookie";
 
 // ============================================
@@ -112,13 +124,6 @@ export const uploadMediaFile = async (
         : duration,
       createdAt: Date.now(),
     };
-
-    // Store in IndexedDB (non-blocking — backend is source of truth)
-    try {
-      await addMediaItem(mediaItem);
-    } catch (indexDbError) {
-      console.warn("IndexedDB storage failed (non-critical):", indexDbError);
-    }
 
     return mediaItem;
   } catch (error) {

@@ -37,6 +37,26 @@ interface WaveformOptions {
  * );
  * ```
  */
+// Chrome caps AudioContexts at ~6 per page and each decode re-downloads the
+// file, so decoding is shared across clips/trims of the same source.
+let sharedAudioContext: AudioContext | null = null;
+const decodedAudio = new Map<string, Promise<AudioBuffer>>();
+
+const decodeAudio = (url: string): Promise<AudioBuffer> => {
+  let pending = decodedAudio.get(url);
+  if (!pending) {
+    pending = (async () => {
+      const response = await fetch(url);
+      const arrayBuffer = await response.arrayBuffer();
+      sharedAudioContext ??= new AudioContext();
+      return sharedAudioContext.decodeAudioData(arrayBuffer);
+    })();
+    pending.catch(() => decodedAudio.delete(url));
+    decodedAudio.set(url, pending);
+  }
+  return pending;
+};
+
 export function useWaveformProcessor(
   src: string | undefined,
   startFromSound: number = 0,
@@ -53,10 +73,7 @@ export function useWaveformProcessor(
 
     const processAudio = async () => {
       try {
-        const response = await fetch(resolveMediaUrl(src));
-        const arrayBuffer = await response.arrayBuffer();
-        const audioContext = new AudioContext();
-        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+        const audioBuffer = await decodeAudio(resolveMediaUrl(src));
 
         if (!isActive) return;
 

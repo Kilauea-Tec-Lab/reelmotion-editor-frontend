@@ -29,9 +29,9 @@ describe("SidebarContext", () => {
     }).toThrow("useSidebar must be used within a SidebarProvider");
   });
 
-  it("should initialize with TEXT as default active panel", () => {
+  it("should initialize with VIDEO as default active panel", () => {
     const { result } = renderHook(() => useSidebar(), { wrapper });
-    expect(result.current.activePanel).toBe(OverlayType.TEXT);
+    expect(result.current.activePanel).toBe(OverlayType.VIDEO);
   });
 
   describe("Panel Management", () => {

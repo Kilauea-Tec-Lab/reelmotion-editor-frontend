@@ -1,386 +1,47 @@
 import { renderHook } from "@testing-library/react";
 import { useTimelinePositioning } from "../../components/editor/version-7.0.0/hooks/use-timeline-positioning";
-import {
-  Overlay,
-  OverlayType,
-} from "../../components/editor/version-7.0.0/types";
+import { Overlay, OverlayType } from "../../components/editor/version-7.0.0/types";
 
-describe("useTimelinePositioning", () => {
+const clip = (id: number, from: number, durationInFrames: number, row: number): Overlay =>
+  ({
+    id,
+    from,
+    durationInFrames,
+    row,
+    type: OverlayType.VIDEO,
+    height: 100,
+    width: 100,
+    left: 0,
+    top: 0,
+    isDragging: false,
+    rotation: 0,
+    content: "test.mp4",
+    src: "test.mp4",
+    styles: { opacity: 1, zIndex: 1 },
+  }) as Overlay;
+
+// New media always lands at the playhead, on the first row that is free there.
+describe("useTimelinePositioning › findNextAvailablePosition", () => {
   const { result } = renderHook(() => useTimelinePositioning());
+  const find = result.current.findNextAvailablePosition;
 
-  describe("findNextAvailablePosition", () => {
-    // Test case 1: Empty timeline
-    it("should return position 0, row 0 when no overlays exist", () => {
-      const position = result.current.findNextAvailablePosition([], 3, 100);
-      expect(position).toEqual({ from: 0, row: 0 });
-    });
+  it("returns the playhead on row 0 when the timeline is empty", () => {
+    expect(find([], 3, 100)).toEqual({ from: 0, row: 0 });
+    expect(find([], 3, 100, 42)).toEqual({ from: 42, row: 0 });
+  });
 
-    // Test case 2: Single row with one overlay
-    it("should find position after single overlay", () => {
-      const overlays: Overlay[] = [
-        {
-          id: 1,
-          from: 0,
-          durationInFrames: 10,
-          row: 0,
-          type: OverlayType.VIDEO,
-          height: 100,
-          width: 100,
-          left: 0,
-          top: 0,
-          isDragging: false,
-          rotation: 0,
-          content: "test.mp4",
-          src: "test.mp4",
-          styles: { opacity: 1, zIndex: 1 },
-        },
-      ];
-      const position = result.current.findNextAvailablePosition(
-        overlays,
-        1,
-        100
-      );
-      expect(position).toEqual({ from: 10, row: 0 });
-    });
+  it("uses row 0 when it is free at the playhead, even if other rows are busy", () => {
+    expect(find([clip(1, 0, 10, 1)], 3, 100, 5)).toEqual({ from: 5, row: 0 });
+    expect(find([clip(1, 0, 10, 0)], 3, 100, 10)).toEqual({ from: 10, row: 0 });
+  });
 
-    // Test case 3: Multiple rows with first row occupied
-    it("should still use first row even if another row is empty", () => {
-      const overlays: Overlay[] = [
-        {
-          id: 1,
-          from: 0,
-          durationInFrames: 20,
-          row: 0,
-          type: OverlayType.VIDEO,
-          height: 100,
-          width: 100,
-          left: 0,
-          top: 0,
-          isDragging: false,
-          rotation: 0,
-          content: "test.mp4",
-          src: "test.mp4",
-          styles: { opacity: 1, zIndex: 1 },
-        },
-      ];
-      const position = result.current.findNextAvailablePosition(
-        overlays,
-        2,
-        100
-      );
-      expect(position).toEqual({ from: 20, row: 0 });
-    });
+  it("drops to the next free row when the playhead is inside a clip", () => {
+    expect(find([clip(1, 0, 10, 0)], 3, 100, 5)).toEqual({ from: 5, row: 1 });
+    expect(find([clip(1, 0, 10, 0), clip(2, 0, 10, 1)], 3, 100, 5)).toEqual({ from: 5, row: 2 });
+  });
 
-    // Test case 4: Gap between overlays
-    it("should append to end of first row even if a gap exists", () => {
-      const overlays: Overlay[] = [
-        {
-          id: 1,
-          from: 0,
-          durationInFrames: 10,
-          row: 0,
-          type: OverlayType.VIDEO,
-          height: 100,
-          width: 100,
-          left: 0,
-          top: 0,
-          isDragging: false,
-          rotation: 0,
-          content: "test1.mp4",
-          src: "test1.mp4",
-          styles: { opacity: 1, zIndex: 1 },
-        },
-        {
-          id: 2,
-          from: 20,
-          durationInFrames: 10,
-          row: 0,
-          type: OverlayType.VIDEO,
-          height: 100,
-          width: 100,
-          left: 0,
-          top: 0,
-          isDragging: false,
-          rotation: 0,
-          content: "test2.mp4",
-          src: "test2.mp4",
-          styles: { opacity: 1, zIndex: 1 },
-        },
-      ];
-      const position = result.current.findNextAvailablePosition(
-        overlays,
-        1,
-        100
-      );
-      expect(position).toEqual({ from: 30, row: 0 });
-    });
-
-    // Test case 5: Overlapping across rows
-    it("should handle overlapping across rows", () => {
-      const overlays: Overlay[] = [
-        {
-          id: 1,
-          from: 0,
-          durationInFrames: 20,
-          row: 0,
-          type: OverlayType.VIDEO,
-          height: 100,
-          width: 100,
-          left: 0,
-          top: 0,
-          isDragging: false,
-          rotation: 0,
-          content: "test1.mp4",
-          src: "test1.mp4",
-          styles: { opacity: 1, zIndex: 1 },
-        },
-        {
-          id: 2,
-          from: 5,
-          durationInFrames: 10,
-          row: 1,
-          type: OverlayType.VIDEO,
-          height: 100,
-          width: 100,
-          left: 0,
-          top: 0,
-          isDragging: false,
-          rotation: 0,
-          content: "test2.mp4",
-          src: "test2.mp4",
-          styles: { opacity: 1, zIndex: 1 },
-        },
-      ];
-      const position = result.current.findNextAvailablePosition(
-        overlays,
-        2,
-        100
-      );
-      expect(position).toEqual({ from: 20, row: 0 });
-    });
-
-    // Test case 6: Timeline fully occupied up to duration
-    it("should handle timeline at capacity", () => {
-      const overlays: Overlay[] = [
-        {
-          id: 1,
-          from: 0,
-          durationInFrames: 100,
-          row: 0,
-          type: OverlayType.VIDEO,
-          height: 100,
-          width: 100,
-          left: 0,
-          top: 0,
-          isDragging: false,
-          rotation: 0,
-          content: "test1.mp4",
-          src: "test1.mp4",
-          styles: { opacity: 1, zIndex: 1 },
-        },
-        {
-          id: 2,
-          from: 0,
-          durationInFrames: 100,
-          row: 1,
-          type: OverlayType.VIDEO,
-          height: 100,
-          width: 100,
-          left: 0,
-          top: 0,
-          isDragging: false,
-          rotation: 0,
-          content: "test2.mp4",
-          src: "test2.mp4",
-          styles: { opacity: 1, zIndex: 1 },
-        },
-      ];
-      const position = result.current.findNextAvailablePosition(
-        overlays,
-        2,
-        100
-      );
-      expect(position).toEqual({ from: 100, row: 0 });
-    });
-
-    // Test case 7: Uneven row end times
-    it("should always choose first row even if other rows end earlier", () => {
-      const overlays: Overlay[] = [
-        {
-          id: 1,
-          from: 0,
-          durationInFrames: 30,
-          row: 0,
-          type: OverlayType.VIDEO,
-          height: 100,
-          width: 100,
-          left: 0,
-          top: 0,
-          isDragging: false,
-          rotation: 0,
-          content: "test1.mp4",
-          src: "test1.mp4",
-          styles: { opacity: 1, zIndex: 1 },
-        },
-        {
-          id: 2,
-          from: 0,
-          durationInFrames: 20,
-          row: 1,
-          type: OverlayType.VIDEO,
-          height: 100,
-          width: 100,
-          left: 0,
-          top: 0,
-          isDragging: false,
-          rotation: 0,
-          content: "test2.mp4",
-          src: "test2.mp4",
-          styles: { opacity: 1, zIndex: 1 },
-        },
-        {
-          id: 3,
-          from: 0,
-          durationInFrames: 40,
-          row: 2,
-          type: OverlayType.VIDEO,
-          height: 100,
-          width: 100,
-          left: 0,
-          top: 0,
-          isDragging: false,
-          rotation: 0,
-          content: "test3.mp4",
-          src: "test3.mp4",
-          styles: { opacity: 1, zIndex: 1 },
-        },
-      ];
-      const position = result.current.findNextAvailablePosition(
-        overlays,
-        3,
-        100
-      );
-      expect(position).toEqual({ from: 30, row: 0 });
-    });
-
-    // Test case 8: Multiple small gaps
-    it("should append to end of first row even with multiple gaps", () => {
-      const overlays: Overlay[] = [
-        {
-          id: 1,
-          from: 0,
-          durationInFrames: 5,
-          row: 0,
-          type: OverlayType.VIDEO,
-          height: 100,
-          width: 100,
-          left: 0,
-          top: 0,
-          isDragging: false,
-          rotation: 0,
-          content: "test1.mp4",
-          src: "test1.mp4",
-          styles: { opacity: 1, zIndex: 1 },
-        },
-        {
-          id: 2,
-          from: 10,
-          durationInFrames: 5,
-          row: 0,
-          type: OverlayType.VIDEO,
-          height: 100,
-          width: 100,
-          left: 0,
-          top: 0,
-          isDragging: false,
-          rotation: 0,
-          content: "test2.mp4",
-          src: "test2.mp4",
-          styles: { opacity: 1, zIndex: 1 },
-        },
-        {
-          id: 3,
-          from: 20,
-          durationInFrames: 5,
-          row: 0,
-          type: OverlayType.VIDEO,
-          height: 100,
-          width: 100,
-          left: 0,
-          top: 0,
-          isDragging: false,
-          rotation: 0,
-          content: "test3.mp4",
-          src: "test3.mp4",
-          styles: { opacity: 1, zIndex: 1 },
-        },
-        {
-          id: 4,
-          from: 7,
-          durationInFrames: 10,
-          row: 1,
-          type: OverlayType.VIDEO,
-          height: 100,
-          width: 100,
-          left: 0,
-          top: 0,
-          isDragging: false,
-          rotation: 0,
-          content: "test4.mp4",
-          src: "test4.mp4",
-          styles: { opacity: 1, zIndex: 1 },
-        },
-      ];
-      const position = result.current.findNextAvailablePosition(
-        overlays,
-        2,
-        100
-      );
-      expect(position).toEqual({ from: 25, row: 0 });
-    });
-
-    // Test case 9: Exact fit between overlays
-    it("should append to end of first row in exact fit scenarios", () => {
-      const overlays: Overlay[] = [
-        {
-          id: 1,
-          from: 0,
-          durationInFrames: 10,
-          row: 0,
-          type: OverlayType.VIDEO,
-          height: 100,
-          width: 100,
-          left: 0,
-          top: 0,
-          isDragging: false,
-          rotation: 0,
-          content: "test1.mp4",
-          src: "test1.mp4",
-          styles: { opacity: 1, zIndex: 1 },
-        },
-        {
-          id: 2,
-          from: 11,
-          durationInFrames: 10,
-          row: 0,
-          type: OverlayType.VIDEO,
-          height: 100,
-          width: 100,
-          left: 0,
-          top: 0,
-          isDragging: false,
-          rotation: 0,
-          content: "test2.mp4",
-          src: "test2.mp4",
-          styles: { opacity: 1, zIndex: 1 },
-        },
-      ];
-      const position = result.current.findNextAvailablePosition(
-        overlays,
-        1,
-        100
-      );
-      expect(position).toEqual({ from: 21, row: 0 });
-    });
+  it("falls back to the last visible row when every row is busy at the playhead", () => {
+    const overlays = [clip(1, 0, 10, 0), clip(2, 0, 10, 1), clip(3, 0, 10, 2)];
+    expect(find(overlays, 3, 100, 5)).toEqual({ from: 5, row: 2 });
   });
 });
