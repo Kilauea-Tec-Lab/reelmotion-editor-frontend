@@ -29,7 +29,10 @@ jest.mock("@/components/editor/version-7.0.0/contexts/timeline-context", () => (
   useTimeline: () => mockTimeline,
 }));
 jest.mock("@/components/editor/version-7.0.0/hooks/use-timeline-positioning", () => ({
-  useTimelinePositioning: () => ({ findNextAvailablePosition: () => ({ from: 0, row: 1 }) }),
+  // echoes the requested frame (+1 when it lands on 130, like "append after clip")
+  useTimelinePositioning: () => ({
+    findNextAvailablePosition: (_o: unknown, _r: unknown, _d: unknown, from: number) => ({ from: from === 130 ? 131 : from, row: 1 }),
+  }),
 }));
 
 // Browsers send both key and code; the library matches arrows by code.
@@ -77,7 +80,7 @@ describe("useEditorShortcuts", () => {
     press("v", { ctrlKey: true });
     expect(mockEditor.addOverlay).toHaveBeenCalledTimes(2);
     expect(mockEditor.addOverlay.mock.calls[0][0]).toMatchObject({ from: 100, row: 1 });
-    expect(mockEditor.addOverlay.mock.calls[1][0]).toMatchObject({ from: 130, row: 1 });
+    expect(mockEditor.addOverlay.mock.calls[1][0]).toMatchObject({ from: 131, row: 1 });
   });
 
   it("ignores keys typed into inputs", () => {

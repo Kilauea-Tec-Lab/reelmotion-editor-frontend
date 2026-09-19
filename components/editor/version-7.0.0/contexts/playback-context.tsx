@@ -27,24 +27,37 @@ export const PlaybackProvider: React.FC<{
   const [isPlaying, setIsPlaying] = useState(false);
 
   useEffect(() => {
-    // Child effects (the <Player>) run before this one, so the ref is set.
-    const player = playerRef.current;
-    if (!player) return;
-
     const onFrame = (e: { detail: { frame: number } }) =>
       setCurrentFrame(e.detail.frame);
     const onPlay = () => setIsPlaying(true);
     const onPause = () => setIsPlaying(false);
 
-    player.addEventListener("frameupdate", onFrame);
-    player.addEventListener("play", onPlay);
-    player.addEventListener("pause", onPause);
-    player.addEventListener("ended", onPause);
+    // The <Player> can mount later than this provider (LocalMediaProvider
+    // holds its children until IndexedDB is restored), so poll the ref
+    // until it exists instead of assuming child effects already ran.
+    let raf = 0;
+    let detach: (() => void) | undefined;
+    const attach = () => {
+      const player = playerRef.current;
+      if (!player) {
+        raf = requestAnimationFrame(attach);
+        return;
+      }
+      player.addEventListener("frameupdate", onFrame);
+      player.addEventListener("play", onPlay);
+      player.addEventListener("pause", onPause);
+      player.addEventListener("ended", onPause);
+      detach = () => {
+        player.removeEventListener("frameupdate", onFrame);
+        player.removeEventListener("play", onPlay);
+        player.removeEventListener("pause", onPause);
+        player.removeEventListener("ended", onPause);
+      };
+    };
+    attach();
     return () => {
-      player.removeEventListener("frameupdate", onFrame);
-      player.removeEventListener("play", onPlay);
-      player.removeEventListener("pause", onPause);
-      player.removeEventListener("ended", onPause);
+      cancelAnimationFrame(raf);
+      detach?.();
     };
   }, [playerRef]);
 

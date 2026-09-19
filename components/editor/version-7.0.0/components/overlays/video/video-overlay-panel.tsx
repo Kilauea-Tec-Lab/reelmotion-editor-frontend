@@ -356,12 +356,16 @@ export const VideoOverlayPanel: React.FC = () => {
               ) : videos.length > 0 ? (
                 <>
                   {videos.map((video) => (
-                    <button
+                    <div
                       key={`${video.id}-${video.video_url}`}
+                      // div, not <button>: the rename trigger inside is a <button> (nested buttons = hydration error)
+                      role="button"
+                      tabIndex={0}
                       draggable
                       onDragStart={(e) => handleDragStart(e, video)}
                       className="relative block w-full cursor-pointer border border-transparent rounded-md overflow-hidden"
                       onClick={() => handleAddClip(video)}
+                      onKeyDown={(e) => e.key === "Enter" && handleAddClip(video)}
                     >
                       <LazyVideoThumbnail
                         video={video}
@@ -419,7 +423,7 @@ export const VideoOverlayPanel: React.FC = () => {
                           </DropdownMenu>
                         </div>
                       </div>
-                    </button>
+                    </div>
                   ))}
                   
                   {/* Loading more indicator */}

@@ -322,7 +322,8 @@ export const useKeyframes = ({
 
       const extractedFrames: FrameInfo[] = [];
       const FRAME_TIMEOUT = 8000;
-      const SEEK_TIMEOUT = 1000;
+      // Remote (GCS) files need a range round-trip per seek; 1s was timing out.
+      const SEEK_TIMEOUT = 5000;
       const EXTRACTION_BATCH_SIZE = 5; // Process frames in smaller batches
 
       extractionLoop: for (
@@ -345,9 +346,7 @@ export const useKeyframes = ({
 
               // Seek with timeout and better error handling
               const seekPromise = new Promise<void>((resolve, reject) => {
-                let seekTimeout = setTimeout(() => {
-                  reject(new Error("Seek timeout"));
-                }, SEEK_TIMEOUT);
+                let seekTimeout: ReturnType<typeof setTimeout>;
 
                 const onSeeked = () => {
                   clearTimeout(seekTimeout);

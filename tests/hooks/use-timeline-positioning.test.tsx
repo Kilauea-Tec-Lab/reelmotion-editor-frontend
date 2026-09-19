@@ -44,4 +44,11 @@ describe("useTimelinePositioning › findNextAvailablePosition", () => {
     const overlays = [clip(1, 0, 10, 0), clip(2, 0, 10, 1), clip(3, 0, 10, 2)];
     expect(find(overlays, 3, 100, 5)).toEqual({ from: 5, row: 2 });
   });
+
+  it("appends after a clip when the playhead sits on its last frame", () => {
+    // Player can't reach frame 10 of a 10-frame clip; End/seek lands on 9.
+    expect(find([clip(1, 0, 10, 0)], 3, 100, 9)).toEqual({ from: 10, row: 0 });
+    // …unless something already starts there.
+    expect(find([clip(1, 0, 10, 0), clip(2, 10, 5, 0)], 3, 100, 9)).toEqual({ from: 9, row: 1 });
+  });
 });

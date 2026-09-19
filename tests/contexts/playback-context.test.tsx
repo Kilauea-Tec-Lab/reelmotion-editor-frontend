@@ -40,4 +40,23 @@ describe("PlaybackProvider", () => {
     unmount();
     expect(Object.values(player.listeners).flat()).toHaveLength(0);
   });
+
+  it("attaches when the Player mounts after the provider", () => {
+    const player = makeFakePlayer();
+    const playerRef = { current: null } as any;
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <PlaybackProvider playerRef={playerRef}>{children}</PlaybackProvider>
+    );
+    jest.useFakeTimers(); // modern fake timers also drive requestAnimationFrame
+    const { result } = renderHook(() => usePlayback(), { wrapper });
+    expect(player.addEventListener).not.toHaveBeenCalled();
+
+    playerRef.current = player;
+    act(() => jest.advanceTimersByTime(50));
+    expect(player.addEventListener).toHaveBeenCalledWith("frameupdate", expect.any(Function));
+
+    act(() => player.emit("frameupdate", { detail: { frame: 7 } }));
+    expect(result.current.currentFrame).toBe(7);
+    jest.useRealTimers();
+  });
 });

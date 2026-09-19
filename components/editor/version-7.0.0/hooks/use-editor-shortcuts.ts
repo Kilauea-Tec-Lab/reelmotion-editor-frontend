@@ -95,9 +95,9 @@ export const useEditorShortcuts = () => {
       // ponytail: each paste lands at the playhead on the first free row; group
       // layout across rows is not preserved.
       copied.forEach((o) => {
-        const from = playhead + (o.from - first);
-        const { row } = findNextAvailablePosition(overlays, visibleRows, durationInFrames, from);
-        addOverlay({ ...o, from, row, isDragging: false });
+        // findNextAvailablePosition may nudge `from` (e.g. playhead on a clip's last frame).
+        const pos = findNextAvailablePosition(overlays, visibleRows, durationInFrames, playhead + (o.from - first));
+        addOverlay({ ...o, from: pos.from, row: pos.row, isDragging: false });
       });
     },
     opts,

@@ -21,14 +21,20 @@ export const useTimelinePositioning = () => {
 
     // Find the first row where no existing overlay occupies the current frame
     for (let row = 0; row < visibleRows; row++) {
-      const hasConflict = existingOverlays.some(
+      const conflict = existingOverlays.find(
         (overlay) =>
           overlay.row === row &&
           overlay.from < from + 1 &&
           overlay.from + overlay.durationInFrames > from
       );
-      if (!hasConflict) {
+      if (!conflict) {
         return { from, row };
+      }
+      // The player can never sit on frame `end` (last frame is end - 1), so a
+      // playhead on a clip's last frame means "append after it" on this row.
+      const end = conflict.from + conflict.durationInFrames;
+      if (end - 1 === from && !existingOverlays.some((o) => o.row === row && o.from === end)) {
+        return { from: end, row };
       }
     }
 

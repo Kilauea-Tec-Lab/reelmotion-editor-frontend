@@ -25,7 +25,7 @@ export const TimelineTransitionBadge: React.FC<TimelineTransitionBadgeProps> = (
     <button
       type="button"
       title={hasTransition ? "Transition" : "Add transition"}
-      className={`absolute top-1/2 -translate-x-1/2 -translate-y-1/2 z-30 w-4 h-4 rounded-full border-2 border-white shadow-sm flex items-center justify-center ${
+      className={`absolute top-1/2 -translate-x-1/2 -translate-y-1/2 z-40 w-4 h-4 rounded-full border-2 border-white shadow-sm flex items-center justify-center ${
         hasTransition ? "bg-primarioLogo" : "bg-gray-500/80 hover:bg-primarioLogo"
       }`}
       style={{ left: `${(incoming.from / totalDuration) * 100}%` }}

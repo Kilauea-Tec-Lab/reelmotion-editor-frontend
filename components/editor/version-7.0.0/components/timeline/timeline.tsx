@@ -925,7 +925,7 @@ const Timeline: React.FC<TimelineProps> = ({
                 isInitialLoad &&
                 shouldShowInitialLoader && (
                   <div
-                    className="absolute inset-0 bg-white/60 dark:bg-gray-900/60 backdrop-blur-[1px] flex items-center justify-center z-50"
+                    className="absolute inset-0 bg-white/60 dark:bg-gray-900/60 backdrop-blur-[1px] flex items-center justify-center z-50 pointer-events-none"
                     style={{ willChange: "opacity" }}
                   >
                     <div className="flex items-center gap-2 px-3 py-2 bg-white/90 dark:bg-darkBoxSub /90 rounded-lg shadow-sm ring-1 ring-black/5 dark:ring-white/10">
