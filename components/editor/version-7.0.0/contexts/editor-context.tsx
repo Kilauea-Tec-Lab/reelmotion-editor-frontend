@@ -6,7 +6,10 @@ interface EditorContextProps {
   // Overlay Management
   overlays: Overlay[]; // Array of all overlays in the editor
   selectedOverlayId: number | null; // Currently selected overlay's ID
-  setSelectedOverlayId: any; // Function to select an overlay
+  setSelectedOverlayId: (id: number | null) => void; // Select one overlay (clears the rest)
+  selectedOverlayIds: number[]; // Multi-selection (last = primary)
+  setSelectedOverlayIds: (ids: number[]) => void;
+  toggleSelectedOverlayId: (id: number) => void; // Shift/Ctrl+click
   changeOverlay: (
     // Function to update overlay properties
     id: number,
@@ -28,7 +31,7 @@ interface EditorContextProps {
   // Overlay Operations
   handleOverlayChange: (updatedOverlay: Overlay) => void; // Handle changes to overlay properties
   addOverlay: (overlay: Overlay) => void; // Add new overlay
-  deleteOverlay: (id: number) => void; // Remove overlay
+  deleteOverlay: (id: number | number[]) => void; // Remove overlay
   duplicateOverlay: (id: number) => void; // Clone existing overlay
   splitOverlay: (id: number, splitPosition: number) => void; // Split overlay at given position
 

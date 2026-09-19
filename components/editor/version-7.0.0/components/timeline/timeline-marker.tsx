@@ -1,5 +1,6 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo } from "react";
 import { usePlayback } from "../../contexts/playback-context";
+import { useTimeline } from "../../contexts/timeline-context";
 
 /**
  * Props for the TimelineMarker component.
@@ -22,7 +23,18 @@ interface TimelineMarkerProps {
  */
 const TimelineMarker: React.FC<TimelineMarkerProps> = React.memo(
   ({ totalDuration }) => {
-    const { currentFrame } = usePlayback();
+    const { currentFrame, isPlaying } = usePlayback();
+    const { timelineRef } = useTimeline();
+
+    // Page the timeline when the playhead runs out of view (CapCut style).
+    useEffect(() => {
+      const container = timelineRef.current?.parentElement;
+      if (!isPlaying || !container || totalDuration <= 0) return;
+      const x = (currentFrame / totalDuration) * container.scrollWidth;
+      if (x < container.scrollLeft || x > container.scrollLeft + container.clientWidth) {
+        container.scrollLeft = Math.max(0, x - container.clientWidth * 0.1);
+      }
+    }, [currentFrame, isPlaying, totalDuration, timelineRef]);
     // Calculate the marker's position with higher precision
     const markerPosition = useMemo(() => {
       // Ensure we're using the same calculation method as timeline items

@@ -5,8 +5,10 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
-import { Trash2, Copy, Scissors } from "lucide-react";
+import { Trash2, Copy, Scissors, ArrowUpToLine, ArrowDownToLine } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
+import { useEditorContext } from "../../contexts/editor-context";
+import { getTypeZIndex } from "../core/layer";
 
 /**
  * Props for the TimelineItemContextMenu component
@@ -54,6 +56,16 @@ export const TimelineItemContextMenu: React.FC<
   itemId,
 }) => {
   const { t } = useTranslation();
+  const { overlays, changeOverlay } = useEditorContext();
+  const itemClass = "dark:hover:bg-slate-800 dark:focus:bg-slate-800 dark:text-slate-200";
+
+  // Stacking is per type by default; these set an explicit base above/below everything.
+  const reorder = (toFront: boolean) => {
+    const bases = overlays.map((o) => o.zOrder ?? getTypeZIndex(o.type));
+    const zOrder = toFront ? Math.max(...bases) + 10 : Math.max(1, Math.min(...bases) - 10);
+    changeOverlay(itemId, (o) => ({ ...o, zOrder }));
+  };
+
   return (
     <ContextMenu onOpenChange={onOpenChange}>
       <ContextMenuTrigger className="z-[100]">{children}</ContextMenuTrigger>
@@ -78,6 +90,14 @@ export const TimelineItemContextMenu: React.FC<
         >
           <Scissors className="mr-4 h-4 w-4" />
           {t("common.split")}
+        </ContextMenuItem>
+        <ContextMenuItem className={itemClass} onClick={() => reorder(true)}>
+          <ArrowUpToLine className="mr-4 h-4 w-4" />
+          {t("common.bringToFront")}
+        </ContextMenuItem>
+        <ContextMenuItem className={itemClass} onClick={() => reorder(false)}>
+          <ArrowDownToLine className="mr-4 h-4 w-4" />
+          {t("common.sendToBack")}
         </ContextMenuItem>
       </ContextMenuContent>
     </ContextMenu>

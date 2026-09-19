@@ -17,7 +17,7 @@ const TransitionColorOverlay: React.FC<{ transition: LayerTransition }> = ({ tra
  * Get the base z-index for an overlay type
  * Elements like text, stickers, captions always appear above videos/images
  */
-const getTypeZIndex = (type: OverlayType | string): number => {
+export const getTypeZIndex = (type: OverlayType | string): number => {
   switch (type) {
     case OverlayType.TEXT:
     case "text":
@@ -67,7 +67,7 @@ export const Layer: React.FC<{
    */
   const style: React.CSSProperties = useMemo(() => {
     // Base z-index from overlay type (text/stickers always above videos)
-    const typeZIndex = getTypeZIndex(overlay.type);
+    const typeZIndex = overlay.zOrder ?? getTypeZIndex(overlay.type);
     // Secondary ordering: higher rows are visually below within same type
     const rowOffset = (overlay.row || 0) * 2;
     // Clips overlapping during a transition: the later one composes on top.
@@ -94,6 +94,7 @@ export const Layer: React.FC<{
     overlay.row,
     overlay.id,
     overlay.type,
+    overlay.zOrder,
     selectedOverlayId,
     transition?.zRank,
   ]);

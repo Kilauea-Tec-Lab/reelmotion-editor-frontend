@@ -7,6 +7,7 @@
 import React, { useCallback, useMemo } from "react";
 import { ROW_HEIGHT } from "../../constants";
 import { useTimeline } from "../../contexts/timeline-context";
+import { useEditorContext } from "../../contexts/editor-context";
 import { Overlay } from "../../types";
 import GapIndicator from "./timeline-gap-indicator";
 import { TimelineTransitionBadge } from "./timeline-transition-badge";
@@ -152,11 +153,13 @@ const TimelineGrid: React.FC<TimelineGridProps> = ({
   alignmentLines,
 }) => {
   const { visibleRows } = useTimeline();
+  const { selectedOverlayIds, toggleSelectedOverlayId } = useEditorContext();
 
   // Stable handlers so React.memo(TimelineItem) actually skips renders.
   const setSelectedItem = useCallback(
-    (item: { id: number }) => setSelectedOverlayId(item.id),
-    [setSelectedOverlayId]
+    (item: { id: number }, additive = false) =>
+      additive ? toggleSelectedOverlayId(item.id) : setSelectedOverlayId(item.id),
+    [setSelectedOverlayId, toggleSelectedOverlayId]
   );
   const onItemMouseDown = useCallback(
     (item: Overlay, action: "move" | "resize-start" | "resize-end", e: React.MouseEvent<HTMLDivElement>) =>
@@ -249,6 +252,7 @@ const TimelineGrid: React.FC<TimelineGridProps> = ({
                     isDragging={isDragging}
                     draggedItem={draggedItem}
                     selectedItem={selectedItem}
+                    isMultiSelected={selectedOverlayIds.includes(overlay.id)}
                     setSelectedItem={setSelectedItem}
                     handleMouseDown={onItemMouseDown}
                     handleTouchStart={onItemTouchStart}

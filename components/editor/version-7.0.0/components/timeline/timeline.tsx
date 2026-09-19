@@ -101,6 +101,7 @@ const Timeline: React.FC<TimelineProps> = ({
     handleWheelZoom,
     addRow,
     removeRow,
+    snapEnabled,
   } = useTimeline();
 
   // State for context menu visibility
@@ -138,7 +139,7 @@ const Timeline: React.FC<TimelineProps> = ({
   const playheadSnap = useMemo(() => [playheadFrame], [playheadFrame]);
 
   const { alignmentLines, snappedGhostElement } = useTimelineSnapping({
-    isDragging,
+    isDragging: isDragging && snapEnabled,
     ghostElement,
     draggedItem,
     dragInfo,

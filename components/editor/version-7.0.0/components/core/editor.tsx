@@ -9,6 +9,7 @@ import { DISABLE_MOBILE_LAYOUT } from "../../constants";
 import Timeline from "../timeline/timeline";
 import { VideoPlayer } from "./video-player";
 import { useTranslation } from "@/lib/i18n";
+import { useEditorShortcuts } from "../../hooks/use-editor-shortcuts";
 
 /**
  * Main Editor Component
@@ -39,6 +40,7 @@ import { useTranslation } from "@/lib/i18n";
  * ```
  */
 export const Editor: React.FC = () => {
+  useEditorShortcuts();
   /** State to track if the current viewport is mobile-sized */
   const [isMobile, setIsMobile] = React.useState(false);
   const { t } = useTranslation();

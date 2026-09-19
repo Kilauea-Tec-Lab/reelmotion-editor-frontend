@@ -26,6 +26,8 @@ type BaseOverlay = {
   isDragging: boolean;
   rotation: number;
   type: OverlayType;
+  /** Explicit stacking base ("bring to front / send to back"); defaults per type. */
+  zOrder?: number;
 };
 
 // Base style properties

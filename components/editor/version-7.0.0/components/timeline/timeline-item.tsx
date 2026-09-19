@@ -51,7 +51,9 @@ export interface TimelineItemProps {
   /** Currently selected item in the timeline */
   selectedItem: { id: number } | null;
   /** Callback to update the selected item */
-  setSelectedItem: (item: { id: number }) => void;
+  setSelectedItem: (item: { id: number }, additive?: boolean) => void;
+  /** Part of a Shift/Ctrl multi-selection */
+  isMultiSelected?: boolean;
   /** Handler for mouse-based drag and resize operations */
   handleMouseDown: (
     item: Overlay,
@@ -96,6 +98,7 @@ const TimelineItem: React.FC<TimelineItemProps> = ({
   draggedItem,
   selectedItem,
   setSelectedItem,
+  isMultiSelected = false,
   handleMouseDown,
   handleTouchStart,
   totalDuration,
@@ -114,7 +117,7 @@ const TimelineItem: React.FC<TimelineItemProps> = ({
     item.durationInFrames
   );
 
-  const isSelected = selectedItem?.id === item.id;
+  const isSelected = selectedItem?.id === item.id || isMultiSelected;
   const itemRef = useRef<HTMLDivElement>(null);
   const { setActivePanel, setIsOpen } = useSidebar();
   const keyframeContext = useKeyframeContext();
@@ -332,7 +335,9 @@ const TimelineItem: React.FC<TimelineItemProps> = ({
 
   const handleSelect = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setSelectedItem({ id: item.id });
+    const additive = e.shiftKey || e.ctrlKey || e.metaKey;
+    setSelectedItem({ id: item.id }, additive);
+    if (additive) return;
 
     if (
       item.type === OverlayType.VIDEO ||

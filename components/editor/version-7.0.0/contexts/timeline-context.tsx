@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useRef, useMemo } from "react";
+import React, { createContext, useContext, useRef, useMemo, useState, useCallback } from "react";
 import { useTimelineZoom } from "../hooks/use-timeline-zoom";
 import { useVisibleRows } from "../hooks/use-visible-rows";
 import { useOverlays } from "../hooks/use-overlays";
@@ -32,6 +32,9 @@ interface TimelineContextType {
   handleWheelZoom: (event: WheelEvent) => void;
   /** Reset all timeline overlays to their default state */
   resetOverlays: () => void;
+  /** Magnetic snapping of dragged clips (S key toggles it) */
+  snapEnabled: boolean;
+  toggleSnap: () => void;
 }
 
 /**
@@ -54,6 +57,8 @@ export const TimelineProvider: React.FC<{ children: React.ReactNode }> = ({
   const { resetOverlays } = useOverlays();
 
   const timelineRef = useRef<HTMLDivElement>(null);
+  const [snapEnabled, setSnapEnabled] = useState(true);
+  const toggleSnap = useCallback(() => setSnapEnabled((v) => !v), []);
 
   const {
     zoomScale,
@@ -78,8 +83,12 @@ export const TimelineProvider: React.FC<{ children: React.ReactNode }> = ({
       handleZoom,
       handleWheelZoom,
       resetOverlays,
+      snapEnabled,
+      toggleSnap,
     }),
     [
+      snapEnabled,
+      toggleSnap,
       visibleRows,
       timelineRef,
       zoomScale,

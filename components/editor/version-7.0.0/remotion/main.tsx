@@ -14,9 +14,7 @@ export type MainProps = {
   /** Array of overlay objects to be rendered */
   readonly overlays: Overlay[];
   /** Function to set the currently selected overlay ID */
-  readonly setSelectedOverlayId: React.Dispatch<
-    React.SetStateAction<number | null>
-  >;
+  readonly setSelectedOverlayId: (id: number | null) => void;
   /** Currently selected overlay ID, or null if none selected */
   readonly selectedOverlayId: number | null;
   /**
@@ -26,7 +24,7 @@ export type MainProps = {
    */
   readonly changeOverlay: (
     overlayId: number,
-    updater: (overlay: Overlay) => Overlay
+    updater: Partial<Overlay> | ((overlay: Overlay) => Overlay)
   ) => void;
   /** Duration in frames of the composition */
   readonly durationInFrames: number;

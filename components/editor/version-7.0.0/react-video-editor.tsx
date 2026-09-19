@@ -48,53 +48,8 @@ import { useTranslation } from "@/lib/i18n";
 import { LocalMediaProvider } from "./contexts/local-media-context";
 import { KeyframeProvider } from "./contexts/keyframe-context";
 import { AssetLoadingProvider } from "./contexts/asset-loading-context";
-import { useTimeline } from "./contexts/timeline-context";
-import { ZOOM_CONSTRAINTS } from "./constants";
 import { inferAspectRatioFromDimensions } from "./utils/aspect-ratio-utils";
 
-// Component to handle zoom keyboard shortcuts
-// Must be inside TimelineProvider to access zoom context
-function ZoomKeyboardShortcuts() {
-  const { zoomScale, setZoomScale } = useTimeline();
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Check if we're not in an input field
-      const target = e.target as HTMLElement;
-      const isInputField = 
-        target.tagName === "INPUT" || 
-        target.tagName === "TEXTAREA" || 
-        target.isContentEditable;
-      
-      if (isInputField) return;
-
-      // Handle + key (zoom in)
-      if (e.key === "+" || e.key === "=") {
-        e.preventDefault();
-        const newScale = Math.min(
-          zoomScale + ZOOM_CONSTRAINTS.step,
-          ZOOM_CONSTRAINTS.max
-        );
-        setZoomScale(newScale);
-      }
-      
-      // Handle - key (zoom out)
-      if (e.key === "-" || e.key === "_") {
-        e.preventDefault();
-        const newScale = Math.max(
-          zoomScale - ZOOM_CONSTRAINTS.step,
-          ZOOM_CONSTRAINTS.min
-        );
-        setZoomScale(newScale);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [zoomScale, setZoomScale]);
-
-  return null; // This component doesn't render anything
-}
 
 export default function ReactVideoEditor({ projectId }: { projectId: string }) {
   // Authentication check
@@ -128,6 +83,9 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
     setOverlays,
     selectedOverlayId,
     setSelectedOverlayId,
+    selectedOverlayIds,
+    setSelectedOverlayIds,
+    toggleSelectedOverlayId,
     changeOverlay,
     addOverlay,
     deleteOverlay,
@@ -478,29 +436,6 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
     await saveState();
   }, [saveState]);
 
-  // Set up keyboard shortcut for deleting selected overlay (Backspace / Delete)
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Check if Backspace or Delete key is pressed
-      if (e.key === "Backspace" || e.key === "Delete") {
-        // Check if we're not in an input field
-        const target = e.target as HTMLElement;
-        const isInputField = 
-          target.tagName === "INPUT" || 
-          target.tagName === "TEXTAREA" || 
-          target.isContentEditable;
-        
-        // Only delete overlay if not in an input field and an overlay is selected
-        if (!isInputField && selectedOverlayId !== null) {
-          e.preventDefault();
-          deleteOverlay(selectedOverlayId);
-        }
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedOverlayId, deleteOverlay]);
 
   // Create edition data for backend save
   const editionData = useMemo(() => ({
@@ -536,6 +471,9 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
     setOverlays,
     selectedOverlayId,
     setSelectedOverlayId,
+    selectedOverlayIds,
+    setSelectedOverlayIds,
+    toggleSelectedOverlayId,
     changeOverlay,
     handleOverlayChange,
     addOverlay,
@@ -600,8 +538,8 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
     backgroundColor,
     setBackgroundColor,
   }), [
-    overlays, setOverlays, selectedOverlayId, setSelectedOverlayId, changeOverlay,
-    handleOverlayChange, addOverlay, deleteOverlay, duplicateOverlay, splitOverlay,
+    overlays, setOverlays, selectedOverlayId, setSelectedOverlayId, selectedOverlayIds,
+    setSelectedOverlayIds, toggleSelectedOverlayId, changeOverlay, handleOverlayChange, addOverlay, deleteOverlay, duplicateOverlay, splitOverlay,
     resetOverlays, playerRef, getCurrentFrame, togglePlayPause, formatTime,
     handleTimelineClick, playbackRate, aspectRatio, setAspectRatio, playerDimensions,
     updatePlayerDimensions, getAspectRatioDimensions, getRenderDimensions,
@@ -631,7 +569,6 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
       <EditorSidebarProvider>
         <KeyframeProvider>
           <TimelineProvider>
-            <ZoomKeyboardShortcuts />
             <EditorProvider value={editorContextValue}>
               <PlaybackProvider playerRef={playerRef}>
               <TimelineRowAdjuster />

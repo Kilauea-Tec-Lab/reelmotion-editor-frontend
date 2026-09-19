@@ -8,6 +8,7 @@ import {
   Minus,
   ZoomOut,
   ZoomIn,
+  Magnet,
   Settings,
   Undo2,
   Redo2,
@@ -40,7 +41,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useTimelineShortcuts } from "../../hooks/use-timeline-shortcuts";
 import { usePlayback } from "../../contexts/playback-context";
 import { useAssetLoading } from "../../contexts/asset-loading-context";
 import { useKeyframeContext } from "../../contexts/keyframe-context";
@@ -112,21 +112,8 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
     setBackgroundColor,
   } = useEditorContext();
 
-  const { visibleRows, addRow, removeRow, zoomScale, setZoomScale } =
+  const { visibleRows, addRow, removeRow, zoomScale, setZoomScale, snapEnabled, toggleSnap } =
     useTimeline();
-
-  // Add this hook to enable shortcuts
-  useTimelineShortcuts({
-    handlePlayPause: () => {
-      togglePlayPause();
-    },
-    undo,
-    redo,
-    canUndo,
-    canRedo,
-    zoomScale,
-    setZoomScale,
-  });
 
   const { isLoadingAssets } = useAssetLoading();
 
@@ -482,6 +469,34 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
             </Tooltip>
           </TooltipProvider>
         </div>
+
+        {/* Snap toggle (S) */}
+        <TooltipProvider delayDuration={50}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                onClick={toggleSnap}
+                variant="ghost"
+                size="icon"
+                className={`hidden sm:block h-7 w-7 transition-colors rounded-md hover:bg-gray-100/80 dark:hover:bg-gray-800/80 ${
+                  snapEnabled ? "text-primarioLogo" : "text-gray-500 dark:text-zinc-500"
+                }`}
+              >
+                <Magnet className="h-3.5 w-3.5 m-auto" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent
+              side="top"
+              sideOffset={5}
+              className="bg-white dark:bg-darkBox text-xs px-2 py-1 rounded-md z-[9999] border border-gray-200 dark:border-gray-700"
+              align="end"
+            >
+              <span className="text-gray-700 dark:text-zinc-200">
+                {t(snapEnabled ? "timeline.snapOn" : "timeline.snapOff")}
+              </span>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
 
         {/* Reset Zoom Button (Replaces Export Button) */}
         <TooltipProvider delayDuration={50}>

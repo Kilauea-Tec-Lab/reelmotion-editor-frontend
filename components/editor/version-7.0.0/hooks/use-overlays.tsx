@@ -15,9 +15,21 @@ export const useOverlays = (initialOverlays?: Overlay[]) => {
   overlaysRef.current = overlays;
   const nextIdRef = useRef(0);
 
-  // Tracks which overlay is currently selected for editing
-  const [selectedOverlayId, setSelectedOverlayId] = useState<number | null>(
-    null
+  // Selection: the last id is the "primary" one (panels, canvas outline);
+  // the whole list is used by delete / copy.
+  const [selectedOverlayIds, setSelectedOverlayIds] = useState<number[]>([]);
+  const selectedOverlayId =
+    selectedOverlayIds.length > 0 ? selectedOverlayIds[selectedOverlayIds.length - 1] : null;
+  const setSelectedOverlayId = useCallback(
+    (id: number | null) => setSelectedOverlayIds(id === null ? [] : [id]),
+    []
+  );
+  const toggleSelectedOverlayId = useCallback(
+    (id: number) =>
+      setSelectedOverlayIds((prev) =>
+        prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+      ),
+    []
   );
 
   /**
@@ -66,12 +78,13 @@ export const useOverlays = (initialOverlays?: Overlay[]) => {
   /**
    * Removes an overlay by its ID and clears the selection
    */
-  const deleteOverlay = useCallback((id: number) => {
+  const deleteOverlay = useCallback((id: number | number[]) => {
+    const ids = Array.isArray(id) ? id : [id];
     setOverlays((prevOverlays) =>
-      prevOverlays.filter((overlay) => overlay.id !== id)
+      prevOverlays.filter((overlay) => !ids.includes(overlay.id))
     );
     setSelectedOverlayId(null);
-  }, []);
+  }, [setSelectedOverlayId]);
 
   /**
    * Removes all overlays on a specified row
@@ -223,6 +236,9 @@ export const useOverlays = (initialOverlays?: Overlay[]) => {
     overlays,
     selectedOverlayId,
     setSelectedOverlayId,
+    selectedOverlayIds,
+    setSelectedOverlayIds,
+    toggleSelectedOverlayId,
     setOverlays,
     changeOverlay,
     addOverlay,

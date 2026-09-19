@@ -30,7 +30,7 @@ export const SortedOutlines: React.FC<{
     overlayId: number,
     updater: (overlay: Overlay) => Overlay
   ) => void;
-  setSelectedOverlayId: React.Dispatch<React.SetStateAction<number | null>>;
+  setSelectedOverlayId: (id: number | null) => void;
 }> = ({ overlays, selectedOverlayId, changeOverlay, setSelectedOverlayId }) => {
   const overlaysToDisplay = React.useMemo(
     () => sortOverlaysByRow(overlays),
