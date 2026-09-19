@@ -10,6 +10,7 @@ import {
 import { ImageStylePanel } from "./image-style-panel";
 import { ImageSettingsPanel } from "./image-settings-panel";
 import { resolveMediaUrl } from "../../../utils/url-helper";
+import { TransitionSettings } from "../common/transition-settings";
 
 /**
  * Props for the ImageDetails component
@@ -103,6 +104,10 @@ export const ImageDetails: React.FC<ImageDetailsProps> = ({
         </TabsContent>
 
         <TabsContent value="settings" className="space-y-4 mt-4">
+          <TransitionSettings
+            overlay={localOverlay}
+            onChange={(transitionIn) => setLocalOverlay({ ...localOverlay, transitionIn })}
+          />
           <ImageSettingsPanel
             localOverlay={localOverlay}
             handleStyleChange={handleStyleChange}

@@ -370,6 +370,22 @@ export const translations: Record<Language, TranslationDictionary> = {
     "animation.keyframes": "Keyframes",
     "animation.title": "Animations",
 
+    // Transitions
+    "transition.title": "Transition from previous clip",
+    "transition.needsNeighbor": "Place this clip right after another video or image in the same row to add a transition.",
+    "transition.none": "None",
+    "transition.crossfade": "Crossfade",
+    "transition.dipToBlack": "Dip to black",
+    "transition.dipToWhite": "Dip to white",
+    "transition.slide": "Slide",
+    "transition.wipe": "Wipe",
+    "transition.push": "Push",
+    "transition.zoomIn": "Zoom in",
+    "transition.zoomOut": "Zoom out",
+    "transition.blur": "Blur",
+    "transition.whipPan": "Whip pan",
+    "transition.flash": "Flash",
+
     // Misc / panels
     "panel.style": "Style",
     "panel.settings": "Settings",
@@ -830,6 +846,22 @@ export const translations: Record<Language, TranslationDictionary> = {
     "animation.duration": "Duración",
     "animation.keyframes": "Fotogramas clave",
     "animation.title": "Animaciones",
+
+    // Transiciones
+    "transition.title": "Transición desde el clip anterior",
+    "transition.needsNeighbor": "Coloca este clip justo después de otro video o imagen en la misma fila para añadir una transición.",
+    "transition.none": "Ninguna",
+    "transition.crossfade": "Fundido cruzado",
+    "transition.dipToBlack": "Fundido a negro",
+    "transition.dipToWhite": "Fundido a blanco",
+    "transition.slide": "Deslizar",
+    "transition.wipe": "Barrido",
+    "transition.push": "Empujar",
+    "transition.zoomIn": "Zoom in",
+    "transition.zoomOut": "Zoom out",
+    "transition.blur": "Desenfoque",
+    "transition.whipPan": "Látigo",
+    "transition.flash": "Flash",
 
     // Misc / panels
     "panel.style": "Estilo",

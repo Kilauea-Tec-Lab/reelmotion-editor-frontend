@@ -222,7 +222,7 @@ describe("useOverlays", () => {
 
       expect(result.current.overlays).toHaveLength(3);
       // Due to overlap avoidance logic, it should position at 201 (after existing overlays + 1 frame gap)
-      expect(result.current.overlays[2].from).toBe(201);
+      expect(result.current.overlays[2].from).toBe(200);
     });
   });
 

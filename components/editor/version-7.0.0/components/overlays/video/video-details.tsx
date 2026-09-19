@@ -27,6 +27,7 @@ import { useOverlayOverlapCheck } from "../../../hooks/use-overlay-overlap-check
 import { useEditorContext } from "../../../contexts/editor-context";
 import { useTranslation } from "@/lib/i18n";
 import { resolveVideoUrl } from "../../../utils/url-helper";
+import { TransitionSettings } from "../common/transition-settings";
 
 interface VideoDetailsProps {
   /** The current state of the video overlay */
@@ -144,6 +145,10 @@ export const VideoDetails: React.FC<VideoDetailsProps> = ({
         </TabsContent>
 
         <TabsContent value="settings" className="space-y-4 mt-4">
+          <TransitionSettings
+            overlay={localOverlay}
+            onChange={(transitionIn) => setLocalOverlay({ ...localOverlay, transitionIn })}
+          />
           <VideoSettingsPanel
             localOverlay={localOverlay}
             handleStyleChange={handleStyleChange}

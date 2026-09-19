@@ -33,8 +33,8 @@ export const useOverlayOverlapCheck = () => {
         const existingEnd =
           existingOverlay.from + existingOverlay.durationInFrames;
 
-        // Add a small buffer to prevent exact edge alignments from triggering overlap
-        const buffer = 1;
+        // Exact edge alignment is allowed (clips can touch for transitions)
+        const buffer = 0;
 
         // Check all possible overlap scenarios with buffer
         return (
@@ -82,8 +82,8 @@ export const useOverlayOverlapCheck = () => {
       const adjustedOverlays: Overlay[] = [];
       let currentPosition = overlayEnd;
 
-      // Add a small gap between overlays to prevent exact edge alignments
-      const gap = 1;
+      // Shifted clips land flush against the moved one (no gap)
+      const gap = 0;
 
       sortedOverlays.forEach((existingOverlay) => {
         const existingEnd =

@@ -105,6 +105,14 @@ describe("useOverlayOverlapCheck", () => {
       expect(adjustedOverlays).toEqual([]);
     });
 
+    it("treats clips that touch edge to edge as not overlapping (transitions need this)", () => {
+      const { result } = renderHook(() => useOverlayOverlapCheck());
+      const overlay = createMockOverlay(1, 100, 100, 1);
+      const currentOverlays = [createMockOverlay(2, 0, 100, 1)];
+
+      expect(result.current.checkOverlap(overlay, currentOverlays)).toBe(false);
+    });
+
     it("should adjust single overlapping overlay", () => {
       const { result } = renderHook(() => useOverlayOverlapCheck());
       const overlay = createMockOverlay(1, 0, 100, 1);
@@ -115,7 +123,7 @@ describe("useOverlayOverlapCheck", () => {
 
       expect(hasOverlap).toBe(true);
       expect(adjustedOverlays).toHaveLength(1);
-      expect(adjustedOverlays[0].from).toBe(101); // Original overlay end (100) + gap (1)
+      expect(adjustedOverlays[0].from).toBe(100); // Flush against the moved overlay's end (no gap)
     });
 
     it("should adjust multiple overlapping overlays in sequence", () => {
@@ -131,8 +139,8 @@ describe("useOverlayOverlapCheck", () => {
 
       expect(hasOverlap).toBe(true);
       expect(adjustedOverlays).toHaveLength(2);
-      expect(adjustedOverlays[0].from).toBe(101); // First overlay starts after main overlay
-      expect(adjustedOverlays[1].from).toBe(152); // Second overlay starts after first adjusted overlay
+      expect(adjustedOverlays[0].from).toBe(100); // First overlay starts flush after main overlay
+      expect(adjustedOverlays[1].from).toBe(150); // Second overlay starts flush after first adjusted overlay
     });
 
     it("should maintain relative order of overlays when adjusting", () => {
@@ -180,7 +188,7 @@ describe("useOverlayOverlapCheck", () => {
 
       expect(hasOverlap).toBe(true);
       expect(adjustedOverlays).toHaveLength(1);
-      expect(adjustedOverlays[0].from).toBe(1); // Should still maintain gap
+      expect(adjustedOverlays[0].from).toBe(0); // No gap is enforced
     });
   });
 });

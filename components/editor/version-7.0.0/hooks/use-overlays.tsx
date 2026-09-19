@@ -130,7 +130,7 @@ export const useOverlays = (initialOverlays?: Overlay[]) => {
               b.from + b.durationInFrames - (a.from + a.durationInFrames)
           )[0];
           newFrom = lastOverlay
-            ? lastOverlay.from + lastOverlay.durationInFrames + 1
+            ? lastOverlay.from + lastOverlay.durationInFrames
             : newFrom + 1;
         }
       }
@@ -351,6 +351,8 @@ const createSplitOverlays = (
     ...(original.type === OverlayType.SOUND && {
       startFromSound: secondHalfStartTime,
     }),
+    // The transition belongs to the cut with the previous clip; the left piece keeps it.
+    ...("transitionIn" in original && { transitionIn: undefined }),
   };
 
   return [firstHalf, secondHalf];

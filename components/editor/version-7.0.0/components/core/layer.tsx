@@ -1,8 +1,17 @@
 import React, { useMemo } from "react";
-import { Sequence } from "remotion";
+import { AbsoluteFill, Sequence, useCurrentFrame } from "remotion";
 import { LayerContent } from "./layer-content";
 import { Overlay, OverlayType } from "../../types";
 import { FPS } from "../../constants";
+import { getTransitionFrameStyle, LayerTransition } from "../../utils/transitions";
+
+/** Dip-to-color / flash: a full cover drawn over the incoming clip. */
+const TransitionColorOverlay: React.FC<{ transition: LayerTransition }> = ({ transition }) => {
+  const frame = useCurrentFrame();
+  const { overlayColor } = getTransitionFrameStyle(transition, frame);
+  if (!overlayColor) return null;
+  return <AbsoluteFill style={{ backgroundColor: overlayColor, pointerEvents: "none" }} />;
+};
 
 /**
  * Get the base z-index for an overlay type
@@ -44,7 +53,9 @@ export const Layer: React.FC<{
   overlay: Overlay;
   selectedOverlayId: number | null;
   baseUrl?: string;
-}> = React.memo(function Layer({ overlay, selectedOverlayId, baseUrl }) {
+  /** From resolveTransitions: extended timing + per-frame style when this clip transitions. */
+  transition?: LayerTransition;
+}> = React.memo(function Layer({ overlay, selectedOverlayId, baseUrl, transition }) {
   /**
    * Memoized style calculations for the layer
    * Handles positioning, dimensions, rotation, and z-index based on:
@@ -59,7 +70,8 @@ export const Layer: React.FC<{
     const typeZIndex = getTypeZIndex(overlay.type);
     // Secondary ordering: higher rows are visually below within same type
     const rowOffset = (overlay.row || 0) * 2;
-    const zIndex = typeZIndex - rowOffset;
+    // Clips overlapping during a transition: the later one composes on top.
+    const zIndex = (typeZIndex - rowOffset) * 1000 + (transition?.zRank ?? 0);
     const isSelected = overlay.id === selectedOverlayId;
 
     return {
@@ -83,6 +95,7 @@ export const Layer: React.FC<{
     overlay.id,
     overlay.type,
     selectedOverlayId,
+    transition?.zRank,
   ]);
 
   /**
@@ -112,11 +125,12 @@ export const Layer: React.FC<{
     <Sequence
       key={overlay.id}
       from={overlay.from}
-      durationInFrames={overlay.durationInFrames}
+      durationInFrames={transition?.sequenceDurationInFrames ?? overlay.durationInFrames}
       premountFor={FPS}
     >
       <div style={style}>
-        <LayerContent overlay={overlay} baseUrl={baseUrl} />
+        <LayerContent overlay={overlay} baseUrl={baseUrl} transition={transition} />
+        {transition?.in && <TransitionColorOverlay transition={transition} />}
       </div>
     </Sequence>
   );

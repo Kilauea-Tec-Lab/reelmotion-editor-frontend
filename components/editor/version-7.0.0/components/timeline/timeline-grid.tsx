@@ -9,6 +9,8 @@ import { ROW_HEIGHT } from "../../constants";
 import { useTimeline } from "../../contexts/timeline-context";
 import { Overlay } from "../../types";
 import GapIndicator from "./timeline-gap-indicator";
+import { TimelineTransitionBadge } from "./timeline-transition-badge";
+import { findOutgoingNeighbor, isTransitionCapable } from "../../utils/transitions";
 import TimelineItem from "./timeline-item";
 import { SNAPPING_CONFIG } from "../../constants";
 
@@ -174,7 +176,11 @@ const TimelineGrid: React.FC<TimelineGridProps> = ({
     () =>
       Array.from({ length: visibleRows }, (_, rowIndex) => {
         const rowItems = overlays.filter((o) => o.row === rowIndex);
-        return { rowItems, gaps: findGapsInRow(rowItems) };
+        // Clips that start exactly where another video/image ends: transition slots.
+        const junctions = rowItems.filter(
+          (o) => isTransitionCapable(o) && findOutgoingNeighbor(rowItems, o)
+        );
+        return { rowItems, gaps: findGapsInRow(rowItems), junctions };
       }),
     [overlays, visibleRows]
   );
@@ -208,7 +214,7 @@ const TimelineGrid: React.FC<TimelineGridProps> = ({
           ))}
 
         {/* Render Rows (existing code) */}
-        {rowsData.map(({ rowItems, gaps }, rowIndex) => {
+        {rowsData.map(({ rowItems, gaps, junctions }, rowIndex) => {
 
           return (
             <div
@@ -268,6 +274,16 @@ const TimelineGrid: React.FC<TimelineGridProps> = ({
                     rowIndex={rowIndex}
                     totalDuration={totalDuration}
                     onRemoveGap={onRemoveGap}
+                  />
+                ))}
+
+              {!isDragging &&
+                junctions.map((incoming) => (
+                  <TimelineTransitionBadge
+                    key={`transition-${incoming.id}`}
+                    incoming={incoming}
+                    totalDuration={totalDuration}
+                    setSelectedItem={setSelectedItem}
                   />
                 ))}
 

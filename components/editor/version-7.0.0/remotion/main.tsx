@@ -1,10 +1,11 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useMemo } from "react";
 import { AbsoluteFill } from "remotion";
 
 import { Overlay } from "../types";
 import { SortedOutlines } from "../components/selection/sorted-outlines";
 import { CanvasGuides } from "../components/selection/canvas-guides";
 import { Layer } from "../components/core/layer";
+import { resolveTransitions } from "../utils/transitions";
 
 /**
  * Props for the Main component
@@ -63,6 +64,9 @@ export const Main: React.FC<MainProps> = ({
   baseUrl,
   backgroundColor = DEFAULT_BG_COLOR,
 }) => {
+  // Same resolution in Player and render: preview == export.
+  const transitions = useMemo(() => resolveTransitions(overlays), [overlays]);
+
   const onPointerDown = useCallback(
     (e: React.PointerEvent) => {
       if (e.button !== 0) {
@@ -89,6 +93,7 @@ export const Main: React.FC<MainProps> = ({
               overlay={overlay}
               selectedOverlayId={selectedOverlayId}
               baseUrl={baseUrl}
+              transition={transitions.get(overlay.id)}
             />
           );
         })}

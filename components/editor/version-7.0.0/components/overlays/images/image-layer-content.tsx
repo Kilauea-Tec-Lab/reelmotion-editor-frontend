@@ -4,6 +4,7 @@ import { ImageOverlay } from "../../../types";
 import { combineFilters, getAnimationStyle } from "../../../utils/animation-phase";
 import { Img } from "remotion";
 import { resolveMediaUrl } from "../../../utils/url-helper";
+import { getTransitionFrameStyle, LayerTransition } from "../../../utils/transitions";
 
 /**
  * Props for the ImageLayerContent component
@@ -14,6 +15,7 @@ import { resolveMediaUrl } from "../../../utils/url-helper";
 interface ImageLayerContentProps {
   overlay: ImageOverlay;
   baseUrl?: string;
+  transition?: LayerTransition;
 }
 
 /**
@@ -54,13 +56,14 @@ interface ImageLayerContentProps {
 export const ImageLayerContent: React.FC<ImageLayerContentProps> = ({
   overlay,
   baseUrl,
+  transition,
 }) => {
   const frame = useCurrentFrame();
-  const anim = getAnimationStyle(
-    overlay.styles.animation,
-    frame,
-    overlay.durationInFrames
-  );
+  // A running transition replaces the clip's own enter/exit animation.
+  const tr = getTransitionFrameStyle(transition, frame);
+  const anim = tr.active
+    ? tr.style
+    : getAnimationStyle(overlay.styles.animation, frame, overlay.durationInFrames);
 
   /**
    * Combine base styles with current animation phase

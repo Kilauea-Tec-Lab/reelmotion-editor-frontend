@@ -7,6 +7,7 @@ import {
   getAnimationStyle,
   isSameOverlay,
 } from "../../../utils/animation-phase";
+import { getTransitionFrameStyle, LayerTransition } from "../../../utils/transitions";
 
 /**
  * Interface defining the props for the VideoLayerContent component
@@ -16,6 +17,7 @@ interface VideoLayerContentProps {
   overlay: ClipOverlay;
   /** The base URL for the video */
   baseUrl?: string;
+  transition?: LayerTransition;
 }
 
 /**
@@ -34,16 +36,21 @@ interface VideoLayerContentProps {
  *   - styles: Object containing visual styling properties and animations
  */
 export const VideoLayerContent: React.FC<VideoLayerContentProps> = memo(
-  function VideoLayerContent({ overlay, baseUrl }) {
+  function VideoLayerContent({ overlay, baseUrl, transition }) {
   const frame = useCurrentFrame();
   const { styles } = overlay;
+  const baseVolume = styles.volume ?? 1;
 
   const videoSrc = useMemo(
     () => resolveVideoUrl(overlay.src, baseUrl),
     [overlay.src, baseUrl]
   );
 
-  const anim = getAnimationStyle(styles.animation, frame, overlay.durationInFrames);
+  // A running transition replaces the clip's own enter/exit animation.
+  const tr = getTransitionFrameStyle(transition, frame);
+  const anim = tr.active
+    ? tr.style
+    : getAnimationStyle(styles.animation, frame, overlay.durationInFrames);
   const filter = combineFilters(styles.filter, anim.filter as string | undefined);
 
   // Only reallocated when a style value actually changes, not every frame.
@@ -83,7 +90,11 @@ export const VideoLayerContent: React.FC<VideoLayerContentProps> = memo(
         src={videoSrc}
         startFrom={overlay.videoStartTime || 0}
         style={videoStyle}
-        volume={overlay.styles.volume ?? 1}
+        volume={
+          transition?.out
+            ? (f: number) => baseVolume * getTransitionFrameStyle(transition, f).volume
+            : baseVolume
+        }
         playbackRate={overlay.speed ?? 1}
         pauseWhenBuffering
         crossOrigin="anonymous"

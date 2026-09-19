@@ -1,3 +1,5 @@
+import type { TransitionConfig } from "./utils/transitions";
+
 // Define overlay types enum
 export enum OverlayType {
   TEXT = "text",
@@ -89,6 +91,8 @@ export type ClipOverlay = BaseOverlay & {
   src: string;
   videoStartTime?: number;
   speed?: number;
+  /** Transition from the clip that ends where this one starts (same row). */
+  transitionIn?: TransitionConfig;
   styles: BaseStyles & {
     objectFit?: "contain" | "cover" | "fill" | "none" | "scale-down";
     objectPosition?: string;
@@ -411,6 +415,8 @@ export interface ImageOverlay extends BaseOverlay {
   type: OverlayType.IMAGE;
   src: string;
   content?: string; // Optional thumbnail/preview
+  /** Transition from the clip that ends where this one starts (same row). */
+  transitionIn?: TransitionConfig;
   styles: ImageStyles;
 }
 

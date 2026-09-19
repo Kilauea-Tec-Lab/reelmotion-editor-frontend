@@ -7,6 +7,7 @@ import { VideoLayerContent } from "../overlays/video/video-layer-content";
 import { ImageLayerContent } from "../overlays/images/image-layer-content";
 import { SoundLayerContent } from "../overlays/captions/sound-layer-content";
 import { StickerLayerContent } from "../overlays/stickers/sticker-layer-content";
+import type { LayerTransition } from "../../utils/transitions";
 
 /**
  * Props for the LayerContent component
@@ -16,6 +17,7 @@ import { StickerLayerContent } from "../overlays/stickers/sticker-layer-content"
 interface LayerContentProps {
   overlay: Overlay;
   baseUrl?: string;
+  transition?: LayerTransition;
 }
 
 /**
@@ -48,7 +50,7 @@ interface LayerContentProps {
  * ```
  */
 export const LayerContent: React.FC<LayerContentProps> = React.memo(
-  function LayerContent({ overlay, baseUrl }) {
+  function LayerContent({ overlay, baseUrl, transition }) {
   /**
    * Common styling applied to all layer types
    * Ensures consistent dimensions across different content types
@@ -62,7 +64,7 @@ export const LayerContent: React.FC<LayerContentProps> = React.memo(
     case OverlayType.VIDEO:
       return (
         <div style={{ ...commonStyle }}>
-          <VideoLayerContent overlay={overlay} baseUrl={baseUrl} />
+          <VideoLayerContent overlay={overlay} baseUrl={baseUrl} transition={transition} />
         </div>
       );
 
@@ -76,7 +78,7 @@ export const LayerContent: React.FC<LayerContentProps> = React.memo(
     case OverlayType.IMAGE:
       return (
         <div style={{ ...commonStyle }}>
-          <ImageLayerContent overlay={overlay} baseUrl={baseUrl} />
+          <ImageLayerContent overlay={overlay} baseUrl={baseUrl} transition={transition} />
         </div>
       );
 
