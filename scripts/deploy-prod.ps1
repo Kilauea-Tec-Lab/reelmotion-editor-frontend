@@ -127,8 +127,8 @@ pm2 save >/dev/null 2>&1 || pm2 dump >/dev/null 2>&1 || echo 'WARNING: pm2 save/
 
 # Write script to temp file locally
 $tempScriptPath = "deploy-remote.sh"
-# Use ASCII to avoid BOM issues on Linux
-Set-Content -Path $tempScriptPath -Value $remoteScript -Encoding Ascii
+# ASCII (no BOM) and LF line endings: bash rejects a CRLF shebang ("/bin/bash^M").
+[System.IO.File]::WriteAllText((Join-Path (Get-Location) $tempScriptPath), ($remoteScript -replace "`r`n", "`n"), [System.Text.Encoding]::ASCII)
 
 try {
     Write-Host " Uploading deployment script..."
@@ -137,6 +137,9 @@ try {
     Write-Host " Executing remote build..."
     # Make executable and run, then remove
     gcloud compute ssh $GCE_INSTANCE --zone=$ZONE --command="chmod +x deploy-remote.sh && ./deploy-remote.sh && rm deploy-remote.sh"
+    if ($LASTEXITCODE -ne 0) {
+        throw "Remote build failed (exit code $LASTEXITCODE)"
+    }
 }
 finally {
     # Cleanup local temp file
