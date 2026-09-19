@@ -1,4 +1,5 @@
 import { bundle } from "@remotion/bundler";
+import { refundExport, type ExportCharge } from "./export-billing";
 import {
   renderMedia,
   selectComposition,
@@ -164,7 +165,8 @@ function hasRemoteAssets(overlays: any[]): boolean {
 export async function startRendering(
   compositionId: string,
   inputProps: Record<string, unknown>,
-  renderScale?: number
+  renderScale?: number,
+  charge?: ExportCharge
 ) {
   const renderId = uuidv4();
   const startTime = Date.now();
@@ -287,6 +289,7 @@ export async function startRendering(
       const totalTime = ((Date.now() - startTime) / 1000).toFixed(1);
       console.error(`[Render ${renderId}] ✗ FAILED after ${totalTime}s:`, error.message);
       failRender(renderId, error.message);
+      if (charge) await refundExport(charge, renderId);
       cleanupAssets(renderId);
     }
   })();

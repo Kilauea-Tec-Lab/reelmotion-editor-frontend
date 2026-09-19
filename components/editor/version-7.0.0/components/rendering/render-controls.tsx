@@ -1,6 +1,5 @@
 import React from "react";
-import Cookies from "js-cookie";
-import { Download, Loader2, Bell, Save, FolderOpen, ChevronDown, Lock, Crown, MoreVertical } from "lucide-react";
+import { Download, Loader2, Bell, Save, FolderOpen, ChevronDown, MoreVertical, Coins } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -23,9 +22,17 @@ import { useEditorContext } from "../../contexts/editor-context";
 import { useLocalMedia, MaterializeProgress } from "../../contexts/local-media-context";
 import { toast } from "@/hooks/use-toast";
 import { Overlay } from "../../types";
-import { SubscriptionModal } from "../shared/subscription-modal";
+import { InsufficientTokensModal } from "../shared/insufficient-tokens-modal";
+import { EXPORT_PRICES, type ExportResolution } from "../../constants";
+import { INSUFFICIENT_TOKENS } from "../../ssr-helpers/export-billing";
 import { useTranslation } from "@/lib/i18n";
 import { LanguageSelector } from "@/components/language-selector";
+
+const RESOLUTIONS: { id: ExportResolution; label: string; quality: string }[] = [
+  { id: "720p", label: "header.standard720p", quality: "header.basicQuality" },
+  { id: "1080p", label: "header.hd1080p", quality: "header.proQuality" },
+  { id: "4k", label: "header.ultraHd4k", quality: "header.eliteQuality" },
+];
 
 /**
  * Interface representing a single video render attempt
@@ -54,7 +61,7 @@ interface RenderItem {
  */
 interface RenderControlsProps {
   state: any;
-  handleRender: (options?: { scale?: number; overlays?: Overlay[] }) => void;
+  handleRender: (options?: { scale?: number; overlays?: Overlay[]; resolution?: ExportResolution }) => void;
   saveProject?: () => Promise<void>;
   renderType?: "ssr" | "lambda" | "cloudrun";
   editionData?: {
@@ -90,17 +97,13 @@ const RenderControls: React.FC<RenderControlsProps> = ({
   const [hasNewRender, setHasNewRender] = React.useState(false);
   const { t } = useTranslation();
 
-  // Use EditorContext to get subscription info, dimensions, overlays and export count
-  const { subscriptionPlan, isPro, getAspectRatioDimensions, getRenderDimensions, overlays, setOverlays, exportNumber } = useEditorContext();
+  const { getAspectRatioDimensions, getRenderDimensions, overlays, setOverlays } = useEditorContext();
   const { materializeOverlays } = useLocalMedia();
   // Local files are uploaded right before export; shown in the export button.
   const [uploadStatus, setUploadStatus] = React.useState<string | null>(null);
 
   // Check if timeline has elements
   const isTimelineEmpty = !overlays || overlays.length === 0;
-
-  // Check if free user has exhausted export limit (3 or more)
-  const isFreeExportBlocked = (subscriptionPlan || 'free').toLowerCase() === 'free' && exportNumber >= 3;
 
   // Track save dialog state
   const [isSaveDialogOpen, setIsSaveDialogOpen] = React.useState(false);
@@ -110,13 +113,13 @@ const RenderControls: React.FC<RenderControlsProps> = ({
   const [isSaveRenderDialogOpen, setIsSaveRenderDialogOpen] = React.useState(false);
   // Track selected video URL for saving
   const [selectedVideoUrl, setSelectedVideoUrl] = React.useState<string>("");
-  // Track subscription modal state
-  const [showSubscriptionModal, setShowSubscriptionModal] = React.useState(false);
+  // Shown when the SSR route refuses the export for lack of tokens
+  const [showInsufficientTokens, setShowInsufficientTokens] = React.useState(false);
 
   // Check if rendering is disabled via environment variable
   const isRenderDisabled = process.env.NEXT_PUBLIC_DISABLE_RENDER === "true";
 
-  const handleExport = async (resolution: '720p' | '1080p' | '4k') => {
+  const handleExport = async (resolution: ExportResolution) => {
     // Output size = composition size × renderScale (uniform, overlays keep
     // their relative positions). 720p = long side 1280, so free users get a
     // downscale, never a re-layout.
@@ -143,46 +146,10 @@ const RenderControls: React.FC<RenderControlsProps> = ({
     }
     if (exportOverlays !== overlays) setOverlays(exportOverlays);
 
-    // Call render with scale factor — Remotion handles the uniform upscaling
-    handleRender({ scale: renderScale, overlays: exportOverlays });
-
-    // Notify backend if subscription is free
-    if ((subscriptionPlan || 'free').toLowerCase() === 'free') {
-      notifyFreeRender();
-    }
+    // Call render with scale factor — Remotion handles the uniform upscaling.
+    // The resolution is what the server charges for (EXPORT_PRICES).
+    handleRender({ scale: renderScale, overlays: exportOverlays, resolution });
   };
-
-  /**
-   * Sends a POST to editor/free-render-sum to track free user renders
-   */
-  const notifyFreeRender = async () => {
-    try {
-      const token = Cookies.get("token");
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "https://backend.reelmotion.ai";
-      await fetch(`${backendUrl}/editor/free-render-sum`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: "Bearer " + token,
-        },
-        body: JSON.stringify({ subscription: "free" }),
-      });
-    } catch (error) {
-      console.error("Error notifying free render:", error);
-    }
-  };
-  
-  // Determine access levels
-  // Assuming subscriptionPlan can be 'free', 'pro', 'elite' (need to verify exact strings) 
-  // Based on user prompt: 
-  // 720p: Everyone
-  // 1080p: Pro, Elite
-  // 4k: Elite
-  
-  // Safe normalization
-  const plan = (subscriptionPlan || 'free').toLowerCase();
-  const can1080p = plan === 'pro' || plan === 'elite' || plan === 'business'; // extended checks just in case
-  const can4k = plan === 'elite' || plan === 'business';
 
   // Add keyboard shortcut for save (Ctrl+S / Cmd+S)
   React.useEffect(() => {
@@ -213,6 +180,10 @@ const RenderControls: React.FC<RenderControlsProps> = ({
       ]);
       setHasNewRender(true);
     } else if (state.status === "error") {
+      if (state.error?.message === INSUFFICIENT_TOKENS) {
+        setShowInsufficientTokens(true);
+        return;
+      }
       setRenders((prev) => [
         {
           timestamp: new Date(),
@@ -290,11 +261,7 @@ const RenderControls: React.FC<RenderControlsProps> = ({
         videoUrl={selectedVideoUrl}
       />
 
-      {/* Subscription Modal */}
-      <SubscriptionModal 
-        open={showSubscriptionModal} 
-        onOpenChange={setShowSubscriptionModal} 
-      />
+      <InsufficientTokensModal open={showInsufficientTokens} onOpenChange={setShowInsufficientTokens} />
 
       <Button
         variant="ghost"
@@ -387,17 +354,6 @@ const RenderControls: React.FC<RenderControlsProps> = ({
         </PopoverContent>
       </Popover>
 
-      <Button
-        onClick={() => handleRender()}
-        size="sm"
-        variant="outline"
-        disabled={state.status === "rendering" || state.status === "invoking" || isRenderDisabled}
-        className={`hidden bg-gray-800 text-white border-gray-700 hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-50 ${isRenderDisabled ? "cursor-not-allowed" : ""}`}
-        title={isRenderDisabled ? t("header.renderDisabledTitle") : undefined}
-      >
-        Legacy Button
-      </Button>
-
       {/* New Export Button with Dropdown */}
       {uploadStatus || state.status === "invoking" || state.status === "rendering" ? (
         <Button disabled variant="secondary" size="sm">
@@ -417,12 +373,12 @@ const RenderControls: React.FC<RenderControlsProps> = ({
           <DropdownMenuTrigger asChild>
              <Button
                 variant="default"
-                disabled={isRenderDisabled || isTimelineEmpty || isFreeExportBlocked}
+                disabled={isRenderDisabled || isTimelineEmpty}
                 size="sm"
                 className="bg-primarioLogo hover:bg-primarioLogo/90 text-white"
-                title={isTimelineEmpty ? t("header.timelineEmptyTitle") : isFreeExportBlocked ? t("header.freeExportBlockedTitle") : isRenderDisabled ? t("header.renderDisabledTitle") : undefined}
+                title={isTimelineEmpty ? t("header.timelineEmptyTitle") : isRenderDisabled ? t("header.renderDisabledTitle") : undefined}
               >
-                {isRenderDisabled ? t("header.exportDisabled") : isTimelineEmpty ? t("header.export") : isFreeExportBlocked ? t("header.exportLimitReached") : t("header.export")}
+                {isRenderDisabled ? t("header.exportDisabled") : t("header.export")}
                 <ChevronDown className="w-3.5 h-3.5 ml-2" />
               </Button>
           </DropdownMenuTrigger>
@@ -430,41 +386,20 @@ const RenderControls: React.FC<RenderControlsProps> = ({
              <DropdownMenuLabel>{t("header.selectResolution")}</DropdownMenuLabel>
              <DropdownMenuSeparator />
 
-             {/* 720p - Always Available */}
-             <DropdownMenuItem onClick={() => handleExport('720p')} className="cursor-pointer">
-                 <div className="flex flex-col">
-                   <span className="font-medium">{t("header.standard720p")}</span>
-                   <span className="text-xs text-muted-foreground">{t("header.basicQuality")}</span>
-                 </div>
-             </DropdownMenuItem>
-
-             {/* 1080p - Pro+ */}
-             <DropdownMenuItem
-               onClick={() => can1080p ? handleExport('1080p') : setShowSubscriptionModal(true)}
-               className={`cursor-pointer ${!can1080p ? "bg-gray-50 dark:bg-gray-900" : ""}`}
-             >
-                 <div className="flex items-center justify-between w-full">
+             {RESOLUTIONS.map(({ id, label, quality }) => (
+               <DropdownMenuItem key={id} onClick={() => handleExport(id)} className="cursor-pointer">
+                 <div className="flex items-center justify-between w-full gap-3">
                    <div className="flex flex-col text-left">
-                     <span className="font-medium">{t("header.hd1080p")}</span>
-                     <span className="text-xs text-muted-foreground">{t("header.proQuality")}</span>
+                     <span className="font-medium">{t(label)}</span>
+                     <span className="text-xs text-muted-foreground">{t(quality)}</span>
                    </div>
-                   {!can1080p && <Crown className="w-4 h-4 text-yellow-500 ml-2" />}
+                   <span className="inline-flex items-center gap-1 text-xs font-mono text-yellow-500 whitespace-nowrap">
+                     <Coins className="w-3.5 h-3.5" />
+                     {t("header.tokensPrice", { n: EXPORT_PRICES[id] })}
+                   </span>
                  </div>
-             </DropdownMenuItem>
-
-             {/* 4K - Elite Only */}
-             <DropdownMenuItem
-               onClick={() => can4k ? handleExport('4k') : setShowSubscriptionModal(true)}
-               className={`cursor-pointer ${!can4k ? "bg-gray-50 dark:bg-gray-900" : ""}`}
-             >
-                 <div className="flex items-center justify-between w-full">
-                   <div className="flex flex-col text-left">
-                     <span className="font-medium">{t("header.ultraHd4k")}</span>
-                     <span className="text-xs text-muted-foreground">{t("header.eliteQuality")}</span>
-                   </div>
-                   {!can4k && <Crown className="w-4 h-4 text-purple-500 ml-2" />}
-                 </div>
-             </DropdownMenuItem>
+               </DropdownMenuItem>
+             ))}
 
           </DropdownMenuContent>
         </DropdownMenu>

@@ -101,4 +101,4 @@ Compositions in `remotion/` — `entry.tsx`, `main.tsx`, `root.tsx`. Video layer
 
 ## Environment
 
-Key env vars: `NEXT_PUBLIC_BACKEND_URL`, `NEXT_PUBLIC_BASE_URL`, `NEXT_PUBLIC_CDN_URL`, `NEXT_PUBLIC_CDN_ENABLED`, GCS bucket names (`NEXT_PUBLIC_GCS_BUCKET_NAME_VIDEO/IMAGE/AUDIO`), `NEXT_PUBLIC_PEXELS_API_KEY`, Remotion GCP/AWS credentials.
+Key env vars: `NEXT_PUBLIC_BACKEND_URL`, `EDITOR_RENDER_SECRET` (server-only; must equal the backend's value — refunds failed paid exports via `POST tokens/refund`), `NEXT_PUBLIC_BASE_URL`, `NEXT_PUBLIC_CDN_URL`, `NEXT_PUBLIC_CDN_ENABLED`, GCS bucket names (`NEXT_PUBLIC_GCS_BUCKET_NAME_VIDEO/IMAGE/AUDIO`), `NEXT_PUBLIC_PEXELS_API_KEY`, Remotion GCP/AWS credentials.

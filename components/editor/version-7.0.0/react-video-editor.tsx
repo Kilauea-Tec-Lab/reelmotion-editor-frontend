@@ -22,7 +22,7 @@ import { useHistory } from "./hooks/use-history";
 import { useEditorAuth } from "./hooks/use-editor-auth";
 
 // Types
-import { Overlay, OverlayType } from "./types";
+import { Overlay } from "./types";
 
 // Utils
 import { prepareUrlForRender } from "./utils/url-helper";
@@ -33,8 +33,7 @@ import {
   DEFAULT_OVERLAYS,
   FPS,
   RENDER_TYPE,
-  WATERMARK_VIDEO_SRC,
-  WATERMARK_DURATION_FRAMES,
+  type ExportResolution,
 } from "./constants";
 import { TimelineProvider } from "./contexts/timeline-context";
 
@@ -55,10 +54,6 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
   // Authentication check
   const { isLoading, isAuthorized, editorData } = useEditorAuth();
   const { t } = useTranslation();
-  
-  const subscriptionPlan = editorData?.suscription?.suscription || "free";
-  const isPro = subscriptionPlan !== "free";
-  const exportNumber = editorData?.export_number ?? 0;
 
   // Autosave state
   const [showRecoveryDialog, setShowRecoveryDialog] = useState(false);
@@ -206,7 +201,6 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
   /**
    * Prepare overlays for rendering by converting all media URLs to absolute URLs
    * that don't use the local proxy (which only works on Next.js server)
-   * And adding watermark if needed relative to render context
    */
   const prepareOverlaysForRender = useCallback((overlays: Overlay[]): Overlay[] => {
     const processedOverlays = overlays.map((overlay) => {
@@ -220,51 +214,18 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
       return overlay;
     });
 
-    // Add watermark for free users
-    if (!isPro) {
-      // Calculate the end time of the composition
-      const maxDuration =
-        processedOverlays.length > 0
-          ? Math.max(...processedOverlays.map((o) => o.from + o.durationInFrames))
-          : 0;
-      
-      // Create new video overlay
-      const watermarkOverlay = {
-        id: -999, // Special ID for watermark
-        type: OverlayType.VIDEO,
-        from: maxDuration,
-        durationInFrames: WATERMARK_DURATION_FRAMES,
-        row: 0,
-        src: prepareUrlForRender(WATERMARK_VIDEO_SRC),
-        content: "Watermark",
-        height: compositionHeight, 
-        width: compositionWidth,
-        left: 0,
-        top: 0,
-        isDragging: false,
-        rotation: 0,
-        styles: {
-          objectFit: "contain",
-          opacity: 1,
-          zIndex: 9999, // Ensure it's on top if overlapping
-        },
-      } as unknown as Overlay;
-
-      processedOverlays.push(watermarkOverlay);
-    }
-
     return processedOverlays;
-  }, [isPro, compositionWidth, compositionHeight]);
+  }, []);
 
   const inputProps = useMemo(() => ({
     overlays: prepareOverlaysForRender(overlays),
-    durationInFrames: contentDurationInFrames + (!isPro ? WATERMARK_DURATION_FRAMES : 0), // Add watermark duration for free users
+    durationInFrames: contentDurationInFrames,
     fps: FPS,
     width: renderWidth, // Use calculated render dimensions
     height: renderHeight,
     src: "",
     backgroundColor,
-  }), [overlays, prepareOverlaysForRender, contentDurationInFrames, isPro, renderWidth, renderHeight, backgroundColor]);
+  }), [overlays, prepareOverlaysForRender, contentDurationInFrames, renderWidth, renderHeight, backgroundColor]);
 
   const { renderMedia: startRender, state } = useRendering(
     "TestComponent",
@@ -275,9 +236,10 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
   // Export may pass overlays materialized a moment ago (local files uploaded)
   // that the memoized inputProps do not contain yet.
   const renderMedia = useCallback(
-    (options?: { scale?: number; overlays?: Overlay[] }) =>
+    (options?: { scale?: number; overlays?: Overlay[]; resolution?: ExportResolution }) =>
       startRender({
         scale: options?.scale,
+        resolution: options?.resolution,
         inputProps: options?.overlays
           ? { ...inputProps, overlays: prepareOverlaysForRender(options.overlays) }
           : undefined,
@@ -507,13 +469,6 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
     // Load edit functionality
     loadEdit: handleLoadEdit,
 
-    // Subscription info
-    subscriptionPlan,
-    isPro,
-
-    // Export limit
-    exportNumber,
-
     // Background color
     backgroundColor,
     setBackgroundColor,
@@ -525,8 +480,7 @@ export default function ReactVideoEditor({ projectId }: { projectId: string }) {
     updatePlayerDimensions, getAspectRatioDimensions, getRenderDimensions,
     durationInFrames, contentDurationInFrames, durationInSeconds, renderMedia, state,
     deleteOverlaysByRow, undo, redo, canUndo, canRedo, updateOverlayStyles,
-    handleManualSave, editionData, handleLoadEdit, subscriptionPlan, isPro,
-    exportNumber, backgroundColor,
+    handleManualSave, editionData, handleLoadEdit, backgroundColor,
   ]);
 
   // Show loading state while authenticating

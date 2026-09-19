@@ -1,4 +1,5 @@
 import React, { createContext, useContext, ReactNode } from "react";
+import type { ExportResolution } from "../constants";
 import { Overlay, AspectRatio, CaptionStyles } from "../types";
 
 // Define the shape of the context
@@ -47,7 +48,7 @@ interface EditorContextProps {
   durationInFrames: number; // Total number of frames
   contentDurationInFrames: number; // Actual content duration in frames
   durationInSeconds: number; // Total duration in seconds
-  renderMedia: (options?: { scale?: number; overlays?: Overlay[] }) => void; // Trigger media rendering
+  renderMedia: (options?: { scale?: number; overlays?: Overlay[]; resolution?: ExportResolution }) => void; // Trigger media rendering
   state: any; // General state object with proper typing
 
   // Timeline
@@ -84,13 +85,6 @@ interface EditorContextProps {
 
   // Load edit functionality
   loadEdit?: (editionData: any) => void;
-
-  // Subscription info
-  subscriptionPlan: string;
-  isPro: boolean;
-
-  // Export limit for free users
-  exportNumber: number;
 
   // Background color for the composition canvas
   backgroundColor: string;

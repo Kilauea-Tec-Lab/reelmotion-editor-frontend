@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { ExportResolution } from "../constants";
 import Cookies from "js-cookie";
 import {
   RenderRequest,
@@ -46,15 +47,18 @@ export const renderVideo = async ({
   id,
   inputProps,
   renderScale,
+  resolution,
 }: {
   id: string;
   inputProps: z.infer<typeof CompositionProps>;
   renderScale?: number;
+  resolution?: ExportResolution;
 }) => {
   const body: z.infer<typeof RenderRequest> = {
     id,
     inputProps,
     renderScale,
+    resolution,
   };
 
   const response = await makeRequest<RenderResponse>(

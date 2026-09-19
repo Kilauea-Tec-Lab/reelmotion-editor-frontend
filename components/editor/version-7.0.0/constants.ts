@@ -28,9 +28,12 @@ export const DISABLE_MOBILE_LAYOUT = false;
  */
 export const DISABLE_VIDEO_KEYFRAMES = false;
 
-// Watermark/Outro video configuration
-export const WATERMARK_VIDEO_SRC = "/wathermark/wathermark.mp4";
-export const WATERMARK_DURATION_FRAMES = 150; // Approximated 5 seconds at 30fps
+// Flat token price per export, keyed by resolution. Imported by both the
+// dropdown (display) and the SSR render route (charge) so they never drift.
+// 100 tokens = $1.
+export const EXPORT_RESOLUTIONS = ["720p", "1080p", "4k"] as const;
+export type ExportResolution = (typeof EXPORT_RESOLUTIONS)[number];
+export const EXPORT_PRICES: Record<ExportResolution, number> = { "720p": 10, "1080p": 25, "4k": 50 };
 
 // AWS deployment configuration (Legacy - keeping for reference)
 export const SITE_NAME = "https://remotionlambda-useast1-1xn6aj83c1.s3.us-east-1.amazonaws.com/sites/reelmotion-editor/index.html";

@@ -325,6 +325,9 @@ export const RenderRequest = z.object({
   id: z.string(),
   inputProps: CompositionProps,
   renderScale: z.number().optional(),
+  // Optional in the schema so lambda/cloudrun bodies still type-check; the SSR
+  // route rejects a request without it (that is what gets charged).
+  resolution: z.enum(["720p", "1080p", "4k"]).optional(),
 });
 
 export const ProgressRequest = z.object({

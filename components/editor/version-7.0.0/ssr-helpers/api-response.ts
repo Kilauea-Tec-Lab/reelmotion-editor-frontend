@@ -12,19 +12,23 @@ export type ApiResponse<Res> =
       data: Res;
     };
 
+export type ApiAuth = { userId: number; authHeader: string };
+
 export const executeApi =
   <Res, Req extends ZodType>(
     schema: Req,
-    handler: (req: Request, body: z.infer<Req>) => Promise<Res>
+    handler: (req: Request, body: z.infer<Req>, auth: ApiAuth) => Promise<Res>
   ) =>
   async (req: Request) => {
-    if (!(await verifyEditorToken(req.headers.get("authorization")))) {
+    const authHeader = req.headers.get("authorization");
+    const session = await verifyEditorToken(authHeader);
+    if (!session) {
       return unauthorizedResponse();
     }
     try {
       const payload = await req.json();
       const parsed = schema.parse(payload);
-      const data = await handler(req, parsed);
+      const data = await handler(req, parsed, { userId: session.userId, authHeader: authHeader as string });
       return NextResponse.json({
         type: "success",
         data: data,
